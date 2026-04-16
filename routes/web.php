@@ -18,7 +18,16 @@ Route::get('dashboard', function () {
 })->middleware('auth');
 Route::get('/', function () {
     return view('welcome');
-
 });
+
+// Route Landing Page
+Route::get('/', function () {
+    return view('welcome');
+})->name('home');
+
+// Route Portal Pasien
+Route::get('/portal', function () {
+    return view('portal');
+})->name('portal');
 
 

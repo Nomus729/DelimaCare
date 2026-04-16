@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Masuk - DelimaCare</title>
+    <title>Daftar - DelimaCare</title>
 
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -25,11 +25,11 @@
         </div>
 
         <div class="mb-8">
-            <h1 class="text-3xl font-semibold text-gray-900 mb-2">Masuk</h1>
+            <h1 class="text-3xl font-semibold text-gray-900 mb-2">Daftar</h1>
             <p class="text-gray-600 text-sm">Selamat Datang!</p>
         </div>
 
-        <form action="/login" method="POST" class="space-y-6">
+        <form action="/register" method="POST" class="space-y-6">
             @csrf
 
             <div>
@@ -43,7 +43,7 @@
             </div>
 
             <div x-data="{ show: false }">
-                <label class="block text-sm font-medium text-gray-800 mb-2">Kata sandi</label>
+                <label class="block text-sm font-medium text-gray-800 mb-2">Nomer Pendaftaran</label>
                 <div class="relative">
                     <input :type="show ? 'text' : 'password'" name="password" placeholder="Masukan kata sandi" required
                            class="w-full pl-4 pr-12 py-3 rounded-lg border @error('password') border-red-500 @else border-gray-300 @enderror focus:ring-2 focus:ring-gray-900 focus:border-gray-900 outline-none transition-all placeholder-gray-400 text-sm">
@@ -59,22 +59,14 @@
                 @enderror
             </div>
 
-            <div class="flex items-center justify-between pt-1">
-                <label class="flex items-center gap-2 cursor-pointer group">
-                    <input type="checkbox" name="remember" class="w-4 h-4 rounded border-gray-300 text-black focus:ring-black cursor-pointer">
-                    <span class="text-sm text-gray-800 group-hover:text-black transition-colors">Ingat Saya</span>
-                </label>
-                <a href="/forgot-password" class="text-sm text-gray-400 hover:text-black transition-colors">Lupa Kata sandi ?</a>
-            </div>
-
-            <button type="submit" class="w-full py-3.5 bg-[#050505] text-white font-medium rounded-lg mt-2 hover:bg-gray-800 hover:shadow-lg transform active:scale-[0.98] transition-all duration-200">
-                Masuk
+            <button type="submit" class="w-full py-3.5 bg-[#050505] text-white font-medium rounded-lg mt-6 hover:bg-gray-800 hover:shadow-lg transform active:scale-[0.98] transition-all duration-200">
+                Daftar
             </button>
         </form>
 
         <div class="mt-10 text-center">
             <p class="text-sm text-gray-400">
-                Belum punya Akun ? <a href="#" class="text-black font-semibold hover:underline">Daftar</a>
+                Sudah Punya Akun ? <a href="{{ route('login') }}" class="text-black font-semibold hover:underline">Masuk</a>
             </p>
         </div>
 
