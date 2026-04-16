@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\User; // Pastikan ini tetap ada
 
 class LoginController extends Controller
 {
@@ -14,22 +15,37 @@ class LoginController extends Controller
 
     public function authenticate(Request $request)
     {
-        // Validasi input
-        $credentials = $request->validate([
+        // 1. Validasi input form
+        $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
         ]);
 
-        // Percobaan Login
-        if (Auth::attempt($credentials)) {
-            $request->session()->regenerate(); // Mencegah Session Fixation
+        // 2. Kredensial "Dummy" (Hardcoded)
+        $dummyEmail = 'admin@delimacare.id';
+        $dummyPassword = 'password123';
 
-            return redirect()->intended('dashboard');
+        // 3. Cek apakah input cocok dengan data dummy kita
+        if ($request->email === $dummyEmail && $request->password === $dummyPassword) {
+
+            // 4. "Memaksa" Laravel untuk menganggap user ini login
+            // Karena kita tidak punya database, kita buat object User kosong secara instan di memori (tidak disimpan ke DB)
+            $dummyUser = new User();
+            $dummyUser->id = 1;
+            $dummyUser->name = 'Admin Dummy';
+            $dummyUser->email = $dummyEmail;
+
+            Auth::login($dummyUser); // Login-kan user dummy tersebut
+
+            $request->session()->regenerate(); // Regenerate session biar aman
+
+            // 5. Arahkan ke Dashboard
+            return redirect()->intended('/admin/dashboard');
         }
 
-        // Jika gagal
+        // Jika salah email/password
         return back()->withErrors([
-            'email' => 'Email atau password tidak cocok dengan data kami.',
+            'email' => 'Email atau password tidak cocok dengan data dummy.',
         ])->onlyInput('email');
     }
 
@@ -38,6 +54,7 @@ class LoginController extends Controller
         Auth::logout();
         $request->session()->invalidate();
         $request->session()->regenerateToken();
+
         return redirect('/');
     }
 }
