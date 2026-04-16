@@ -32,11 +32,12 @@ Route::post('/register', [RegisterController::class, 'store']);
 
 
 // ==========================================
-// 3. ADMIN PANEL (Hanya bisa diakses kalau sudah Login)
+// 3. ADMIN PANEL (DIBYPASS SEMENTARA TANPA DATABASE)
 // ==========================================
-Route::group(['prefix' => 'admin', 'middleware' => ['auth']], function () {
+// Middleware 'auth' sudah saya hapus di bawah ini biar nggak ngecek database lagi
+Route::group(['prefix' => 'admin'], function () {
 
-    // Halaman Dashboard Admin (Akan memanggil resources/views/admin/index.blade.php)
+    // Halaman Dashboard Admin
     Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
 });
