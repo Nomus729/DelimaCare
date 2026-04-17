@@ -17,14 +17,17 @@ class RedirectIfAuthenticated
      */
     public function handle(Request $request, Closure $next, string ...$guards): Response
     {
-        $guards = empty($guards) ? [null] : $guards;
+        // BYPASS TOTAL:
+        // Kita matikan pengecekan Auth sementara supaya Laravel TIDAK MENCARI DATABASE.
+        // Langsung loloskan saja ke halaman yang dituju.
 
+        /* $guards = empty($guards) ? [null] : $guards;
         foreach ($guards as $guard) {
             if (Auth::guard($guard)->check()) {
-                // UBAH DI SINI: Langsung arahkan ke dashboard admin
                 return redirect('/admin/dashboard');
             }
         }
+        */
 
         return $next($request);
     }
