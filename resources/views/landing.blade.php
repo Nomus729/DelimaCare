@@ -27,7 +27,9 @@
         </div>
     </header>
 
-    <div class="h-24 bg-white"></div> <section class="bg-white px-8 md:px-16 py-16 md:py-24 max-w-4xl mx-auto opacity-0 animate-fade-in delay-100">
+    <div class="h-24 bg-white"></div>
+
+    <section class="bg-white px-8 md:px-16 py-16 md:py-24 max-w-4xl mx-auto opacity-0 animate-fade-in delay-100">
         <h1 class="text-5xl md:text-7xl font-extrabold leading-tight mb-8 tracking-tighter">
             Layanan<br>
             Kesehatan<br>
@@ -53,41 +55,55 @@
         </div>
 
         <div class="px-8 md:px-16 max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <x-feature-card title="Rekam Medis Digital" description="Basis data terintegrasi untuk riwayat kesehatan pasien ibu hamil dan KB yang aman dan mudah diakses.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"></path></svg>
-                </x-slot>
-            </x-feature-card>
 
-            <x-feature-card title="Reservasi Online" description="Pastikan jadwal dokter real-time dan buat janji temu dengan mudah melalui sistem online.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path><circle cx="12" cy="14" r="2"></circle></svg>
-                </x-slot>
-            </x-feature-card>
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Rekam Medis Digital</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Basis data terintegrasi untuk riwayat kesehatan pasien ibu hamil dan KB yang aman dan mudah diakses.</p>
+            </div>
 
-            <x-feature-card title="Laporan Otomatis" description="Pelaporan administrasi instan untuk kebutuhan Pusat dan Bidan Desa tanpa input manual.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
-                </x-slot>
-            </x-feature-card>
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path><circle cx="12" cy="14" r="2"></circle></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Reservasi Online</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Pastikan jadwal dokter real-time dan buat janji temu dengan mudah melalui sistem online.</p>
+            </div>
 
-            <x-feature-card title="Manajemen Stok" description="Pantau ketersediaan obat dan logistik medis secara real-time untuk operasional optimal.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
-                </x-slot>
-            </x-feature-card>
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Laporan Otomatis</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Pelaporan administrasi instan untuk kebutuhan Pusat dan Bidan Desa tanpa input manual.</p>
+            </div>
 
-            <x-feature-card title="Dashboard Terintegrasi" description="Antarmuka intuitif untuk semua staf klinik dengan akses mudah ke semua modul sistem.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
-                </x-slot>
-            </x-feature-card>
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Manajemen Stok</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Pantau ketersediaan obat dan logistik medis secara real-time untuk operasional optimal.</p>
+            </div>
 
-            <x-feature-card title="Keamanan Data" description="Perlindungan data pasien dengan enkripsi dan sistem keamanan tingkat tinggi.">
-                <x-slot:icon>
-                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-10 h-10" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
-                </x-slot>
-            </x-feature-card>
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Dashboard Terintegrasi</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Antarmuka intuitif untuk semua staf klinik dengan akses mudah ke semua modul sistem.</p>
+            </div>
+
+            <div class="bg-white border border-gray-200 p-8 rounded-2xl hover:shadow-xl hover:-translate-y-2 transition-all duration-300">
+                <div class="w-14 h-14 bg-gray-50 rounded-xl border border-gray-100 flex items-center justify-center text-black mb-6">
+                    <svg fill="none" stroke="currentColor" stroke-width="2" class="w-8 h-8" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>
+                </div>
+                <h3 class="text-xl font-bold text-gray-900 mb-3">Keamanan Data</h3>
+                <p class="text-gray-600 leading-relaxed text-sm">Perlindungan data pasien dengan enkripsi dan sistem keamanan tingkat tinggi.</p>
+            </div>
+
         </div>
     </section>
 
@@ -147,7 +163,6 @@
     </footer>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-
     <script src="{{ asset('js/script.js') }}"></script>
 
 </body>

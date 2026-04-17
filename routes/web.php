@@ -9,7 +9,7 @@ use App\Http\Controllers\AdminController;
 // 1. HALAMAN DEPAN & PORTAL (Bisa diakses siapa saja)
 // ==========================================
 Route::get('/', function () {
-    return view('welcome');
+    return view('landing');
 })->name('home');
 
 Route::get('/portal', function () {
