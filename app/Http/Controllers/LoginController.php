@@ -54,7 +54,7 @@ class LoginController extends Controller
         }
 
         // 3. Attempt authentication (password otomatis di-hash check oleh Laravel)
-        if (Auth::attempt($credentials, $request->boolean('remember'))) {
+        if (Auth::attempt($credentials)) {
             // Reset rate limiter on success
             RateLimiter::clear($throttleKey);
 
