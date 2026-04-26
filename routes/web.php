@@ -16,6 +16,15 @@ Route::get('/portal', function () {
     return view('portal');
 })->name('portal');
 
+// --- Artikel / Konten ---
+Route::get('/artikel', function () {
+    return view('articles.index');
+})->name('articles.index');
+
+Route::get('/artikel/{slug}', function ($slug) {
+    return view('articles.show', ['slug' => $slug]);
+})->name('articles.show');
+
 
 // ==========================================
 // 2. AUTHENTICATION (Login, Register, Logout)
