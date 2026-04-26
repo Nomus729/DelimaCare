@@ -14,7 +14,7 @@ Route::get('/', function () {
 
 Route::get('/portal', function () {
     return view('portal');
-})->name('portal');
+})->name('portal')->middleware('auth');
 
 // --- Artikel / Konten ---
 Route::get('/artikel', function () {

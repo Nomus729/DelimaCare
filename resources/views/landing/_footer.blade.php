@@ -14,7 +14,7 @@
         <h2 class="text-3xl md:text-5xl font-extrabold text-white mb-6 leading-tight">Siap Memberikan yang<br>Terbaik untuk Keluarga?</h2>
         <p class="text-teal-100 text-lg mb-10 max-w-xl mx-auto leading-relaxed">Bergabunglah dengan ribuan keluarga yang telah mempercayakan kesehatan mereka kepada DelimaCare.</p>
         <div class="flex flex-wrap justify-center gap-4">
-            <a href="{{ route('portal') }}" class="btn-primary">
+            <a href="{{ route('login') }}" class="btn-primary">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 Buat Reservasi Sekarang
             </a>
@@ -72,7 +72,7 @@
                     <li><a href="#fitur">Fitur</a></li>
                     <li><a href="#tentang">Tentang Kami</a></li>
                     <li><a href="#testimoni">Testimoni</a></li>
-                    <li><a href="{{ route('portal') }}">Portal Pasien</a></li>
+                    <li><a href="{{ route('login') }}">Portal Pasien</a></li>
                 </ul>
             </div>
 

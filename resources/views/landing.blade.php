@@ -49,11 +49,6 @@
         </nav>
 
         <div class="flex items-center gap-3">
-            <a href="{{ route('portal') }}"
-               class="hidden sm:inline-flex items-center px-5 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 border"
-               :class="scrolled ? 'border-gray-300 text-gray-700 hover:border-teal-500 hover:text-teal-600' : 'border-white/30 text-white hover:bg-white/10'">
-                Portal Pasien
-            </a>
             {{-- Dark Mode Toggle --}}
             <button @click="toggleDark()" class="dark-toggle" :class="scrolled ? 'text-gray-600' : 'text-white'" aria-label="Toggle dark mode">
                 <svg x-show="!darkMode" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"/></svg>
