@@ -6,47 +6,84 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\AdminController;
 
 // ==========================================
-// 1. HALAMAN DEPAN & PORTAL (Bisa diakses siapa saja)
+// 1. HALAMAN PUBLIK (Semua orang bisa akses)
 // ==========================================
 Route::get('/', function () {
-    return view('landing');
+    $articles = \App\Models\Article::latest()->take(3)->get();
+    return view('landing', compact('articles'));
 })->name('home');
 
-Route::get('/portal', function () {
-    return view('portal');
-})->name('portal')->middleware('auth');
+// --- Artikel / Konten (publik) ---
+Route::get('/artikel', function (\Illuminate\Http\Request $request) {
+    $query = \App\Models\Article::query();
 
-// --- Artikel / Konten ---
-Route::get('/artikel', function () {
-    return view('articles.index');
+    // Filter by Category
+    if ($request->filled('category')) {
+        $query->where('category', $request->category);
+    }
+
+    // Search by Keyword
+    if ($request->filled('search')) {
+        $searchTerm = '%' . $request->search . '%';
+        $query->where(function($q) use ($searchTerm) {
+            $q->where('title', 'like', $searchTerm)
+              ->orWhere('content', 'like', $searchTerm);
+        });
+    }
+
+    $articles = $query->latest()->paginate(9)->withQueryString();
+    
+    // Get current parameters for the view
+    $currentCategory = $request->query('category', '');
+    $searchQuery = $request->query('search', '');
+
+    return view('articles.index', compact('articles', 'currentCategory', 'searchQuery'));
 })->name('articles.index');
 
 Route::get('/artikel/{slug}', function ($slug) {
-    return view('articles.show', ['slug' => $slug]);
+    $article = \App\Models\Article::where('slug', $slug)->firstOrFail();
+    
+    // Ambil artikel terkait
+    $related = \App\Models\Article::where('id', '!=', $article->id)
+        ->latest()
+        ->take(2)
+        ->get();
+        
+    return view('articles.show', compact('article', 'related'));
 })->name('articles.show');
 
 
 // ==========================================
-// 2. AUTHENTICATION (Login, Register, Logout)
+// 2. AUTHENTICATION (hanya untuk tamu/guest)
 // ==========================================
+Route::middleware('guest')->group(function () {
+    Route::get('/login',    [LoginController::class, 'index'])->name('login');
+    Route::post('/login',   [LoginController::class, 'authenticate']);
+    Route::get('/register', [RegisterController::class, 'index'])->name('register');
+    Route::post('/register', [RegisterController::class, 'store']);
+});
 
-// --- Login ---
-Route::get('/login', [LoginController::class, 'index'])->name('login')->middleware('guest');
-Route::post('/login', [LoginController::class, 'authenticate']);
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout');
-
-// --- Register ---
-Route::get('/register', [RegisterController::class, 'index'])->name('register')->middleware('guest');
-Route::post('/register', [RegisterController::class, 'store']);
+// Logout (hanya user yang sudah login)
+Route::post('/logout', [LoginController::class, 'logout'])
+    ->name('logout')
+    ->middleware('auth');
 
 
 // ==========================================
-// 3. ADMIN PANEL (DIBYPASS SEMENTARA TANPA DATABASE)
+// 3. PORTAL PASIEN (Hanya pasien terdaftar)
 // ==========================================
-// Middleware 'auth' sudah saya hapus di bawah ini biar nggak ngecek database lagi
-Route::group(['prefix' => 'admin'], function () {
+Route::get('/portal', function () {
+    return view('portal');
+})->name('portal')->middleware('patient');
 
-    // Halaman Dashboard Admin
-    Route::get('/dashboard', [AdminController::class, 'index'])->name('admin.dashboard');
 
+// ==========================================
+// 4. ADMIN PANEL (Hanya admin & dokter)
+//    Semua route di sini wajib melalui middleware 'admin'
+// ==========================================
+Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
+    
+    // Kelola Konten
+    Route::resource('konten', \App\Http\Controllers\ArticleController::class)->except(['index', 'show']);
 });

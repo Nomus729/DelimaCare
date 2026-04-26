@@ -22,77 +22,62 @@
             </a>
         </div>
 
-        {{-- Featured Article (Large) + 2 Small Cards --}}
+        @if($articles->count() > 0)
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-            {{-- Featured Large Card --}}
-            <a href="{{ route('articles.show', 'tips-menjaga-kesehatan-ibu-hamil') }}" class="group relative rounded-2xl overflow-hidden h-full min-h-[380px] flex scroll-reveal delay-100" style="box-shadow: 0 8px 32px rgba(13,148,136,0.1);">
-                <img src="https://images.unsplash.com/photo-1559839734-2b71ea197ec2?w=800&q=80" alt="Kesehatan Ibu Hamil" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+            {{-- Featured Large Card (First Article) --}}
+            @php $featured = $articles->first(); @endphp
+            <a href="{{ route('articles.show', $featured->slug) }}" class="group relative rounded-2xl overflow-hidden h-full min-h-[380px] flex scroll-reveal delay-100" style="box-shadow: 0 8px 32px rgba(13,148,136,0.1);">
+                @if($featured->image_path)
+                    <img src="{{ asset('storage/' . $featured->image_path) }}" alt="{{ $featured->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                @else
+                    <div class="absolute inset-0 w-full h-full bg-teal-800"></div>
+                @endif
                 <div class="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/40 to-transparent"></div>
                 <div class="relative z-10 mt-auto p-8 w-full">
-                    <span class="cat-badge cat-artikel mb-3 inline-flex">Artikel</span>
-                    <h3 class="text-2xl md:text-3xl font-extrabold text-white mb-3 leading-tight group-hover:text-teal-200 transition-colors">Tips Menjaga Kesehatan Ibu Hamil di Trimester Pertama</h3>
-                    <p class="text-gray-300 text-sm leading-relaxed mb-4 max-w-lg">Trimester pertama kehamilan adalah periode krusial dalam perkembangan janin. Berikut tips penting yang perlu diperhatikan...</p>
+                    <span class="cat-badge cat-{{ strtolower($featured->category) }} mb-3 inline-flex">{{ $featured->category }}</span>
+                    <h3 class="text-2xl md:text-3xl font-extrabold text-white mb-3 leading-tight group-hover:text-teal-200 transition-colors">{{ $featured->title }}</h3>
+                    <p class="text-gray-300 text-sm leading-relaxed mb-4 max-w-lg line-clamp-2">{{ strip_tags($featured->content) }}</p>
                     <div class="flex items-center gap-4 text-xs text-gray-400">
                         <span class="flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                            Dr. Siti Nurhaliza
+                            {{ $featured->author->username ?? 'Admin' }}
                         </span>
                         <span class="flex items-center gap-1">
                             <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            25 Apr 2026
-                        </span>
-                        <span class="flex items-center gap-1">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3"/><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="2" fill="none"/></svg>
-                            5 menit baca
+                            {{ $featured->created_at->format('d M Y') }}
                         </span>
                     </div>
                 </div>
             </a>
 
-            {{-- Right Column: 2 stacked cards --}}
+            {{-- Right Column: Stacked cards (Next 2 Articles) --}}
             <div class="flex flex-col gap-6">
-                {{-- Card 2 --}}
-                <a href="{{ route('articles.show', 'jadwal-vaksinasi-anak-2026') }}" class="article-card flex-1 scroll-reveal delay-200" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);">
-                    <div class="flex flex-col sm:flex-row gap-4 h-full">
-                        <div class="sm:w-44 h-40 sm:h-auto rounded-xl overflow-hidden flex-shrink-0">
-                            <img src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=400&q=80" alt="Vaksinasi Anak" class="w-full h-full object-cover">
-                        </div>
-                        <div class="flex flex-col justify-center flex-1 py-1">
-                            <span class="cat-badge cat-berita mb-2 inline-flex self-start">Berita</span>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2 leading-snug hover:text-teal-600 transition-colors">Jadwal Vaksinasi Anak Tahun 2026 Telah Dibuka</h3>
-                            <p class="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">Pendaftaran vaksinasi untuk anak usia 0-5 tahun bulan ini telah dibuka. Segera daftarkan buah hati Anda...</p>
-                            <div class="flex items-center gap-3 text-xs text-gray-400">
-                                <span class="flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    22 Apr 2026
-                                </span>
-                                <span>3 menit baca</span>
-                            </div>
+                @foreach($articles->skip(1) as $article)
+                <a href="{{ route('articles.show', $article->slug) }}" class="group flex flex-col sm:flex-row bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-teal-500/30 transition-all duration-300 flex-1 scroll-reveal delay-200">
+                    <div class="w-full sm:w-48 h-48 sm:h-auto relative overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700">
+                        @if($article->image_path)
+                            <img src="{{ asset('storage/' . $article->image_path) }}" alt="{{ $article->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        @endif
+                    </div>
+                    <div class="p-5 sm:p-6 flex flex-col justify-center flex-1">
+                        <span class="cat-badge cat-{{ strtolower($article->category) }} mb-2 inline-flex self-start">{{ $article->category }}</span>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white mb-2 leading-snug group-hover:text-teal-600 transition-colors">{{ $article->title }}</h3>
+                        <p class="text-gray-500 dark:text-gray-400 text-sm leading-relaxed mb-3 line-clamp-2">{{ strip_tags($article->content) }}</p>
+                        <div class="flex items-center gap-3 text-xs text-gray-400 mt-auto">
+                            <span class="flex items-center gap-1">
+                                <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                {{ $article->created_at->format('d M Y') }}
+                            </span>
                         </div>
                     </div>
                 </a>
-
-                {{-- Card 3 --}}
-                <a href="{{ route('articles.show', 'seminar-kesehatan-keluarga') }}" class="article-card flex-1 scroll-reveal delay-300" style="background: rgba(255,255,255,0.85); backdrop-filter: blur(8px);">
-                    <div class="flex flex-col sm:flex-row gap-4 h-full">
-                        <div class="sm:w-44 h-40 sm:h-auto rounded-xl overflow-hidden flex-shrink-0">
-                            <img src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?w=400&q=80" alt="Seminar Kesehatan" class="w-full h-full object-cover">
-                        </div>
-                        <div class="flex flex-col justify-center flex-1 py-1">
-                            <span class="cat-badge cat-acara mb-2 inline-flex self-start">Acara</span>
-                            <h3 class="text-lg font-bold text-gray-900 mb-2 leading-snug hover:text-teal-600 transition-colors">Seminar Kesehatan Keluarga: Nutrisi & Tumbuh Kembang Anak</h3>
-                            <p class="text-gray-500 text-sm leading-relaxed mb-3 line-clamp-2">Ikuti seminar gratis bersama pakar nutrisi dan dokter spesialis anak pada tanggal 10 Mei 2026...</p>
-                            <div class="flex items-center gap-3 text-xs text-gray-400">
-                                <span class="flex items-center gap-1">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                                    18 Apr 2026
-                                </span>
-                                <span>4 menit baca</span>
-                            </div>
-                        </div>
-                    </div>
-                </a>
+                @endforeach
             </div>
         </div>
+        @else
+        <div class="text-center py-16">
+            <p class="text-gray-500">Belum ada konten yang dipublikasikan.</p>
+        </div>
+        @endif
     </div>
 </section>
