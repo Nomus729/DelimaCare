@@ -5,6 +5,21 @@ document.addEventListener("alpine:init", () => {
         // Tab aktif secara default
         activeTab: "reservasi",
 
+        // Dark mode state
+        darkMode: document.documentElement.classList.contains('dark'),
+
+        // Toggle Dark Mode
+        toggleDark() {
+            this.darkMode = !this.darkMode;
+            localStorage.setItem('delimacare-dark', this.darkMode);
+            document.documentElement.classList.add('dark-transition');
+            setTimeout(() => document.documentElement.classList.remove('dark-transition'), 350);
+            this.darkMode ? document.documentElement.classList.add('dark') : document.documentElement.classList.remove('dark');
+        },
+
+        // Mobile menu state
+        mobileMenuOpen: false,
+
         // State untuk fitur Chat Asisten Virtual
         newMessage: "",
         isTyping: false,
@@ -20,6 +35,7 @@ document.addEventListener("alpine:init", () => {
         // Fungsi berpindah tab
         switchTab(tabName) {
             this.activeTab = tabName;
+            this.mobileMenuOpen = false;
             window.scrollTo({ top: 0, behavior: "smooth" });
         },
 
@@ -38,7 +54,6 @@ document.addEventListener("alpine:init", () => {
                 time: timeString,
             });
 
-            const userText = this.newMessage;
             this.newMessage = "";
             this.isTyping = true;
             this.scrollToBottom();
