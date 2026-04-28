@@ -82,6 +82,9 @@ Route::get('/portal', function () {
 //    Semua route di sini wajib melalui middleware 'admin'
 // ==========================================
 Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
+    Route::get('/', function () {
+        return redirect()->route('admin.dashboard');
+    });
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
     
     // Kelola Konten
