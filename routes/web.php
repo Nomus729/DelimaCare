@@ -4,6 +4,7 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\LoginController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\ReservasiController;
 
 // ==========================================
 // 1. HALAMAN PUBLIK (Semua orang bisa akses)
@@ -32,8 +33,7 @@ Route::get('/artikel', function (\Illuminate\Http\Request $request) {
     }
 
     $articles = $query->latest()->paginate(9)->withQueryString();
-    
-    // Get current parameters for the view
+
     $currentCategory = $request->query('category', '');
     $searchQuery = $request->query('search', '');
 
@@ -42,13 +42,7 @@ Route::get('/artikel', function (\Illuminate\Http\Request $request) {
 
 Route::get('/artikel/{slug}', function ($slug) {
     $article = \App\Models\Article::where('slug', $slug)->firstOrFail();
-    
-    // Ambil artikel terkait
-    $related = \App\Models\Article::where('id', '!=', $article->id)
-        ->latest()
-        ->take(2)
-        ->get();
-        
+    $related = \App\Models\Article::where('id', '!=', $article->id)->latest()->take(2)->get();
     return view('articles.show', compact('article', 'related'));
 })->name('articles.show');
 
@@ -73,8 +67,15 @@ Route::post('/logout', [LoginController::class, 'logout'])
 // 3. PORTAL PASIEN (Hanya pasien terdaftar)
 // ==========================================
 Route::get('/portal', function () {
-    return view('portal');
+    // INI YANG SERING HILANG: Bawa data jadwal biar tab nggak error undefined variable
+    $jadwalPasien = \App\Models\Reservasi::latest()->get();
+    return view('portal', compact('jadwalPasien'));
 })->name('portal')->middleware('patient');
+
+// --- RUTE RESERVASI (Sudah dikeluarkan dari grup Admin) ---
+Route::post('/portal/reservasi', [ReservasiController::class, 'store'])->name('reservasi.store')->middleware('patient');
+Route::get('/portal/jadwal', [ReservasiController::class, 'indexPasien'])->name('portal.jadwal')->middleware('patient');
+Route::delete('/portal/reservasi/{id}', [ReservasiController::class, 'destroy'])->name('reservasi.destroy')->middleware('patient');
 
 
 // ==========================================
@@ -85,8 +86,9 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::get('/', function () {
         return redirect()->route('admin.dashboard');
     });
+
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
-    
+
     // Kelola Konten
     Route::resource('konten', \App\Http\Controllers\ArticleController::class)->except(['index', 'show']);
 
@@ -97,4 +99,8 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::resource('rekam-medis', \App\Http\Controllers\Admin\RekamMedisController::class)
         ->except(['index', 'create', 'show', 'edit'])
         ->parameters(['rekam-medis' => 'rekamMedis']);
+
+    // --- TAMBAHAN BARU: Fitur Tombol Admin Reservasi ---
+    Route::patch('/reservasi/{id}/konfirmasi', [ReservasiController::class, 'konfirmasiAdmin'])->name('reservasi.konfirmasi');
+    Route::delete('/reservasi/{id}/batal', [ReservasiController::class, 'batalAdmin'])->name('reservasi.batal');
 });

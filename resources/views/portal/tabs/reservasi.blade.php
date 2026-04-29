@@ -61,7 +61,7 @@
         <h3 class="font-bold text-gray-900 mb-2 text-xl dark:text-white">Form Reservasi</h3>
         <p class="text-sm text-gray-500 mb-8 dark:text-gray-400">Isi formulir dengan lengkap untuk membuat janji temu baru. Data Anda dienkripsi.</p>
 
-        <form action="#" method="POST" class="space-y-5">
+        <form action="{{ route('reservasi.store') }}" method="POST" class="space-y-5">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -83,6 +83,7 @@
                             <option>Pemeriksaan Kehamilan</option>
                             <option>Konsultasi KB</option>
                             <option>Imunisasi Anak</option>
+                            <option>Umum</option>
                             <option>Lainnya</option>
                         </select>
                         <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">

@@ -6,9 +6,6 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('articles', function (Blueprint $table) {
@@ -18,15 +15,14 @@ return new class extends Migration
             $table->enum('category', ['Artikel', 'Berita', 'Acara']);
             $table->longText('content');
             $table->string('image_path')->nullable();
-            $table->unsignedInteger('author_id')->nullable();
-            $table->foreign('author_id')->references('id')->on('users')->nullOnDelete();
+
+            // INI YANG DIBENERIN LAGI:
+            $table->foreignId('author_id')->nullable()->constrained('users')->nullOnDelete();
+
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('articles');

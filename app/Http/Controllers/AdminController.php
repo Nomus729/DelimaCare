@@ -6,6 +6,7 @@ use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Medicine;
 use App\Models\RekamMedis;
+use App\Models\Reservasi;
 
 class AdminController extends Controller
 {
@@ -56,6 +57,9 @@ class AdminController extends Controller
             'Konsultasi'         => $rekamMedisAll->where('kategori', 'Konsultasi')->count(),
         ];
 
+        // ─── Reservasi (INI YANG DITAMBAHIN WOK) ──────────────────
+        $semuaReservasi = Reservasi::latest()->get();
+
         // ─── Dashboard Stats ──────────────────────────────────────
         $stats = [
             'total_pasien'         => $rmStats['total'] + 342,
@@ -66,12 +70,13 @@ class AdminController extends Controller
 
         $activeTab = $request->query('tab', 'dashboard');
 
+        // Pastikan 'semuaReservasi' masuk ke dalam compact di bawah ini!
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory',
             'medicines', 'lowStockCount', 'totalMedicines',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
+            'semuaReservasi', // <-- INI DIA OLEH-OLEHNYA
             'stats', 'activeTab'
         ));
     }
 }
-
