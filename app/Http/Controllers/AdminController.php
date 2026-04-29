@@ -5,12 +5,13 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Article;
 use App\Models\Medicine;
+use App\Models\RekamMedis;
 
 class AdminController extends Controller
 {
     public function index(Request $request)
     {
-        // Category filter (Artikel | Berita | Acara | '' = semua)
+        // ─── Konten ───────────────────────────────────────────────
         $activeCategory = $request->query('category', '');
 
         $query = Article::latest();
@@ -18,20 +19,46 @@ class AdminController extends Controller
             $query->where('category', $activeCategory);
         }
 
-        // 6 articles per page, preserve full query string (tab + category)
         $articles = $query->paginate(6)->withQueryString();
 
-        // Per-category counts for badge display on filter tabs
         $categoryCounts = Article::selectRaw('category, count(*) as total')
             ->groupBy('category')
             ->pluck('total', 'category');
 
-        $medicines     = Medicine::orderBy('name')->get();
-        $lowStockCount = Medicine::whereRaw('stock <= min_stock')->count();
+        // ─── Inventori ────────────────────────────────────────────
+        $medicines      = Medicine::orderBy('name')->get();
+        $lowStockCount  = Medicine::whereRaw('stock <= min_stock')->count();
         $totalMedicines = $medicines->count();
 
+        // ─── Rekam Medis ──────────────────────────────────────────
+        $rmSearch    = $request->query('rm_search', '');
+        $rmKategori  = $request->query('rm_kategori', '');
+
+        $rmQuery = RekamMedis::latest()
+            ->search($rmSearch)
+            ->byKategori($rmKategori);
+
+        $rekamMedisAll  = RekamMedis::get();
+        $rekamMedis     = $rmQuery->paginate(8)->withQueryString();
+
+        $rmStats = [
+            'total'       => $rekamMedisAll->count(),
+            'kehamilan'   => $rekamMedisAll->where('kategori', 'Kehamilan')->count(),
+            'kb'          => $rekamMedisAll->where('kategori', 'Keluarga Berencana')->count(),
+            'risiko_tinggi' => $rekamMedisAll->where('status_risiko', 'Tinggi')->count(),
+        ];
+
+        $rmKategoriCounts = [
+            ''                   => $rekamMedisAll->count(),
+            'Kehamilan'          => $rekamMedisAll->where('kategori', 'Kehamilan')->count(),
+            'Keluarga Berencana' => $rekamMedisAll->where('kategori', 'Keluarga Berencana')->count(),
+            'Kontrol Umum'       => $rekamMedisAll->where('kategori', 'Kontrol Umum')->count(),
+            'Konsultasi'         => $rekamMedisAll->where('kategori', 'Konsultasi')->count(),
+        ];
+
+        // ─── Dashboard Stats ──────────────────────────────────────
         $stats = [
-            'total_pasien'         => 342,
+            'total_pasien'         => $rmStats['total'] + 342,
             'reservasi_hari_ini'   => 28,
             'stok_menipis'         => $lowStockCount,
             'pendapatan_bulan_ini' => '45,2M',
@@ -42,7 +69,9 @@ class AdminController extends Controller
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory',
             'medicines', 'lowStockCount', 'totalMedicines',
+            'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
             'stats', 'activeTab'
         ));
     }
 }
+

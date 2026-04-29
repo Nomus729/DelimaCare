@@ -92,4 +92,9 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     // Inventori Obat
     Route::resource('medicines', \App\Http\Controllers\Admin\MedicineController::class);
+
+    // Rekam Medis
+    Route::resource('rekam-medis', \App\Http\Controllers\Admin\RekamMedisController::class)
+        ->except(['index', 'create', 'show', 'edit'])
+        ->parameters(['rekam-medis' => 'rekamMedis']);
 });
