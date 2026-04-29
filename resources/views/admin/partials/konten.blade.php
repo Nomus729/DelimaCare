@@ -1,4 +1,31 @@
-<div>
+<div x-data="{
+    showDeleteModal: false,
+    contentToDelete: { id: '', title: '' },
+    confirmDelete(id, title) {
+        this.contentToDelete = { id, title };
+        this.showDeleteModal = true;
+    },
+    executeDelete() {
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `{{ url('admin/konten') }}/${this.contentToDelete.id}`;
+        
+        const csrf = document.createElement('input');
+        csrf.type = 'hidden';
+        csrf.name = '_token';
+        csrf.value = '{{ csrf_token() }}';
+        
+        const method = document.createElement('input');
+        method.type = 'hidden';
+        method.name = '_method';
+        method.value = 'DELETE';
+        
+        form.appendChild(csrf);
+        form.appendChild(method);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}">
     <div class="flex justify-between items-center mb-6">
         <div>
             <h2 class="text-3xl font-extrabold text-gray-900 dark:text-white mb-1">Manajemen Konten</h2>
@@ -9,12 +36,6 @@
         </a>
     </div>
 
-    @if(session('success'))
-    <div class="mb-6 p-4 bg-emerald-50 dark:bg-emerald-900/30 border border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 rounded-xl flex items-center gap-3">
-        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
-        <span class="font-semibold">{{ session('success') }}</span>
-    </div>
-    @endif
 
     <div class="space-y-4 mb-8">
         @forelse($articles ?? [] as $article)
@@ -44,13 +65,9 @@
                     <a href="{{ route('admin.konten.edit', $article->id) }}" class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 text-xs font-bold rounded flex items-center gap-2 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg> Edit
                     </a>
-                    <form action="{{ route('admin.konten.destroy', $article->id) }}" method="POST" onsubmit="return confirm('Apakah Anda yakin ingin menghapus konten ini?');" class="inline">
-                        @csrf
-                        @method('DELETE')
-                        <button type="submit" class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-bold rounded flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Hapus
-                        </button>
-                    </form>
+                    <button @click="confirmDelete({{ $article->id }}, '{{ addslashes($article->title) }}')" class="px-4 py-1.5 bg-white dark:bg-gray-800 border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 text-xs font-bold rounded flex items-center gap-2 hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg> Hapus
+                    </button>
                 </div>
             </div>
         </div>
@@ -64,5 +81,34 @@
             </a>
         </div>
         @endforelse
+    </div>
+
+    {{-- Custom Delete Confirmation Modal --}}
+    <div x-show="showDeleteModal" x-cloak class="fixed inset-0 z-[110] flex items-center justify-center p-4">
+        <div @click="showDeleteModal = false" class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity"></div>
+        
+        <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-md rounded-3xl shadow-2xl overflow-hidden anim-up" x-transition>
+            <div class="p-8 text-center">
+                <div class="w-20 h-20 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <svg class="w-10 h-10 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                    </svg>
+                </div>
+                
+                <h3 class="text-2xl font-black text-gray-900 dark:text-white mb-2">Hapus Konten?</h3>
+                <p class="text-gray-500 dark:text-gray-400 mb-6">
+                    Apakah Anda yakin ingin menghapus <span class="font-bold text-gray-900 dark:text-white" x-text="contentToDelete.title"></span>? Tindakan ini tidak dapat dibatalkan.
+                </p>
+
+                <div class="flex gap-3">
+                    <button @click="showDeleteModal = false" class="flex-1 px-4 py-3 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all">
+                        Batal
+                    </button>
+                    <button @click="executeDelete()" class="flex-1 px-4 py-3 bg-rose-600 text-white font-bold rounded-xl hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition-all">
+                        Hapus Sekarang
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>

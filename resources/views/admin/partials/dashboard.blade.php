@@ -34,14 +34,14 @@
     {{-- Stat Cards --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
         @php
-        $stats = [
-            ['label'=>'Total Pasien','value'=>'342','sub'=>'dari bulan lalu','badge'=>'+12%','badge_color'=>'emerald','color'=>'teal','icon'=>'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z','up'=>true],
-            ['label'=>'Reservasi Hari Ini','value'=>'28','sub'=>'dari kemarin','badge'=>'+5','badge_color'=>'emerald','color'=>'cyan','icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z','up'=>true],
-            ['label'=>'Stok Menipis','value'=>'7','sub'=>'item perlu restock','badge'=>'Perhatian','badge_color'=>'amber','color'=>'amber','icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4','up'=>false],
-            ['label'=>'Pendapatan Bulan Ini','value'=>'Rp 45,2M','sub'=>'dari bulan lalu','badge'=>'+18%','badge_color'=>'emerald','color'=>'emerald','icon'=>'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6','up'=>true],
+        $statsData = [
+            ['label'=>'Total Pasien','value'=>$stats['total_pasien'],'sub'=>'dari bulan lalu','badge'=>'+12%','badge_color'=>'emerald','color'=>'teal','icon'=>'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z','up'=>true],
+            ['label'=>'Reservasi Hari Ini','value'=>$stats['reservasi_hari_ini'],'sub'=>'dari kemarin','badge'=>'+5','badge_color'=>'emerald','color'=>'cyan','icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z','up'=>true],
+            ['label'=>'Stok Menipis','value'=>$stats['stok_menipis'],'sub'=>'item perlu restock','badge'=>$stats['stok_menipis'] > 0 ? 'Perhatian' : 'Aman','badge_color'=>$stats['stok_menipis'] > 0 ? 'amber' : 'emerald','color'=>'amber','icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4','up'=>false],
+            ['label'=>'Pendapatan Bulan Ini','value'=>'Rp '.$stats['pendapatan_bulan_ini'],'sub'=>'dari bulan lalu','badge'=>'+18%','badge_color'=>'emerald','color'=>'emerald','icon'=>'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6','up'=>true],
         ];
         @endphp
-        @foreach($stats as $i => $s)
+        @foreach($statsData as $i => $s)
         <div class="relative bg-white dark:bg-[#1E293B] rounded-2xl p-6 border border-gray-100 dark:border-gray-800 shadow-sm hover:-translate-y-1.5 hover:shadow-lg transition-all duration-300 overflow-hidden group"
              style="animation: fadeInUp 0.5s cubic-bezier(0.16,1,0.3,1) {{ $i * 100 }}ms both;">
             <div class="absolute inset-x-0 top-0 h-1 bg-{{ $s['color'] }}-500 rounded-t-2xl"></div>

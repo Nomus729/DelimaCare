@@ -89,4 +89,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     
     // Kelola Konten
     Route::resource('konten', \App\Http\Controllers\ArticleController::class)->except(['index', 'show']);
+
+    // Inventori Obat
+    Route::resource('medicines', \App\Http\Controllers\Admin\MedicineController::class);
 });

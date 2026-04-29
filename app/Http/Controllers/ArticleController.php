@@ -44,7 +44,7 @@ class ArticleController extends Controller
 
         $article->save();
 
-        return redirect()->route('admin.dashboard')->with('success', 'Konten berhasil ditambahkan!');
+        return redirect()->route('admin.dashboard', ['tab' => 'konten'])->with('success', 'Konten berhasil ditambahkan!');
     }
 
     /**
@@ -87,7 +87,7 @@ class ArticleController extends Controller
 
         $article->save();
 
-        return redirect()->route('admin.dashboard')->with('success', 'Konten berhasil diperbarui!');
+        return redirect()->route('admin.dashboard', ['tab' => 'konten'])->with('success', 'Konten berhasil diperbarui!');
     }
 
     /**
@@ -103,6 +103,6 @@ class ArticleController extends Controller
         
         $article->delete();
 
-        return redirect()->route('admin.dashboard')->with('success', 'Konten berhasil dihapus!');
+        return redirect()->route('admin.dashboard', ['tab' => 'konten'])->with('success', 'Konten berhasil dihapus!');
     }
 }
