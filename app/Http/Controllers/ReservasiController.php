@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Reservasi;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // <-- KUNCI UTAMANYA DI SINI WOK
 
 class ReservasiController extends Controller
 {
@@ -15,7 +16,7 @@ class ReservasiController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'nama' => 'required',
+            // Validasi nama dihapus karena kita ngambil otomatis dari akun yang login
             'phone' => 'required',
             'layanan' => 'required',
             'tanggal' => 'required|date',
@@ -23,7 +24,8 @@ class ReservasiController extends Controller
         ]);
 
         Reservasi::create([
-            'nama' => $request->nama,
+            'user_id' => Auth::id(), // <-- SIMPAN ID PASIEN BIAR GAK KETUKER
+            'nama' => Auth::user()->username, // <-- Ambil nama langsung dari sistem (Anti Inspect Element)
             'phone' => $request->phone,
             'layanan' => $request->layanan,
             'dokter_id' => $request->dokter_id,
@@ -39,14 +41,16 @@ class ReservasiController extends Controller
     // 2. Menampilkan data jadwal ke Portal Pasien
     public function indexPasien()
     {
-        $jadwalPasien = Reservasi::latest()->get();
+        // <-- CUMA NAMPILIN DATA YANG PUNYA DIA SENDIRI AJA
+        $jadwalPasien = Reservasi::where('user_id', Auth::id())->latest()->get();
         return view('portal.jadwal', compact('jadwalPasien'));
     }
 
     // 3. Menghapus/Membatalkan Reservasi dari sisi Pasien
     public function destroy($id)
     {
-        $reservasi = Reservasi::findOrFail($id);
+        // Ekstra aman: Cari data berdasarkan ID Reservasi DAN ID User biar gak bisa ngehapus punya orang
+        $reservasi = Reservasi::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
         $reservasi->delete();
 
         return redirect()->route('portal')->with('success', 'Jadwal konsultasi berhasil dibatalkan.');
@@ -54,7 +58,7 @@ class ReservasiController extends Controller
 
 
     // ==========================================
-    // FITUR UNTUK ADMIN PANEL (YANG TADI KURANG)
+    // FITUR UNTUK ADMIN PANEL (ADMIN BISA LIHAT SEMUA)
     // ==========================================
 
     // 4. Admin mengonfirmasi reservasi

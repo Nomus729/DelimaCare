@@ -5,6 +5,7 @@ use App\Http\Controllers\LoginController;
 use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ReservasiController;
+use Illuminate\Support\Facades\Auth; // Tambahan biar Auth dikenali di route
 
 // ==========================================
 // 1. HALAMAN PUBLIK (Semua orang bisa akses)
@@ -67,12 +68,14 @@ Route::post('/logout', [LoginController::class, 'logout'])
 // 3. PORTAL PASIEN (Hanya pasien terdaftar)
 // ==========================================
 Route::get('/portal', function () {
-    // INI YANG SERING HILANG: Bawa data jadwal biar tab nggak error undefined variable
-    $jadwalPasien = \App\Models\Reservasi::latest()->get();
+    // KODE YANG DIUBAH WOK:
+    // Sekarang cuma ngambil jadwal yang "user_id"-nya sama dengan pasien yang lagi login
+    $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
+
     return view('portal', compact('jadwalPasien'));
 })->name('portal')->middleware('patient');
 
-// --- RUTE RESERVASI (Sudah dikeluarkan dari grup Admin) ---
+// --- RUTE RESERVASI ---
 Route::post('/portal/reservasi', [ReservasiController::class, 'store'])->name('reservasi.store')->middleware('patient');
 Route::get('/portal/jadwal', [ReservasiController::class, 'indexPasien'])->name('portal.jadwal')->middleware('patient');
 Route::delete('/portal/reservasi/{id}', [ReservasiController::class, 'destroy'])->name('reservasi.destroy')->middleware('patient');
@@ -100,7 +103,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
         ->except(['index', 'create', 'show', 'edit'])
         ->parameters(['rekam-medis' => 'rekamMedis']);
 
-    // --- TAMBAHAN BARU: Fitur Tombol Admin Reservasi ---
+    // Fitur Tombol Admin Reservasi
     Route::patch('/reservasi/{id}/konfirmasi', [ReservasiController::class, 'konfirmasiAdmin'])->name('reservasi.konfirmasi');
     Route::delete('/reservasi/{id}/batal', [ReservasiController::class, 'batalAdmin'])->name('reservasi.batal');
 });

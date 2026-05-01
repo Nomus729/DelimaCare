@@ -66,7 +66,13 @@
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nama Lengkap Pasien</label>
-                    <input type="text" name="nama" placeholder="Masukkan nama lengkap" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                    <!-- KODE YANG DIUBAH: NGUNCI NAMA PASIEN -->
+                    <input type="text"
+                           name="nama"
+                           value="{{ Auth::user()->username }}"
+                           readonly
+                           class="w-full px-4 py-3 rounded-xl border border-gray-200 bg-gray-100 text-gray-500 cursor-not-allowed focus:ring-0 focus:border-gray-200 outline-none transition-all dark:bg-gray-800 dark:border-gray-700 dark:text-gray-400">
+                    <p class="text-[10px] text-gray-400 mt-1 italic">*Nama otomatis disesuaikan dengan akun Anda.</p>
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nomor Telepon / WA</label>
