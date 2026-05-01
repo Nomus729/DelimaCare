@@ -18,4 +18,41 @@ class Medicine extends Model
         'price',
         'min_stock',
     ];
+    /**
+     * Scope for searching medicines by name or brand.
+     */
+    public function scopeSearch($query, $search)
+    {
+        return $query->when($search, function ($q) use ($search) {
+            $q->where(function ($q2) use ($search) {
+                $q2->where('name', 'like', '%' . $search . '%')
+                   ->orWhere('brand', 'like', '%' . $search . '%');
+            });
+        });
+    }
+
+    /**
+     * Scope for sorting medicines.
+     */
+    public function scopeSort($query, $sort)
+    {
+        switch ($sort) {
+            case 'name_asc':
+                return $query->orderBy('name', 'asc');
+            case 'name_desc':
+                return $query->orderBy('name', 'desc');
+            case 'stock_asc':
+                return $query->orderBy('stock', 'asc');
+            case 'stock_desc':
+                return $query->orderBy('stock', 'desc');
+            case 'price_asc':
+                return $query->orderBy('price', 'asc');
+            case 'price_desc':
+                return $query->orderBy('price', 'desc');
+            case 'latest':
+                return $query->latest();
+            default:
+                return $query->orderBy('name', 'asc');
+        }
+    }
 }

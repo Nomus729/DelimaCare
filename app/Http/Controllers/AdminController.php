@@ -27,9 +27,15 @@ class AdminController extends Controller
             ->pluck('total', 'category');
 
         // ─── Inventori ────────────────────────────────────────────
-        $medicines      = Medicine::orderBy('name')->get();
+        $medSearch = $request->query('med_search', '');
+        $medSort   = $request->query('med_sort', 'name_asc');
+
+        $medicines = Medicine::search($medSearch)
+            ->sort($medSort)
+            ->get();
+
         $lowStockCount  = Medicine::whereRaw('stock <= min_stock')->count();
-        $totalMedicines = $medicines->count();
+        $totalMedicines = Medicine::count();
 
         // ─── Rekam Medis ──────────────────────────────────────────
         $rmSearch    = $request->query('rm_search', '');
@@ -73,7 +79,7 @@ class AdminController extends Controller
         // Pastikan 'semuaReservasi' masuk ke dalam compact di bawah ini!
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory',
-            'medicines', 'lowStockCount', 'totalMedicines',
+            'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
             'semuaReservasi', // <-- INI DIA OLEH-OLEHNYA
             'stats', 'activeTab'

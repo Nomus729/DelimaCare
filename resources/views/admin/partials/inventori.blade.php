@@ -123,6 +123,51 @@
     </div>
     @endif
 
+    {{-- Search & Filter --}}
+    <div class="mb-5 flex flex-col md:flex-row gap-4 items-center justify-between">
+        <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+            <input type="hidden" name="tab" value="inventori">
+            
+            <div class="relative group flex-1 sm:w-72">
+                <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                    <svg class="w-4 h-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                    </svg>
+                </div>
+                <input type="text" name="med_search" value="{{ $medSearch }}"
+                    placeholder="Cari nama obat atau brand..."
+                    class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800
+                           rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
+                           dark:text-white transition-all shadow-sm">
+            </div>
+
+            <div class="flex gap-2">
+                <select name="med_sort" onchange="this.form.submit()"
+                    class="pl-4 pr-10 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800
+                           rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
+                           dark:text-white transition-all shadow-sm appearance-none cursor-pointer">
+                    <option value="name_asc" {{ $medSort == 'name_asc' ? 'selected' : '' }}>Nama (A-Z)</option>
+                    <option value="name_desc" {{ $medSort == 'name_desc' ? 'selected' : '' }}>Nama (Z-A)</option>
+                    <option value="stock_asc" {{ $medSort == 'stock_asc' ? 'selected' : '' }}>Stok Terendah</option>
+                    <option value="stock_desc" {{ $medSort == 'stock_desc' ? 'selected' : '' }}>Stok Tertinggi</option>
+                    <option value="price_asc" {{ $medSort == 'price_asc' ? 'selected' : '' }}>Harga Termurah</option>
+                    <option value="price_desc" {{ $medSort == 'price_desc' ? 'selected' : '' }}>Harga Termahal</option>
+                    <option value="latest" {{ $medSort == 'latest' ? 'selected' : '' }}>Terbaru</option>
+                </select>
+                
+                @if($medSearch || $medSort != 'name_asc')
+                <a href="{{ route('admin.dashboard', ['tab' => 'inventori']) }}" 
+                    class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center"
+                    title="Reset Filter">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </a>
+                @endif
+            </div>
+        </form>
+    </div>
+
     {{-- Table --}}
     <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm overflow-hidden">
         <div class="overflow-x-auto">
