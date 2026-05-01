@@ -55,4 +55,14 @@ class Medicine extends Model
                 return $query->orderBy('name', 'asc');
         }
     }
+
+    /**
+     * Scope for filtering medicines.
+     */
+    public function scopeFilter($query, $filter)
+    {
+        return $query->when($filter == 'low_stock', function ($q) {
+            $q->whereRaw('stock <= min_stock');
+        });
+    }
 }

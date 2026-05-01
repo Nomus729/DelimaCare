@@ -29,8 +29,10 @@ class AdminController extends Controller
         // ─── Inventori ────────────────────────────────────────────
         $medSearch = $request->query('med_search', '');
         $medSort   = $request->query('med_sort', 'name_asc');
+        $medFilter = $request->query('med_filter', '');
 
         $medicines = Medicine::search($medSearch)
+            ->filter($medFilter)
             ->sort($medSort)
             ->get();
 
@@ -79,7 +81,7 @@ class AdminController extends Controller
         // Pastikan 'semuaReservasi' masuk ke dalam compact di bawah ini!
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory',
-            'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort',
+            'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
             'semuaReservasi', // <-- INI DIA OLEH-OLEHNYA
             'stats', 'activeTab'

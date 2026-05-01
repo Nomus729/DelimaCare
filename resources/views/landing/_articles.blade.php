@@ -28,7 +28,7 @@
             @php $featured = $articles->first(); @endphp
             <a href="{{ route('articles.show', $featured->slug) }}" class="group relative rounded-2xl overflow-hidden h-full min-h-[380px] flex scroll-reveal delay-100" style="box-shadow: 0 8px 32px rgba(13,148,136,0.1);">
                 @if($featured->image_path)
-                    <img src="{{ asset('storage/' . $featured->image_path) }}" alt="{{ $featured->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                    <img src="{{ $featured->image_url }}" alt="{{ $featured->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                 @else
                     <div class="absolute inset-0 w-full h-full bg-teal-800"></div>
                 @endif
@@ -56,7 +56,7 @@
                 <a href="{{ route('articles.show', $article->slug) }}" class="group flex flex-col sm:flex-row bg-white/90 dark:bg-gray-800/90 backdrop-blur-md border border-gray-100 dark:border-gray-700 rounded-2xl overflow-hidden shadow-sm hover:shadow-xl hover:border-teal-500/30 transition-all duration-300 flex-1 scroll-reveal delay-200">
                     <div class="w-full sm:w-48 h-48 sm:h-auto relative overflow-hidden flex-shrink-0 bg-gray-100 dark:bg-gray-700">
                         @if($article->image_path)
-                            <img src="{{ asset('storage/' . $article->image_path) }}" alt="{{ $article->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                            <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="absolute inset-0 w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                         @endif
                     </div>
                     <div class="p-5 sm:p-6 flex flex-col justify-center flex-1">

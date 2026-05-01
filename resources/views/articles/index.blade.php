@@ -80,7 +80,7 @@
             <a href="{{ route('articles.show', $article->slug) }}" class="group flex flex-col rounded-2xl overflow-hidden bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl transition-all duration-300 animate-fade-in-up" style="animation-delay: {{ $loop->index * 100 }}ms">
                 <div class="aspect-video w-full bg-gray-100 dark:bg-gray-800 overflow-hidden relative">
                     @if($article->image_path)
-                        <img src="{{ asset('storage/' . $article->image_path) }}" alt="{{ $article->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
+                        <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700">
                     @endif
                     <span class="absolute top-4 left-4 px-3 py-1 bg-white/90 dark:bg-gray-900/90 backdrop-blur-sm text-[11px] font-extrabold uppercase rounded shadow-sm text-teal-600 dark:text-teal-400">
                         {{ $article->category }}

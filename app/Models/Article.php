@@ -25,4 +25,20 @@ class Article extends Model
     {
         return $this->belongsTo(User::class, 'author_id');
     }
+
+    /**
+     * Get the full image URL.
+     */
+    public function getImageUrlAttribute()
+    {
+        if (!$this->image_path) {
+            return asset('images/default-article.jpg'); 
+        }
+        
+        if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
+            return $this->image_path;
+        }
+        
+        return asset('storage/' . $this->image_path);
+    }
 }

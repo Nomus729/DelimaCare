@@ -433,7 +433,7 @@
             <div class="kc-img-wrap">
                 @if($article->image_path)
                     <img
-                        src="{{ asset('storage/' . $article->image_path) }}"
+                        src="{{ $article->image_url }}"
                         alt="{{ $article->title }}"
                         loading="lazy"
                         decoding="async"

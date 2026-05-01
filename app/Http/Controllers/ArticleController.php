@@ -28,6 +28,7 @@ class ArticleController extends Controller
             'category' => 'required|in:Artikel,Berita,Acara',
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $article = new Article();
@@ -40,6 +41,8 @@ class ArticleController extends Controller
         if ($request->hasFile('image')) {
             $path = $request->file('image')->store('articles', 'public');
             $article->image_path = $path;
+        } elseif ($request->filled('image_url')) {
+            $article->image_path = $request->image_url;
         }
 
         $article->save();
@@ -68,6 +71,7 @@ class ArticleController extends Controller
             'category' => 'required|in:Artikel,Berita,Acara',
             'content' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg,webp|max:2048',
+            'image_url' => 'nullable|url',
         ]);
 
         $article->title = $validated['title'];
@@ -76,13 +80,19 @@ class ArticleController extends Controller
         $article->content = $validated['content'];
 
         if ($request->hasFile('image')) {
-            // Hapus gambar lama jika ada
-            if ($article->image_path && Storage::disk('public')->exists($article->image_path)) {
+            // Hapus gambar lama jika ada dan bukan URL
+            if ($article->image_path && !filter_var($article->image_path, FILTER_VALIDATE_URL) && Storage::disk('public')->exists($article->image_path)) {
                 Storage::disk('public')->delete($article->image_path);
             }
             
             $path = $request->file('image')->store('articles', 'public');
             $article->image_path = $path;
+        } elseif ($request->filled('image_url')) {
+            // Hapus gambar lama jika ada dan bukan URL
+            if ($article->image_path && !filter_var($article->image_path, FILTER_VALIDATE_URL) && Storage::disk('public')->exists($article->image_path)) {
+                Storage::disk('public')->delete($article->image_path);
+            }
+            $article->image_path = $request->image_url;
         }
 
         $article->save();

@@ -154,8 +154,19 @@
                     <option value="price_desc" {{ $medSort == 'price_desc' ? 'selected' : '' }}>Harga Termahal</option>
                     <option value="latest" {{ $medSort == 'latest' ? 'selected' : '' }}>Terbaru</option>
                 </select>
+
+                <input type="hidden" name="med_filter" id="med_filter_input" value="{{ $medFilter }}">
+                <button type="button" 
+                    onclick="document.getElementById('med_filter_input').value = (document.getElementById('med_filter_input').value === 'low_stock' ? '' : 'low_stock'); this.form.submit();"
+                    class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+                           {{ $medFilter == 'low_stock' ? 'bg-rose-100 text-rose-700 border-rose-200 shadow-rose-100' : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800' }} border shadow-sm hover:shadow-md">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                    </svg>
+                    Stok Menipis
+                </button>
                 
-                @if($medSearch || $medSort != 'name_asc')
+                @if($medSearch || $medSort != 'name_asc' || $medFilter)
                 <a href="{{ route('admin.dashboard', ['tab' => 'inventori']) }}" 
                     class="px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-500 dark:text-gray-400 rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all flex items-center justify-center"
                     title="Reset Filter">

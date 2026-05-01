@@ -166,7 +166,7 @@
             {{-- Feature Image --}}
             @if($article->image_path)
             <div class="mb-14 rounded-3xl overflow-hidden shadow-2xl animate-fade-in-up delay-100 aspect-video relative">
-                <img src="{{ asset('storage/' . $article->image_path) }}" alt="{{ $article->title }}" class="w-full h-full object-cover">
+                <img src="{{ $article->image_url }}" alt="{{ $article->title }}" class="w-full h-full object-cover">
             </div>
             @endif
 
