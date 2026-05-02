@@ -14,17 +14,27 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        // Pastikan tidak duplikat
-        if (!User::where('email', 'admin@delimacare.id')->exists()) {
+        // Check if admin already exists
+        $adminEmail = 'admin@dalimacare.id';
+        $adminPassword = 'password123';
+
+        if (!User::where('email', $adminEmail)->exists()) {
             User::create([
-                'username' => 'Admin DelimaCare',
-                'email'    => 'admin@delimacare.id',
-                'password' => Hash::make('password123'),
+                'username' => 'Administrator',
+                'email'    => $adminEmail,
+                'password' => Hash::make($adminPassword),
                 'role'     => 'admin',
             ]);
-            $this->command->info('Admin user created successfully.');
+
+            $this->command->info('---------------------------------------');
+            $this->command->info('   Admin Account Generated Successfully');
+            $this->command->info('---------------------------------------');
+            $this->command->info("   Email    : $adminEmail");
+            $this->command->info("   Password : $adminPassword");
+            $this->command->info("   Role     : admin");
+            $this->command->info('---------------------------------------');
         } else {
-            $this->command->info('Admin user already exists.');
+            $this->command->warn('Admin user already exists in the database.');
         }
     }
 }

@@ -61,6 +61,10 @@
         const c=document.createElement('input'); c.type='hidden'; c.name='_token'; c.value='{{ csrf_token() }}';
         const m=document.createElement('input'); m.type='hidden'; m.name='_method'; m.value='DELETE';
         f.appendChild(c); f.appendChild(m); document.body.appendChild(f); f.submit();
+    },
+    formatRupiah(val) {
+        if (!val || val === 0) return '';
+        return new Intl.NumberFormat('id-ID').format(val);
     }
 }">
 
@@ -331,8 +335,15 @@
                                    placeholder="pcs, tablet, botol">
                         </div>
                         <div class="inv-field">
-                            <label>Harga Satuan (Rp) <span class="text-rose-500">*</span></label>
-                            <input type="number" name="price" x-model="medicine.price" required min="0">
+                            <label>Harga Satuan <span class="text-rose-500">*</span></label>
+                            <div class="relative">
+                                <span class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm font-bold">Rp</span>
+                                <input type="text" 
+                                       :value="formatRupiah(medicine.price)"
+                                       @input="medicine.price = $event.target.value.replace(/[^0-9]/g, '')"
+                                       class="!pl-10" required placeholder="0">
+                                <input type="hidden" name="price" :value="medicine.price">
+                            </div>
                         </div>
                         <div class="inv-field">
                             <label>Min. Stok <span class="text-rose-500">*</span></label>
