@@ -7,6 +7,7 @@ use App\Models\Article;
 use App\Models\Medicine;
 use App\Models\RekamMedis;
 use App\Models\Reservasi;
+use App\Models\Doctor;
 
 class AdminController extends Controller
 {
@@ -67,13 +68,17 @@ class AdminController extends Controller
 
         // ─── Reservasi (INI YANG DITAMBAHIN WOK) ──────────────────
         $semuaReservasi = Reservasi::latest()->get();
+        $pendingReservasiCount = Reservasi::where('status', 'Menunggu')->count();
+        $reservasiHariIni = Reservasi::whereDate('tanggal', now()->format('Y-m-d'))->count();
+        $totalPasien = RekamMedis::count();
+        $doctors = Doctor::all();
 
         // ─── Dashboard Stats ──────────────────────────────────────
         $stats = [
-            'total_pasien'         => $rmStats['total'] + 342,
-            'reservasi_hari_ini'   => 28,
+            'total_pasien'         => $totalPasien,
+            'reservasi_hari_ini'   => $reservasiHariIni,
             'stok_menipis'         => $lowStockCount,
-            'pendapatan_bulan_ini' => '45,2M',
+            'pendapatan_bulan_ini' => '45,2M', // Ini masih dummy karena butuh tabel transaksi
         ];
 
         $activeTab = $request->query('tab', 'dashboard');
@@ -83,7 +88,7 @@ class AdminController extends Controller
             'articles', 'categoryCounts', 'activeCategory',
             'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
-            'semuaReservasi', // <-- INI DIA OLEH-OLEHNYA
+            'semuaReservasi', 'pendingReservasiCount', 'doctors', // <-- INI DIA OLEH-OLEHNYA
             'stats', 'activeTab'
         ));
     }

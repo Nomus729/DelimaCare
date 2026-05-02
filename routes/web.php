@@ -71,8 +71,9 @@ Route::get('/portal', function () {
     // KODE YANG DIUBAH WOK:
     // Sekarang cuma ngambil jadwal yang "user_id"-nya sama dengan pasien yang lagi login
     $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
+    $doctors = \App\Models\Doctor::all();
 
-    return view('portal', compact('jadwalPasien'));
+    return view('portal', compact('jadwalPasien', 'doctors'));
 })->name('portal')->middleware('patient');
 
 // --- RUTE RESERVASI ---
@@ -100,10 +101,12 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     // Rekam Medis
     Route::resource('rekam-medis', \App\Http\Controllers\Admin\RekamMedisController::class)
-        ->except(['index', 'create', 'show', 'edit'])
         ->parameters(['rekam-medis' => 'rekamMedis']);
 
+    Route::resource('doctors', \App\Http\Controllers\Admin\DoctorController::class);
+
     // Fitur Tombol Admin Reservasi
+    Route::post('/reservasi/store', [ReservasiController::class, 'storeAdmin'])->name('reservasi.store_admin');
     Route::patch('/reservasi/{id}/konfirmasi', [ReservasiController::class, 'konfirmasiAdmin'])->name('reservasi.konfirmasi');
     Route::delete('/reservasi/{id}/batal', [ReservasiController::class, 'batalAdmin'])->name('reservasi.batal');
 });

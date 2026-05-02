@@ -10,8 +10,8 @@ class RekamMedis extends Model
     use HasFactory;
 
     protected $table = 'rekam_medis';
-
     protected $fillable = [
+        'reservasi_id',
         'no_rekam_medis',
         'nama_pasien',
         'usia',
@@ -34,6 +34,11 @@ class RekamMedis extends Model
         'jadwal_kontrol_berikutnya',
         'dokter_pemeriksa',
     ];
+
+    public function reservasi()
+    {
+        return $this->belongsTo(Reservasi::class);
+    }
 
     protected $casts = [
         'hpht'                      => 'date',

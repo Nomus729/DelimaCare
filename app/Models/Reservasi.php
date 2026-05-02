@@ -14,4 +14,9 @@ class Reservasi extends Model
 
     // Biar semua data dari form bisa masuk
     protected $guarded = ['id'];
+
+    public function rekamMedis()
+    {
+        return $this->hasOne(RekamMedis::class);
+    }
 }

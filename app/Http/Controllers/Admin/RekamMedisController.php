@@ -14,6 +14,7 @@ class RekamMedisController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
+            'reservasi_id'              => 'nullable|exists:reservasi,id',
             'nama_pasien'               => 'required|string|max:255',
             'usia'                      => 'required|integer|min:1|max:120',
             'no_telepon'                => 'nullable|string|max:20',
@@ -38,7 +39,16 @@ class RekamMedisController extends Controller
 
         $validated['no_rekam_medis'] = RekamMedis::generateNoRekamMedis();
 
-        RekamMedis::create($validated);
+        $rekamMedis = RekamMedis::create($validated);
+
+        // --- UPDATE STATUS RESERVASI OTOMATIS WOK ---
+        if ($request->filled('reservasi_id')) {
+            $reservasi = \App\Models\Reservasi::find($request->reservasi_id);
+            if ($reservasi) {
+                $reservasi->status = 'Datang';
+                $reservasi->save();
+            }
+        }
 
         return redirect()
             ->route('admin.dashboard', ['tab' => 'rekam_medis'])

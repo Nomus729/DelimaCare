@@ -62,6 +62,7 @@
     editMode: false,
     rm: {
         id: '',
+        reservasi_id: '',
         nama_pasien: '',
         usia: '',
         no_telepon: '',
@@ -82,21 +83,26 @@
         jadwal_kontrol_berikutnya: '',
         dokter_pemeriksa: ''
     },
-    openAdd() {
+    openAdd(prefill = null) {
         this.editMode = false;
         this.rm = {
-            id: '', nama_pasien: '', usia: '', no_telepon: '', alamat: '', golongan_darah: '',
+            id: '', reservasi_id: '', nama_pasien: '', usia: '', no_telepon: '', alamat: '', golongan_darah: '',
             kategori: 'Kontrol Umum', usia_kehamilan_minggu: '', hpht: '', taksiran_persalinan: '',
             status_risiko: 'Rendah', status_kunjungan: 'Aktif', tekanan_darah: '', berat_badan: '',
             tinggi_badan: '', catatan_medis: '', diagnosis: '', tindakan: '', jadwal_kontrol_berikutnya: '',
             dokter_pemeriksa: ''
         };
+        if (prefill) {
+            this.rm.reservasi_id = prefill.reservasi_id || '';
+            this.rm.nama_pasien = prefill.nama_pasien || '';
+            this.rm.no_telepon = prefill.no_telepon || '';
+            this.rm.kategori = prefill.layanan || 'Kontrol Umum';
+        }
         this.showModal = true;
     },
     openEdit(data) {
         this.editMode = true;
         this.rm = { ...data };
-        // Format dates if they exist
         if(this.rm.hpht) this.rm.hpht = this.rm.hpht.split('T')[0];
         if(this.rm.taksiran_persalinan) this.rm.taksiran_persalinan = this.rm.taksiran_persalinan.split('T')[0];
         if(this.rm.jadwal_kontrol_berikutnya) this.rm.jadwal_kontrol_berikutnya = this.rm.jadwal_kontrol_berikutnya.split('T')[0];
@@ -115,7 +121,7 @@
         const m=document.createElement('input'); m.type='hidden'; m.name='_method'; m.value='DELETE';
         f.appendChild(c); f.appendChild(m); document.body.appendChild(f); f.submit();
     }
-}">
+}" @open-rm-modal.window="switchMenu('rekam_medis'); openAdd($event.detail)">
 
     {{-- ── Header & Action ──────────────────────────────────────── --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
@@ -335,6 +341,7 @@
                     <template x-if="editMode">
                         <input type="hidden" name="_method" value="PUT">
                     </template>
+                    <input type="hidden" name="reservasi_id" x-model="rm.reservasi_id">
 
                     {{-- Section 1: Identitas --}}
                     <div>

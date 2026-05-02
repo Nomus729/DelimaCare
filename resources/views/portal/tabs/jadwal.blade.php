@@ -21,29 +21,39 @@
             <div class="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
                 <div class="flex flex-col md:flex-row justify-between gap-6">
                     <div class="flex gap-5">
-                        <div class="flex-shrink-0 w-20 h-20 bg-gray-50 rounded-2xl flex flex-col items-center justify-center border border-gray-100">
-                            <span class="text-gray-400 text-[10px] font-bold uppercase">Waktu</span>
-                            <span class="text-gray-900 font-extrabold text-lg">{{ $jadwal->waktu }}</span>
+                        <div class="flex-shrink-0 w-20 h-20 bg-teal-50 rounded-2xl flex flex-col items-center justify-center border border-teal-100 shadow-sm">
+                            <span class="text-teal-500 text-[9px] font-black uppercase tracking-widest">No. Urut</span>
+                            <span class="text-teal-900 font-black text-2xl">#{{ $jadwal->queue_number ?? '-' }}</span>
                         </div>
 
                         <div>
-                            <div class="flex items-center gap-2 mb-2">
-                                <span class="px-3 py-1 bg-blue-50 text-blue-600 text-[10px] font-bold rounded-full uppercase">{{ $jadwal->layanan }}</span>
-                                <span class="text-gray-300">•</span>
-                                <span class="text-gray-500 text-xs font-semibold">{{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d F Y') }}</span>
+                            <div class="flex items-center gap-3 mb-2">
+                                <span class="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider">{{ $jadwal->layanan }}</span>
+                                <span class="text-gray-400 font-medium text-xs flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    {{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d F Y') }}
+                                </span>
                             </div>
-                            <h3 class="text-xl font-bold text-gray-900 mb-1">Konsultasi dengan {{ $jadwal->dokter_id ?? 'Tenaga Medis' }}</h3>
-                            <p class="text-sm text-gray-500 flex items-center gap-1">
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path></svg>
-                                Klinik DelimaCare Pusat
+                            <h3 class="text-xl font-black text-gray-900 tracking-tight">Estimasi Jam: {{ $jadwal->estimated_time ? \Carbon\Carbon::parse($jadwal->estimated_time)->format('H:i') : $jadwal->waktu }}</h3>
+                            <p class="text-sm text-gray-500 font-medium flex items-center gap-1.5 mt-1">
+                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Silakan datang 10 menit sebelum jadwal.
                             </p>
                         </div>
                     </div>
 
                     <div class="flex flex-row md:flex-col justify-between items-center md:items-end gap-3">
-
-                        <span class="px-4 py-1.5 {{ ($jadwal->status ?? 'Menunggu') == 'Menunggu' ? 'bg-yellow-100 text-yellow-700' : 'bg-green-100 text-green-700' }} text-xs font-bold rounded-full shadow-sm">
-                            {{ ($jadwal->status ?? 'Menunggu') == 'Menunggu' ? 'Menunggu Konfirmasi' : 'Dikonfirmasi' }}
+                        @php
+                            $statusColor = match($jadwal->status) {
+                                'Menunggu' => 'amber',
+                                'Dikonfirmasi' => 'blue',
+                                'Datang' => 'emerald',
+                                'Tidak Datang' => 'rose',
+                                default => 'gray'
+                            };
+                        @endphp
+                        <span class="px-4 py-1.5 bg-{{ $statusColor }}-50 text-{{ $statusColor }}-700 text-[10px] font-black uppercase tracking-widest rounded-full border border-{{ $statusColor }}-100 shadow-sm">
+                            {{ $jadwal->status ?? 'Menunggu Konfirmasi' }}
                         </span>
 
                         <div class="flex gap-2">
@@ -85,8 +95,8 @@
                                 <p class="text-gray-900 font-semibold">{{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d M Y') }}</p>
                             </div>
                             <div>
-                                <p class="text-xs text-gray-500 font-bold uppercase">Waktu</p>
-                                <p class="text-gray-900 font-semibold">{{ $jadwal->waktu }}</p>
+                                <p class="text-xs text-gray-500 font-bold uppercase">No. Antrean</p>
+                                <p class="text-teal-600 font-black text-xl">#{{ $jadwal->queue_number ?? '-' }}</p>
                             </div>
                         </div>
                         <div>
