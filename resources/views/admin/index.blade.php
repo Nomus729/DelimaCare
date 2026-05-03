@@ -102,6 +102,13 @@
             0%   { background-position: -200% center; }
             100% { background-position: 200% center; }
         }
+        @keyframes popOut {
+            0% { opacity: 0; transform: scale(0.3) translateY(-20px); }
+            100% { opacity: 1; transform: scale(1) translateY(0); }
+        }
+        .notif-popout {
+            animation: popOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+        }
 
         .anim-up  { animation: fadeInUp  0.55s cubic-bezier(0.16,1,0.3,1) both; }
         .anim-left{ animation: fadeInLeft 0.5s cubic-bezier(0.16,1,0.3,1) both; }
@@ -244,12 +251,12 @@
                         {!! $menu['icon'] !!}
                     </svg>
                     <span class="flex-1 text-left truncate font-semibold">{{ $menu['label'] }}</span>
-                    @if($menu['badge'])
-                    <span class="text-[10px] font-black px-2 py-0.5 rounded-full
-                        {{ $menu['id'] === 'inventori' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400' }}">
-                        {{ $menu['badge'] }}
-                    </span>
-                    @endif
+                    <template x-if="('{{ $menu['id'] }}' === 'inventori' && lowStockCount > 0) || ('{{ $menu['id'] }}' === 'reservasi' && pendingCount > 0)">
+                        <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
+                            :class="'{{ $menu['id'] }}' === 'inventori' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400'"
+                            x-text="'{{ $menu['id'] }}' === 'inventori' ? lowStockCount : pendingCount">
+                        </span>
+                    </template>
                     {{-- Active indicator dot --}}
                     <span x-show="activeMenu === '{{ $menu['id'] }}'" class="w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-400 flex-shrink-0"></span>
                 </button>
@@ -322,16 +329,72 @@
                     </button>
 
                     {{-- Notification --}}
-                    <button class="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group
-                                   bg-gray-50 border border-gray-200 text-gray-500
-                                   hover:bg-white hover:text-teal-600 hover:shadow-md hover:-translate-y-0.5
-                                   dark:bg-[#1E293B] dark:border-gray-700 dark:text-gray-400
-                                   dark:hover:bg-gray-700 dark:hover:text-teal-400">
-                        <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
-                        </svg>
-                        <span class="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full bell-pulse"></span>
-                    </button>
+                    <div class="relative" x-data="{ open: false }" @click.away="open = false">
+                        <button @click="open = !open"
+                                class="relative w-9 h-9 rounded-xl flex items-center justify-center transition-all duration-300 group
+                                       bg-gray-50 border border-gray-200 text-gray-500
+                                       hover:bg-white hover:text-teal-600 hover:shadow-md hover:-translate-y-0.5
+                                       dark:bg-[#1E293B] dark:border-gray-700 dark:text-gray-400
+                                       dark:hover:bg-gray-700 dark:hover:text-teal-400">
+                            <svg class="w-4 h-4 group-hover:scale-110 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"/>
+                            </svg>
+                            <span x-show="pendingCount > 0" class="absolute top-1.5 right-1.5 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white dark:border-[#0E1A2E] bell-pulse"></span>
+                        </button>
+
+                        {{-- Notification Dropdown --}}
+                        <div x-show="open" x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-2 scale-95"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                             x-transition:leave-end="opacity-0 translate-y-2 scale-95"
+                             class="absolute right-0 mt-3 w-80 bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-800 overflow-hidden z-50">
+                            <div class="px-5 py-4 border-b border-gray-50 dark:border-gray-800 flex items-center justify-between">
+                                <span class="text-xs font-black uppercase tracking-widest text-gray-900 dark:text-white">Notifikasi</span>
+                                <span class="text-[10px] font-bold text-teal-600 bg-teal-50 dark:bg-teal-900/30 px-2 py-0.5 rounded-full" x-text="pendingCount + ' Baru'"></span>
+                            </div>
+                            <div class="max-h-[350px] overflow-y-auto p-2">
+                                <template x-if="recentNotifications.length === 0">
+                                    <div class="py-10 text-center">
+                                        <p class="text-xs text-gray-400 font-medium">Tidak ada notifikasi baru</p>
+                                    </div>
+                                </template>
+                                <template x-for="(notif, index) in recentNotifications" :key="index">
+                                    <div class="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-all cursor-pointer">
+                                        <div class="w-8 h-8 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center flex-shrink-0">
+                                            <svg class="w-4 h-4 text-teal-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        </div>
+                                        <div>
+                                            <p class="text-xs font-bold text-gray-900 dark:text-white" x-text="notif.title"></p>
+                                            <p class="text-[10px] text-gray-400 mt-0.5" x-text="notif.time"></p>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            <button @click="switchMenu('reservasi'); open = false" class="w-full py-3 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-teal-600 border-t border-gray-50 dark:border-gray-800 transition-all">
+                                Lihat Semua Antrean
+                            </button>
+                        </div>
+
+                        {{-- Pop-out Notification for New Reservation --}}
+                        <div x-show="showPopout" x-cloak
+                             class="absolute right-0 mt-2 w-64 bg-gradient-to-br from-teal-600 to-cyan-500 text-white rounded-2xl shadow-xl p-4 notif-popout z-[60]">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center shadow-inner">
+                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-[10px] font-black uppercase tracking-widest opacity-80">Reservasi Baru!</p>
+                                    <p class="text-xs font-bold truncate">Pasien baru telah mendaftar.</p>
+                                </div>
+                            </div>
+                            <button @click="switchMenu('reservasi'); showPopout = false" class="w-full mt-3 py-2 bg-white/20 hover:bg-white/30 rounded-lg text-[10px] font-black uppercase tracking-widest transition-all">
+                                Cek Sekarang
+                            </button>
+                        </div>
+                    </div>
 
                     {{-- Divider --}}
                     <div class="w-px h-6 bg-gray-200 dark:bg-gray-700"></div>

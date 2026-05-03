@@ -15,7 +15,76 @@
     showAddModal: false,
     showDetailModal: false,
     detailItem: null,
-    openDetail(item) { this.detailItem = item; this.showDetailModal = true; }
+    isPolling: false,
+    lastHash: '',
+    openDetail(item) { this.detailItem = item; this.showDetailModal = true; },
+    
+    init() {
+        // Initial poll
+        this.pollData();
+
+        // Poll every 10 seconds
+        setInterval(() => {
+            // Access activeMenu from global adminPanel scope
+            const currentTab = this.$data.activeMenu || (this.$root && Alpine.find(this.$root).activeMenu);
+            if (!this.showAddModal && !this.showDetailModal) {
+                this.pollData();
+            }
+        }, 10000);
+
+        // Listen for global refresh signal from admin.js
+        window.addEventListener('refresh-reservasi', () => {
+            this.pollData();
+        });
+    },
+
+    async pollData() {
+        if (this.isPolling) return;
+        this.isPolling = true;
+        try {
+            const url = new URL('{{ route('admin.reservasi.partial') }}', window.location.origin);
+            const currentParams = new URLSearchParams(window.location.search);
+            // Append current filters to the polling request
+            currentParams.forEach((value, key) => url.searchParams.append(key, value));
+
+            const response = await fetch(url);
+            const html = await response.text();
+            
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            
+            // Update stats
+            const newStats = doc.getElementById('reservasi-stats-container');
+            const oldStats = document.getElementById('reservasi-stats-container');
+            if (newStats && oldStats) oldStats.innerHTML = newStats.innerHTML;
+            
+            // Update list with a simple hash check to avoid flicker
+            const newList = doc.getElementById('reservasi-list-container');
+            const oldList = document.getElementById('reservasi-list-container');
+            if (newList && oldList) {
+                const newContent = newList.innerHTML;
+                if (newContent !== this.lastHash) {
+                    oldList.innerHTML = newContent;
+                    this.lastHash = newContent;
+                }
+            }
+        } catch (e) { console.error('Polling error:', e); }
+        this.isPolling = false;
+    },
+
+    showDeleteModal: false,
+    itemToDelete: { id: '', nama: '' },
+    confirmDelete(id, nama) {
+        this.itemToDelete = { id, nama };
+        this.showDeleteModal = true;
+    },
+    executeDelete() {
+        const f = document.createElement('form'); f.method='POST';
+        f.action=`{{ url('admin/reservasi') }}/${this.itemToDelete.id}/batal`;
+        const c=document.createElement('input'); c.type='hidden'; c.name='_token'; c.value='{{ csrf_token() }}';
+        const m=document.createElement('input'); m.type='hidden'; m.name='_method'; m.value='DELETE';
+        f.appendChild(c); f.appendChild(m); document.body.appendChild(f); f.submit();
+    }
 }">
 
 {{-- ─── Header ─── --}}
@@ -31,16 +100,10 @@
     </button>
 </div>
 
-{{-- ─── Flash Message ─── --}}
-@if(session('success'))
-<div class="mb-5 p-4 bg-emerald-50 text-emerald-700 rounded-2xl border border-emerald-100 flex items-center gap-3 q-anim">
-    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/></svg>
-    <span class="font-semibold text-sm">{{ session('success') }}</span>
-</div>
-@endif
 
 {{-- ─── Stats Row ─── --}}
-<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+<div id="reservasi-stats-container">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
     @php
     $statItems = [
         ['label'=>'Hari Ini',    'value'=>$reservasiHariIni,        'color'=>'teal',    'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
@@ -60,6 +123,7 @@
         </div>
     </div>
     @endforeach
+    </div>
 </div>
 
 {{-- ─── Filter & Search Bar ─── --}}
@@ -97,7 +161,7 @@
 </div>
 
 {{-- ─── Queue Cards ─── --}}
-<div class="space-y-2.5">
+<div id="reservasi-list-container" class="space-y-2.5">
 @if(isset($semuaReservasi) && $semuaReservasi->count() > 0)
     @foreach($semuaReservasi as $idx => $item)
     @php
@@ -184,14 +248,11 @@
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </button>
                     @endif
-                    <form action="{{ route('admin.reservasi.batal', $item->id) }}" method="POST"
-                          onsubmit="return confirm('Hapus antrean {{ addslashes($item->nama) }}?')">
-                        @csrf @method('DELETE')
-                        <button type="submit" title="Hapus"
-                            class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 bg-slate-50 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
-                            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        </button>
-                    </form>
+                    <button @click="confirmDelete({{ $item->id }}, '{{ addslashes($item->nama) }}')"
+                        title="Hapus Antrean"
+                        class="w-8 h-8 rounded-xl flex items-center justify-center text-slate-400 bg-slate-50 hover:bg-rose-500 hover:text-white transition-all shadow-sm">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                    </button>
                 </div>
             </div>
         </div>
@@ -296,6 +357,48 @@
                     </button>
                 </div>
             </form>
+        </div>
+    </div>
+</template>
+
+{{-- ─── MODAL HAPUS ANTREAN ─── --}}
+<template x-teleport="body">
+    <div x-show="showDeleteModal" x-cloak
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0"
+         class="fixed inset-0 z-[999] flex items-center justify-center p-4">
+
+        <div class="absolute inset-0 bg-gray-900/65 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+
+        <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden q-anim" @click.stop>
+            <div class="p-8 text-center">
+                <div class="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
+                    <svg class="w-8 h-8 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                    </svg>
+                </div>
+                <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">Hapus Antrean?</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
+                    Yakin ingin menghapus antrean untuk pasien <span class="font-bold text-gray-900 dark:text-white" x-text="itemToDelete.nama"></span>?
+                    Tindakan ini tidak dapat dibatalkan.
+                </p>
+                <div class="flex gap-3">
+                    <button @click="showDeleteModal = false"
+                        class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300
+                               font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-sm">
+                        Batal
+                    </button>
+                    <button @click="executeDelete()"
+                        class="flex-1 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl
+                               hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition-all text-sm">
+                        Hapus Sekarang
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 </template>

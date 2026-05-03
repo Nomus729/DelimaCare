@@ -69,37 +69,15 @@ class AdminController extends Controller
         ];
 
         // ─── Reservasi ─────────────────────────────────────────────
-        $resFilter = $request->query('res_filter', 'today'); // today | upcoming | all
-        $resStatus = $request->query('res_status', '');       // Menunggu | Dikonfirmasi | Datang | dll
-        $resSearch = $request->query('res_search', '');
-
-        $resQuery = Reservasi::query();
-
-        // Date filter
-        if ($resFilter === 'today') {
-            $resQuery->whereDate('tanggal', today());
-        } elseif ($resFilter === 'upcoming') {
-            $resQuery->whereDate('tanggal', '>', today());
-        }
-        // 'all' = no date filter
-
-        // Status filter
-        if ($resStatus) {
-            $resQuery->where('status', $resStatus);
-        }
-
-        // Search by name
-        if ($resSearch) {
-            $resQuery->where('nama', 'like', "%{$resSearch}%");
-        }
-
-        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')->get();
-
-        // Stats for reservasi
-        $pendingReservasiCount  = Reservasi::where('status', 'Menunggu')->count();
-        $reservasiHariIni       = Reservasi::whereDate('tanggal', today())->count();
-        $reservasiMendatang     = Reservasi::whereDate('tanggal', '>', today())->count();
-        $reservasiDikonfirmasi  = Reservasi::where('status', 'Dikonfirmasi')->whereDate('tanggal', '>=', today())->count();
+        $resData = $this->getReservasiData($request);
+        $semuaReservasi         = $resData['semuaReservasi'];
+        $pendingReservasiCount  = $resData['pendingReservasiCount'];
+        $reservasiHariIni       = $resData['reservasiHariIni'];
+        $reservasiMendatang     = $resData['reservasiMendatang'];
+        $reservasiDikonfirmasi  = $resData['reservasiDikonfirmasi'];
+        $resFilter              = $resData['resFilter'];
+        $resStatus              = $resData['resStatus'];
+        $resSearch              = $resData['resSearch'];
 
         $totalPasien = RekamMedis::count();
         $doctors = Doctor::all();
@@ -123,5 +101,65 @@ class AdminController extends Controller
             'resFilter', 'resStatus', 'resSearch',
             'stats', 'activeTab'
         ));
+    }
+
+    /**
+     * Get reservation data for polling or index.
+     */
+    private function getReservasiData(Request $request)
+    {
+        $resFilter = $request->query('res_filter', 'today');
+        $resStatus = $request->query('res_status', '');
+        $resSearch = $request->query('res_search', '');
+
+        $resQuery = Reservasi::query();
+
+        if ($resFilter === 'today') {
+            $resQuery->whereDate('tanggal', today());
+        } elseif ($resFilter === 'upcoming') {
+            $resQuery->whereDate('tanggal', '>', today());
+        }
+
+        if ($resStatus) {
+            $resQuery->where('status', $resStatus);
+        }
+
+        if ($resSearch) {
+            $resQuery->where('nama', 'like', "%{$resSearch}%");
+        }
+
+        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')->get();
+
+        return [
+            'semuaReservasi'        => $semuaReservasi,
+            'pendingReservasiCount' => Reservasi::where('status', 'Menunggu')->count(),
+            'reservasiHariIni'      => Reservasi::whereDate('tanggal', today())->count(),
+            'reservasiMendatang'    => Reservasi::whereDate('tanggal', '>', today())->count(),
+            'reservasiDikonfirmasi' => Reservasi::where('status', 'Dikonfirmasi')->whereDate('tanggal', '>=', today())->count(),
+            'resFilter'             => $resFilter,
+            'resStatus'             => $resStatus,
+            'resSearch'             => $resSearch,
+            'doctors'               => Doctor::all(),
+        ];
+    }
+
+    /**
+     * Return only the reservasi partial for auto-update.
+     */
+    public function getReservasiPartial(Request $request)
+    {
+        $data = $this->getReservasiData($request);
+        return view('admin.partials.reservasi', $data);
+    }
+
+    /**
+     * Get lightweight stats for global polling (notifications).
+     */
+    public function getPollingStats()
+    {
+        return response()->json([
+            'pendingReservasiCount' => Reservasi::where('status', 'Menunggu')->count(),
+            'lowStockCount'         => Medicine::whereRaw('stock <= min_stock')->count(),
+        ]);
     }
 }

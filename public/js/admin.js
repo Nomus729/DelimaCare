@@ -42,6 +42,10 @@ document.addEventListener("alpine:init", () => {
         },
 
         notification: { show: false, message: '', type: 'success' },
+        pendingCount: 0,
+        lowStockCount: 0,
+        showPopout: false,
+        recentNotifications: [],
 
         init() {
             // Apply initial tab theme
@@ -52,6 +56,40 @@ document.addEventListener("alpine:init", () => {
             if (initialMsg && initialMsg.value) {
                 this.showNotify(initialMsg.value);
             }
+
+            // Global stats polling every 10s
+            this.pollStats(true);
+            setInterval(() => this.pollStats(), 10000);
+        },
+
+        async pollStats(isInitial = false) {
+            try {
+                const res = await fetch('/admin/stats/polling');
+                const data = await res.json();
+                
+                // If pending count increases
+                if (!isInitial && data.pendingReservasiCount > this.pendingCount) {
+                    // Trigger popout near bell
+                    this.showPopout = true;
+                    setTimeout(() => { this.showPopout = false; }, 8000);
+
+                    // Add to recent list
+                    this.recentNotifications.unshift({
+                        title: 'Antrean Pasien Baru',
+                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
+                        type: 'reservasi'
+                    });
+                    
+                    // Keep only last 5
+                    if (this.recentNotifications.length > 5) this.recentNotifications.pop();
+
+                    // Tell the reservation tab to refresh immediately
+                    window.dispatchEvent(new CustomEvent('refresh-reservasi'));
+                }
+
+                this.pendingCount = data.pendingReservasiCount;
+                this.lowStockCount = data.lowStockCount;
+            } catch (e) { console.error('Stats poll error:', e); }
         },
 
         showNotify(message, type = 'success') {
