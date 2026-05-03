@@ -63,6 +63,21 @@ return [
             ]) : [],
         ],
 
+        'mysql_remote' => [
+            'driver' => 'mysql',
+            'host' => env('REMOTE_DB_HOST', '127.0.0.1'),
+            'port' => env('REMOTE_DB_PORT', '3306'),
+            'database' => env('REMOTE_DB_DATABASE', 'forge'),
+            'username' => env('REMOTE_DB_USERNAME', 'forge'),
+            'password' => env('REMOTE_DB_PASSWORD', ''),
+            'charset' => 'utf8mb4',
+            'collation' => 'utf8mb4_unicode_ci',
+            'prefix' => '',
+            'prefix_indexes' => true,
+            'strict' => true,
+            'engine' => null,
+        ],
+
         'pgsql' => [
             'driver' => 'pgsql',
             'url' => env('DATABASE_URL'),

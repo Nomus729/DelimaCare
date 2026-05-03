@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\HybridSync;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Reservasi extends Model
 {
-    use HasFactory;
+    use HasFactory, HybridSync;
 
     // INI PENAWARNYA WOK: Kasih tau Laravel nama tabel aslinya apa
     protected $table = 'reservasi';
