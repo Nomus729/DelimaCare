@@ -1,43 +1,5 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8"
-     x-data='{ 
-        selectedDoctor: "", 
-        selectedDate: "{{ date("Y-m-d") }}",
-        doctors: @json($doctors),
-        days: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
-        daysIndo: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
-        warning: "",
-
-        init() {
-            this.checkAvailability();
-        },
-
-        checkAvailability() {
-            this.warning = "";
-            if (!this.selectedDoctor || !this.selectedDate) return;
-
-            const doc = this.doctors.find(d => d.nama === this.selectedDoctor);
-            if (!doc) return;
-
-            const dateObj = new Date(this.selectedDate);
-            const dayName = this.days[dateObj.getDay()];
-
-            const regex = /^(.+) - (.+) \((..):(..) - (..):(..)\)$/;
-            const match = doc.jadwal_praktek ? doc.jadwal_praktek.match(regex) : null;
-
-            if (match) {
-                const dayStart = match[1];
-                const dayEnd = match[2];
-                
-                const startIndex = this.daysIndo.indexOf(dayStart);
-                const endIndex = this.daysIndo.indexOf(dayEnd);
-                const currentIndex = this.daysIndo.indexOf(dayName);
-
-                if (currentIndex < startIndex || currentIndex > endIndex) {
-                    this.warning = `Maaf, ${doc.nama} tidak praktek di hari ${dayName}. Jadwal: ${dayStart} - ${dayEnd}`;
-                }
-            }
-        }
-     }'>
+     x-data="reservasiApp(@js($doctors), '{{ date('Y-m-d') }}')">
     {{-- Left Column: Doctor Availability --}}
     <div class="lg:col-span-5 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
         <div class="flex items-center gap-3 mb-6">
@@ -101,12 +63,23 @@
         </div>
 
         @if(session('error'))
-        <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-700 text-sm font-bold dark:bg-rose-900/20 dark:border-rose-900/30 dark:text-rose-400">
+        <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-700 text-sm font-bold dark:bg-rose-900/20 dark:border-rose-900/30 dark:text-rose-400 flex items-center gap-3">
+            <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
             {{ session('error') }}
         </div>
         @endif
 
-        <form action="{{ route('reservasi.store') }}" method="POST" class="space-y-5">
+        @if($errors->any())
+        <div class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl text-rose-700 text-sm font-bold dark:bg-rose-900/20 dark:border-rose-900/30 dark:text-rose-400">
+            <ul class="list-disc list-inside space-y-1">
+                @foreach($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+        </div>
+        @endif
+
+        <form action="{{ route('reservasi.store') }}" method="POST" @submit="isSubmitting = true" class="space-y-5">
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
@@ -121,7 +94,7 @@
                 </div>
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nomor Telepon / WA</label>
-                    <input type="tel" name="phone" placeholder="08xx-xxxx-xxxx" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                    <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="08xx-xxxx-xxxx" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
                 </div>
             </div>
 
@@ -130,12 +103,12 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Jenis Layanan</label>
                     <div class="relative">
                         <select name="layanan" class="w-full px-4 py-3 appearance-none rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-white transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
-                            <option disabled selected>Pilih layanan</option>
-                            <option>Pemeriksaan Kehamilan</option>
-                            <option>Konsultasi KB</option>
-                            <option>Imunisasi Anak</option>
-                            <option>Umum</option>
-                            <option>Lainnya</option>
+                            <option value="" disabled {{ !old('layanan') ? 'selected' : '' }}>Pilih layanan</option>
+                            <option {{ old('layanan') === 'Pemeriksaan Kehamilan' ? 'selected' : '' }}>Pemeriksaan Kehamilan</option>
+                            <option {{ old('layanan') === 'Konsultasi KB' ? 'selected' : '' }}>Konsultasi KB</option>
+                            <option {{ old('layanan') === 'Imunisasi Anak' ? 'selected' : '' }}>Imunisasi Anak</option>
+                            <option {{ old('layanan') === 'Umum' ? 'selected' : '' }}>Umum</option>
+                            <option {{ old('layanan') === 'Lainnya' ? 'selected' : '' }}>Lainnya</option>
                         </select>
                         <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
@@ -146,7 +119,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Dokter Terpilih</label>
                     <div class="px-4 py-3 rounded-xl border border-dashed border-teal-200 bg-teal-50/30 flex items-center justify-between dark:border-teal-900/50 dark:bg-teal-900/10 transition-all">
                         <span class="text-sm font-bold text-teal-700 dark:text-teal-400" x-text="selectedDoctor || 'Silakan klik dokter di sebelah kiri'"></span>
-                        <input type="hidden" name="dokter_id" :value="selectedDoctor" required>
+                        <input type="hidden" name="dokter_id" :value="selectedDoctor">
                         <template x-if="selectedDoctor">
                             <svg class="w-5 h-5 text-teal-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>
                         </template>
@@ -175,11 +148,17 @@
                 <textarea name="keluhan" rows="3" placeholder="Jelaskan keluhan atau catatan khusus untuk dokter" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all resize-none dark:bg-[#0F172A] dark:border-gray-700 dark:text-white"></textarea>
             </div>
 
-            <button type="submit" :disabled="!!warning"
-                    :class="!!warning ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'hover:-translate-y-0.5'"
-                    class="w-full py-4 rounded-xl text-white font-bold text-sm transition-all duration-300 mt-2" 
+            <button type="submit" :disabled="!!warning || isSubmitting"
+                    :class="(!!warning || isSubmitting) ? 'opacity-50 cursor-not-allowed bg-gray-400' : 'hover:-translate-y-0.5'"
+                    class="w-full py-4 rounded-xl text-white font-bold text-sm transition-all duration-300 mt-2 flex items-center justify-center gap-2" 
                     style="background: var(--gradient-main); box-shadow: 0 4px 16px rgba(13,148,136,0.25);">
-                Kirim Permintaan Reservasi
+                <template x-if="isSubmitting">
+                    <svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                </template>
+                <span x-text="isSubmitting ? 'Mengirim Permintaan...' : 'Kirim Permintaan Reservasi'"></span>
             </button>
             <p class="text-xs text-center text-gray-400 mt-3 flex items-center justify-center gap-1">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/></svg>

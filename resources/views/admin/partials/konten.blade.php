@@ -410,7 +410,7 @@
                 $count    = $catKey === '' ? $totalAll : ($categoryCounts[$catKey] ?? 0);
                 $pillClass = $isActive ? 'kc-filter-pill ' . $meta['active_class'] : 'kc-filter-pill pill-default';
                 // Build URL: keep ?tab=konten, set/remove ?category=, reset page=1
-                $filterUrl = route('admin.dashboard') . '?tab=konten' . ($catKey !== '' ? '&category=' . $catKey : '');
+                $filterUrl = route('admin.dashboard', ['tab' => 'konten', 'category' => $catKey]);
             @endphp
             <a href="{{ $filterUrl }}"
                class="{{ $pillClass }}"
@@ -507,7 +507,7 @@
                 </svg>
             </span>
         @else
-            <a href="{{ $articles->previousPageUrl() }}&tab=konten" rel="prev" aria-label="Halaman sebelumnya">
+            <a href="{{ $articles->previousPageUrl() }}" rel="prev" aria-label="Halaman sebelumnya">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 19l-7-7 7-7"/>
                 </svg>
@@ -519,13 +519,13 @@
             @if($page == $articles->currentPage())
                 <span class="active" aria-current="page">{{ $page }}</span>
             @else
-                <a href="{{ $url }}&tab=konten">{{ $page }}</a>
+                <a href="{{ $url }}">{{ $page }}</a>
             @endif
         @endforeach
 
         {{-- Next --}}
         @if($articles->hasMorePages())
-            <a href="{{ $articles->nextPageUrl() }}&tab=konten" rel="next" aria-label="Halaman berikutnya">
+            <a href="{{ $articles->nextPageUrl() }}" rel="next" aria-label="Halaman berikutnya">
                 <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                 </svg>

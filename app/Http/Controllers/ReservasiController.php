@@ -187,4 +187,15 @@ class ReservasiController extends Controller
 
         return redirect()->back()->with('success', 'Reservasi atas nama ' . $nama . ' berhasil dihapus.');
     }
+
+    // 6. Admin update status reservasi (Datang / Tidak Datang)
+    public function updateStatus(Request $request, $id)
+    {
+        $request->validate(['status' => 'required|in:Menunggu,Dikonfirmasi,Datang,Tidak Datang']);
+        $reservasi = Reservasi::findOrFail($id);
+        $reservasi->status = $request->status;
+        $reservasi->save();
+
+        return redirect()->back()->with('success', 'Status reservasi ' . $reservasi->nama . ' diperbarui menjadi ' . $request->status . '.');
+    }
 }

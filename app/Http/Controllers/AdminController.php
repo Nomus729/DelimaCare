@@ -21,7 +21,8 @@ class AdminController extends Controller
             $query->where('category', $activeCategory);
         }
 
-        $articles = $query->paginate(6)->withQueryString();
+        $articles = $query->paginate(6)
+            ->appends(['tab' => 'konten', 'category' => $activeCategory]);
 
         $categoryCounts = Article::selectRaw('category, count(*) as total')
             ->groupBy('category')
@@ -49,7 +50,8 @@ class AdminController extends Controller
             ->byKategori($rmKategori);
 
         $rekamMedisAll  = RekamMedis::get();
-        $rekamMedis     = $rmQuery->paginate(8)->withQueryString();
+        $rekamMedis = $rmQuery->paginate(8)
+            ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori]);
 
         $rmStats = [
             'total'       => $rekamMedisAll->count(),
@@ -66,10 +68,39 @@ class AdminController extends Controller
             'Konsultasi'         => $rekamMedisAll->where('kategori', 'Konsultasi')->count(),
         ];
 
-        // ─── Reservasi (INI YANG DITAMBAHIN WOK) ──────────────────
-        $semuaReservasi = Reservasi::latest()->get();
-        $pendingReservasiCount = Reservasi::where('status', 'Menunggu')->count();
-        $reservasiHariIni = Reservasi::whereDate('tanggal', now()->format('Y-m-d'))->count();
+        // ─── Reservasi ─────────────────────────────────────────────
+        $resFilter = $request->query('res_filter', 'today'); // today | upcoming | all
+        $resStatus = $request->query('res_status', '');       // Menunggu | Dikonfirmasi | Datang | dll
+        $resSearch = $request->query('res_search', '');
+
+        $resQuery = Reservasi::query();
+
+        // Date filter
+        if ($resFilter === 'today') {
+            $resQuery->whereDate('tanggal', today());
+        } elseif ($resFilter === 'upcoming') {
+            $resQuery->whereDate('tanggal', '>', today());
+        }
+        // 'all' = no date filter
+
+        // Status filter
+        if ($resStatus) {
+            $resQuery->where('status', $resStatus);
+        }
+
+        // Search by name
+        if ($resSearch) {
+            $resQuery->where('nama', 'like', "%{$resSearch}%");
+        }
+
+        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')->get();
+
+        // Stats for reservasi
+        $pendingReservasiCount  = Reservasi::where('status', 'Menunggu')->count();
+        $reservasiHariIni       = Reservasi::whereDate('tanggal', today())->count();
+        $reservasiMendatang     = Reservasi::whereDate('tanggal', '>', today())->count();
+        $reservasiDikonfirmasi  = Reservasi::where('status', 'Dikonfirmasi')->whereDate('tanggal', '>=', today())->count();
+
         $totalPasien = RekamMedis::count();
         $doctors = Doctor::all();
 
@@ -83,12 +114,13 @@ class AdminController extends Controller
 
         $activeTab = $request->query('tab', 'dashboard');
 
-        // Pastikan 'semuaReservasi' masuk ke dalam compact di bawah ini!
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory',
             'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
-            'semuaReservasi', 'pendingReservasiCount', 'doctors', // <-- INI DIA OLEH-OLEHNYA
+            'semuaReservasi', 'pendingReservasiCount', 'doctors',
+            'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
+            'resFilter', 'resStatus', 'resSearch',
             'stats', 'activeTab'
         ));
     }

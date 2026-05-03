@@ -2,8 +2,8 @@
 
 document.addEventListener("alpine:init", () => {
     Alpine.data("portalApp", () => ({
-        // Tab aktif secara default
-        activeTab: "reservasi",
+        // Tab aktif secara default (ambil dari URL jika ada)
+        activeTab: new URLSearchParams(window.location.search).get('tab') || "reservasi",
 
         // Dark mode state
         darkMode: document.documentElement.classList.contains('dark'),
@@ -37,6 +37,10 @@ document.addEventListener("alpine:init", () => {
             this.activeTab = tabName;
             this.mobileMenuOpen = false;
             window.scrollTo({ top: 0, behavior: "smooth" });
+
+            // Simpan ke URL agar tidak hilang saat refresh/submit (Clean URL)
+            const newUrl = window.location.origin + window.location.pathname + '?tab=' + tabName;
+            window.history.pushState({}, '', newUrl);
         },
 
         // Fungsi kirim pesan di Konsultasi Online
@@ -79,5 +83,46 @@ document.addEventListener("alpine:init", () => {
                 }
             }, 50);
         },
+    }));
+
+    Alpine.data("reservasiApp", (initialDoctors, initialDate) => ({
+        isSubmitting: false,
+        selectedDoctor: '', 
+        selectedDate: initialDate,
+        doctors: initialDoctors,
+        days: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
+        daysIndo: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
+        warning: "",
+
+        init() {
+            this.checkAvailability();
+        },
+
+        checkAvailability() {
+            this.warning = "";
+            if (!this.selectedDoctor || !this.selectedDate) return;
+
+            const doc = this.doctors.find(d => d.nama === this.selectedDoctor);
+            if (!doc) return;
+
+            const dateObj = new Date(this.selectedDate);
+            const dayName = this.days[dateObj.getDay()];
+
+            const regex = /^(.+) - (.+) \((..):(..) - (..):(..)\)$/;
+            const match = doc.jadwal_praktek ? doc.jadwal_praktek.match(regex) : null;
+
+            if (match) {
+                const dayStart = match[1];
+                const dayEnd = match[2];
+                
+                const startIndex = this.daysIndo.indexOf(dayStart);
+                const endIndex = this.daysIndo.indexOf(dayEnd);
+                const currentIndex = this.daysIndo.indexOf(dayName);
+
+                if (currentIndex < startIndex || currentIndex > endIndex) {
+                    this.warning = `Maaf, ${doc.nama} tidak praktek di hari ${dayName}. Jadwal: ${dayStart} - ${dayEnd}`;
+                }
+            }
+        }
     }));
 });

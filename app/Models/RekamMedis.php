@@ -29,6 +29,7 @@ class RekamMedis extends Model
         'berat_badan',
         'tinggi_badan',
         'catatan_medis',
+        'catatan_pasien',
         'diagnosis',
         'tindakan',
         'tanggal_kunjungan_terakhir',
@@ -39,6 +40,11 @@ class RekamMedis extends Model
     public function reservasi()
     {
         return $this->belongsTo(Reservasi::class);
+    }
+
+    public function resepMedis()
+    {
+        return $this->hasOne(\App\Models\ResepMedis::class, 'rekam_medis_id');
     }
 
     protected $casts = [

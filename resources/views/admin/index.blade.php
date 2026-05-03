@@ -23,6 +23,33 @@
         body { background-color: #F0FDFB; }
         html.dark body { background-color: #080F1E; }
 
+        /* ── Per-tab accent CSS variables ── */
+        :root {
+            --acc1: #0D9488; --acc2: #06B6D4;
+            --blob1: rgba(13,148,136,0.18); --blob2: rgba(6,182,212,0.12);
+            --grad: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
+        }
+
+        /* Tab themes applied via JS to :root */
+        .shimmer-bar {
+            background: linear-gradient(90deg, var(--acc1) 0%, var(--acc2) 40%, var(--acc1) 100%);
+            background-size: 200% auto; animation: shimmer 2s linear infinite;
+            transition: background 0.5s ease;
+        }
+        .blob-1 { background: var(--blob1); transition: background 0.6s ease; }
+        .blob-2 { background: var(--blob2); transition: background 0.6s ease; }
+        .header-date { color: var(--acc1); transition: color 0.5s ease; }
+
+        .nav-active {
+            background: linear-gradient(135deg, color-mix(in srgb, var(--acc1) 12%, transparent), color-mix(in srgb, var(--acc2) 8%, transparent));
+            color: var(--acc1); box-shadow: inset 3px 0 0 var(--acc1); font-weight: 800;
+        }
+        html.dark .nav-active { color: var(--acc2); box-shadow: inset 3px 0 0 var(--acc2); }
+        .nav-icon-active { color: var(--acc1); }
+        html.dark .nav-icon-active { color: var(--acc2); }
+        .dot-active { background: var(--acc1); }
+        html.dark .dot-active { background: var(--acc2); }
+
         :root {
             --teal-main: #0D9488;
             --cyan-main: #06B6D4;
@@ -261,8 +288,8 @@
         <div class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F0FDFB] dark:bg-[#080F1E] relative">
 
             {{-- Ambient blobs --}}
-            <div class="absolute top-[-100px] right-[-100px] w-[500px] h-[500px] bg-teal-200/20 dark:bg-teal-900/10 rounded-full blur-3xl pointer-events-none blob-float"></div>
-            <div class="absolute bottom-[-80px] left-[-60px] w-[400px] h-[400px] bg-cyan-200/15 dark:bg-cyan-900/10 rounded-full blur-3xl pointer-events-none blob-float-2"></div>
+            <div class="blob-1 absolute top-[-100px] right-[-100px] w-[500px] h-[500px] rounded-full blur-3xl pointer-events-none blob-float opacity-30"></div>
+            <div class="blob-2 absolute bottom-[-80px] left-[-60px] w-[400px] h-[400px] rounded-full blur-3xl pointer-events-none blob-float-2 opacity-20"></div>
 
             {{-- ===== HEADER ===== --}}
             <header class="h-[72px] flex-shrink-0 flex items-center justify-between px-8
@@ -272,7 +299,7 @@
                 {{-- Left: page title --}}
                 <div class="anim-up">
                     <h2 class="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none" x-text="menuLabel"></h2>
-                    <p class="text-[11px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-widest mt-1">
+                    <p class="header-date text-[11px] font-bold uppercase tracking-widest mt-1">
                         {{ now()->isoFormat('dddd, D MMMM YYYY') }}
                     </p>
                 </div>

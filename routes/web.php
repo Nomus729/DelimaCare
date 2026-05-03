@@ -72,8 +72,14 @@ Route::get('/portal', function () {
     // Sekarang cuma ngambil jadwal yang "user_id"-nya sama dengan pasien yang lagi login
     $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
     $doctors = \App\Models\Doctor::all();
+    
+    // Ambil data rekam medis pasien yang login
+    $rekamMedis = \App\Models\RekamMedis::with('resepMedis.items.medicine')
+        ->where('nama_pasien', Auth::user()->username)
+        ->latest()
+        ->get();
 
-    return view('portal', compact('jadwalPasien', 'doctors'));
+    return view('portal', compact('jadwalPasien', 'doctors', 'rekamMedis'));
 })->name('portal')->middleware('patient');
 
 // --- RUTE RESERVASI ---
@@ -105,8 +111,15 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
 
     Route::resource('doctors', \App\Http\Controllers\Admin\DoctorController::class);
 
+    // Resep Medis
+    Route::post('/resep-medis', [\App\Http\Controllers\Admin\ResepMedisController::class, 'store'])->name('resep-medis.store');
+    Route::patch('/resep-medis/{resepMedis}/status', [\App\Http\Controllers\Admin\ResepMedisController::class, 'updateStatus'])->name('resep-medis.status');
+    Route::delete('/resep-medis/{resepMedis}', [\App\Http\Controllers\Admin\ResepMedisController::class, 'destroy'])->name('resep-medis.destroy');
+    Route::get('/api/medicines/search', [\App\Http\Controllers\Admin\ResepMedisController::class, 'searchMedicine'])->name('api.medicines.search');
+
     // Fitur Tombol Admin Reservasi
     Route::post('/reservasi/store', [ReservasiController::class, 'storeAdmin'])->name('reservasi.store_admin');
     Route::patch('/reservasi/{id}/konfirmasi', [ReservasiController::class, 'konfirmasiAdmin'])->name('reservasi.konfirmasi');
+    Route::patch('/reservasi/{id}/status', [ReservasiController::class, 'updateStatus'])->name('reservasi.status');
     Route::delete('/reservasi/{id}/batal', [ReservasiController::class, 'batalAdmin'])->name('reservasi.batal');
 });
