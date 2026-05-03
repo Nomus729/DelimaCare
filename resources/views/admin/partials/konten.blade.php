@@ -365,31 +365,64 @@
 }">
 
     {{-- ── Header ──────────────────────────────────────── --}}
-    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-        <div>
-            <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-0.5">Manajemen Konten</h2>
+    <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-6 mb-8">
+        <div class="flex-1">
+            <h2 class="text-2xl font-black text-gray-900 dark:text-white mb-1">Manajemen Konten</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">
                 Kelola artikel, berita, dan acara untuk website
                 @if($articles->total() > 0)
                     &nbsp;·&nbsp;
-                    <span class="font-semibold text-teal-600 dark:text-teal-400">
+                    <span class="font-bold text-teal-600 dark:text-teal-400">
                         {{ $articles->total() }} {{ $activeCategory ? strtolower($activeCategory) : 'konten' }} ditemukan
                     </span>
                 @endif
             </p>
         </div>
-        <a href="{{ route('admin.konten.create') }}"
-           class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white
-                  bg-gradient-to-r from-teal-600 to-cyan-500
-                  hover:from-teal-700 hover:to-cyan-600
-                  shadow-lg shadow-teal-500/30
-                  hover:shadow-teal-500/50 hover:-translate-y-0.5
-                  transition-all duration-200 flex-shrink-0">
-            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
-            </svg>
-            Buat Konten Baru
-        </a>
+
+        <div class="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:min-w-[450px]">
+            {{-- Search Bar (Matched with Inventori style) --}}
+            <form action="{{ route('admin.dashboard') }}" method="GET" class="flex-1 relative group">
+                <input type="hidden" name="tab" value="konten">
+                @if($activeCategory)
+                    <input type="hidden" name="category" value="{{ $activeCategory }}">
+                @endif
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-400 group-focus-within:text-teal-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input type="text"
+                           name="search_konten"
+                           value="{{ $searchKonten }}"
+                           placeholder="Cari judul konten..."
+                           class="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800
+                                  rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
+                                  dark:text-white transition-all shadow-sm placeholder-gray-400">
+                    @if($searchKonten)
+                        <a href="{{ route('admin.dashboard', ['tab' => 'konten', 'category' => $activeCategory]) }}"
+                           class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-rose-500 transition-colors">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                </div>
+            </form>
+
+            <a href="{{ route('admin.konten.create') }}"
+               class="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold text-white
+                      bg-gradient-to-r from-teal-600 to-cyan-500
+                      hover:from-teal-700 hover:to-cyan-600
+                      shadow-lg shadow-teal-500/30
+                      hover:shadow-teal-500/50 hover:-translate-y-0.5
+                      transition-all duration-200 flex-shrink-0">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/>
+                </svg>
+                Tambah Konten
+            </a>
+        </div>
     </div>
 
     {{-- ── Category Filter Pills ─────────────────────── --}}
@@ -409,8 +442,12 @@
                 $isActive = ($activeCategory === $catKey);
                 $count    = $catKey === '' ? $totalAll : ($categoryCounts[$catKey] ?? 0);
                 $pillClass = $isActive ? 'kc-filter-pill ' . $meta['active_class'] : 'kc-filter-pill pill-default';
-                // Build URL: keep ?tab=konten, set/remove ?category=, reset page=1
-                $filterUrl = route('admin.dashboard', ['tab' => 'konten', 'category' => $catKey]);
+                // Build URL: keep ?tab=konten, set/remove ?category=, reset page=1, keep search_konten
+                $filterUrl = route('admin.dashboard', [
+                    'tab' => 'konten',
+                    'category' => $catKey,
+                    'search_konten' => $searchKonten
+                ]);
             @endphp
             <a href="{{ $filterUrl }}"
                class="{{ $pillClass }}"

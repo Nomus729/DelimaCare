@@ -15,14 +15,19 @@ class AdminController extends Controller
     {
         // ─── Konten ───────────────────────────────────────────────
         $activeCategory = $request->query('category', '');
+        $searchKonten   = $request->query('search_konten', '');
 
         $query = Article::latest();
         if ($activeCategory && in_array($activeCategory, ['Artikel', 'Berita', 'Acara'])) {
             $query->where('category', $activeCategory);
         }
 
-        $articles = $query->paginate(6)
-            ->appends(['tab' => 'konten', 'category' => $activeCategory]);
+        if ($searchKonten) {
+            $query->where('title', 'like', '%' . $searchKonten . '%');
+        }
+
+        $articles = $query->paginate(9)
+            ->appends(['tab' => 'konten', 'category' => $activeCategory, 'search_konten' => $searchKonten]);
 
         $categoryCounts = Article::selectRaw('category, count(*) as total')
             ->groupBy('category')
@@ -93,7 +98,7 @@ class AdminController extends Controller
         $activeTab = $request->query('tab', 'dashboard');
 
         return view('admin.index', compact(
-            'articles', 'categoryCounts', 'activeCategory',
+            'articles', 'categoryCounts', 'activeCategory', 'searchKonten',
             'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
             'semuaReservasi', 'pendingReservasiCount', 'doctors',

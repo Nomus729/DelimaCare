@@ -132,13 +132,124 @@
             animation: shimmer 2s linear infinite;
         }
 
-        /* Menu tooltip on hover for collapsed sidebar (future) */
+        /* ── Sidebar ──────────────────────────────────── */
+        #main-sidebar {
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            will-change: width;
+            overflow: visible;
+        }
+        #main-sidebar.sidebar-wide { width: 18rem !important; }
+        #main-sidebar:not(.sidebar-wide) { width: 4.5rem !important; }
+
+        /* Inner scroll container clips content */
+        #sb-inner {
+            overflow: hidden;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            backface-visibility: hidden;
+        }
         .sidebar-link {
-            transition: all 0.25s cubic-bezier(0.16,1,0.3,1);
+            position: relative;
+            transition: background 0.22s ease, transform 0.22s cubic-bezier(0.34,1.56,0.64,1), color 0.18s ease;
+            border-radius: 14px;
+            overflow: hidden;
         }
-        .sidebar-link:hover {
-            transform: translateX(3px);
+        .sidebar-link::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(13,148,136,0.08), rgba(6,182,212,0.06));
+            opacity: 0;
+            transition: opacity 0.2s ease;
+            border-radius: 14px;
         }
+        .sidebar-link:hover::before { opacity: 1; }
+        .sidebar-link:hover { transform: translateX(4px); }
+        .sidebar-link:hover svg { transform: scale(1.12) rotate(4deg); }
+        .sidebar-link:active { transform: scale(0.97) translateX(2px); }
+        .sidebar-link svg { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+        #main-sidebar:not(.sidebar-wide) .sidebar-link:hover {
+            transform: scale(1.1) translateX(0);
+        }
+        .nav-active {
+            background: linear-gradient(135deg, rgba(13,148,136,0.12) 0%, rgba(6,182,212,0.08) 100%) !important;
+            border: 1px solid rgba(13,148,136,0.18);
+            color: #0d9488 !important;
+            box-shadow: 0 2px 12px rgba(13,148,136,0.1);
+        }
+        .dark .nav-active {
+            background: linear-gradient(135deg, rgba(13,148,136,0.18) 0%, rgba(6,182,212,0.12) 100%) !important;
+            color: #2dd4bf !important;
+        }
+        .nav-active svg { color: #0d9488 !important; }
+        .dark .nav-active svg { color: #2dd4bf !important; }
+        /* Sidebar text & extras fade */
+        .sb-label, .sb-dot, .sb-user-info, .sb-logout-text, .sb-live, .sb-section-title {
+            transition: opacity 0.25s ease, max-width 0.4s cubic-bezier(0.65,0,0.35,1);
+            white-space: nowrap;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        #main-sidebar:not(.sidebar-wide) .sb-label,
+        #main-sidebar:not(.sidebar-wide) .sb-dot,
+        #main-sidebar:not(.sidebar-wide) .sb-user-info,
+        #main-sidebar:not(.sidebar-wide) .sb-logout-text,
+        #main-sidebar:not(.sidebar-wide) .sb-live,
+        #main-sidebar:not(.sidebar-wide) .sb-section-title {
+            opacity: 0;
+            max-width: 0;
+            pointer-events: none;
+        }
+        #main-sidebar.sidebar-wide .sb-label,
+        #main-sidebar.sidebar-wide .sb-dot,
+        #main-sidebar.sidebar-wide .sb-user-info,
+        #main-sidebar.sidebar-wide .sb-logout-text,
+        #main-sidebar.sidebar-wide .sb-live,
+        #main-sidebar.sidebar-wide .sb-section-title {
+            opacity: 1;
+            max-width: 220px;
+        }
+        /* Badge — always visible, style changes per mode */
+        .sb-badge {
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        /* Wide badge: full pill */
+        #main-sidebar.sidebar-wide .sb-badge {
+            font-size: 10px; padding: 1px 6px; border-radius: 9999px;
+        }
+        /* Mini badge: compact square next to icon */
+        #main-sidebar:not(.sidebar-wide) .sb-badge {
+            font-size: 9px; padding: 1px 4px; border-radius: 5px;
+            min-width: 16px; text-align: center;
+        }
+        /* Mini active bar */
+        .mini-active-bar {
+            transition: opacity 0.25s ease;
+        }
+        /* Scrollbar for sidebar */
+        #sb-inner nav::-webkit-scrollbar { width: 3px; }
+        #sb-inner nav::-webkit-scrollbar-track { background: transparent; }
+        #sb-inner nav::-webkit-scrollbar-thumb { background: rgba(13,148,136,0.2); border-radius: 10px; }
+        /* Prevent main content from janking during sidebar transition */
+        #main-content {
+            contain: layout;
+            flex: 1;
+            min-width: 0;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        /* Toggle button always transitions with sidebar width */
+        #sidebar-toggle {
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                        background-color 0.2s ease,
+                        border-color 0.2s ease !important;
+            will-change: left;
+        }
+        #sidebar-toggle.sidebar-wide { left: calc(18rem - 12px) !important; }
+        #sidebar-toggle:not(.sidebar-wide) { left: calc(4.5rem - 12px) !important; }
         /* Page Loader */
         #page-loader {
             position: fixed;
@@ -195,104 +306,185 @@
 
     <div class="page-content-wrapper flex w-full h-screen overflow-hidden">
         {{-- ========== SIDEBAR ========== --}}
-        <aside class="hidden md:flex flex-col w-72 flex-shrink-0 h-full z-30 relative
-                      bg-white/90 dark:bg-[#0E1A2E]/95 backdrop-blur-2xl
-                      border-r border-gray-100 dark:border-gray-800/60
-                      shadow-[6px_0_32px_rgba(0,0,0,0.04)] anim-left">
+        <aside id="main-sidebar"
+               class="sidebar-wide hidden md:flex flex-col flex-shrink-0 h-full z-30 relative">
 
-            {{-- Decorative gradient top --}}
-            <div class="absolute inset-x-0 top-0 h-1 shimmer-bar rounded-t-none"></div>
+            <div id="sb-inner" class="bg-white dark:bg-[#0D1826] border-r border-gray-100 dark:border-gray-800/50 shadow-[4px_0_24px_rgba(0,0,0,0.04)] relative h-full">
 
-            {{-- Logo --}}
-            <div class="h-20 flex items-center px-6 border-b border-gray-100/70 dark:border-gray-800/50 flex-shrink-0">
-                <a href="{{ route('home') }}" class="flex items-center gap-3.5 group w-full">
-                    <div class="w-11 h-11 logo-icon rounded-2xl flex items-center justify-center shadow-lg shadow-teal-500/30
-                                group-hover:scale-105 group-hover:rotate-6 transition-all duration-400">
-                        <svg class="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            {{-- Top shimmer --}}
+            <div class="absolute inset-x-0 top-0 h-[3px] shimmer-bar pointer-events-none"></div>
+
+            {{-- Logo row --}}
+            <div class="h-[72px] flex items-center justify-between px-4 flex-shrink-0 border-b border-gray-100/70 dark:border-gray-800/50">
+                <a href="{{ route('home') }}" class="flex items-center gap-3 group min-w-0 flex-1">
+                    <div class="w-10 h-10 logo-icon rounded-xl flex-shrink-0 flex items-center justify-center shadow-lg shadow-teal-500/25 group-hover:scale-110 group-hover:rotate-6 transition-all duration-300">
+                        <svg class="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/>
                         </svg>
                     </div>
-                    <div class="min-w-0">
-                        <span class="text-[17px] font-black tracking-tight text-gray-900 dark:text-white block leading-tight">DelimaCare</span>
-                        <span class="text-[10px] font-extrabold uppercase tracking-[0.18em] bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-transparent">Admin Panel</span>
-                    </div>
-                    {{-- Live badge --}}
-                    <div class="ml-auto flex-shrink-0 flex items-center gap-1.5 bg-teal-50 dark:bg-teal-900/30 px-2.5 py-1.5 rounded-lg">
-                        <span class="w-1.5 h-1.5 rounded-full bg-teal-500 dot-pulse"></span>
-                        <span class="text-[9px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-400">Live</span>
+                    <div class="sb-label min-w-0">
+                        <p class="text-[15px] font-black tracking-tight text-gray-900 dark:text-white leading-none">DelimaCare</p>
+                        <p class="text-[9px] font-extrabold uppercase tracking-[0.18em] bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-transparent">Admin Panel</p>
                     </div>
                 </a>
+                {{-- Live pill --}}
+                <div class="sb-live flex items-center gap-1 bg-teal-50 dark:bg-teal-900/25 px-2 py-1 rounded-lg flex-shrink-0 ml-2">
+                    <span class="w-1.5 h-1.5 rounded-full bg-teal-500 dot-pulse"></span>
+                    <span class="text-[8px] font-black uppercase tracking-wider text-teal-700 dark:text-teal-400">Live</span>
+                </div>
             </div>
 
             {{-- Nav --}}
-            <nav class="flex-1 px-4 py-5 overflow-y-auto space-y-0.5">
-                <p class="text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.2em] mb-3 px-4">Menu Utama</p>
+            <nav class="flex-1 px-3 py-4 overflow-y-auto space-y-0.5">
+                <p class="sb-section-title text-[9px] font-black text-gray-400 dark:text-gray-600 uppercase tracking-[0.22em] mb-2 px-3">Menu Utama</p>
 
                 @php
                     $menus = [
-                        ['id'=>'dashboard',   'label'=>'Dashboard',         'icon'=>'M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z', 'badge'=>null],
-                        ['id'=>'konten',      'label'=>'Kelola Konten',     'icon'=>'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z', 'badge'=>null],
-                        ['id'=>'inventori',   'label'=>'Inventori Obat',    'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4', 'badge' => $lowStockCount > 0 ? $lowStockCount : null],
-                        ['id'=>'keuangan',    'label'=>'Keuangan',          'icon'=>'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z', 'badge'=>null],
-                        ['id'=>'laporan',     'label'=>'Laporan Pengunjung','icon'=>'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z', 'badge'=>null],
-                        ['id'=>'doctors',     'label'=>'Jadwal Dokter',     'icon'=>'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z', 'badge'=>null],
-                        ['id'=>'reservasi',   'label'=>'Antrean Pasien',    'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z', 'badge'=>$pendingReservasiCount > 0 ? $pendingReservasiCount : null],
-                        ['id'=>'rekam_medis', 'label'=>'Rekam Medis',       'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z', 'badge'=>null],
+                        ['id'=>'dashboard',   'label'=>'Dashboard',          'icon'=>'M4 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1h-4a1 1 0 01-1-1v-4z'],
+                        ['id'=>'konten',      'label'=>'Kelola Konten',      'icon'=>'M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z'],
+                        ['id'=>'inventori',   'label'=>'Inventori Obat',     'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
+                        ['id'=>'keuangan',    'label'=>'Keuangan',           'icon'=>'M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z'],
+                        ['id'=>'laporan',     'label'=>'Laporan Pengunjung', 'icon'=>'M7 12l3-3 3 3 4-4M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z'],
+                        ['id'=>'doctors',     'label'=>'Jadwal Dokter',      'icon'=>'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
+                        ['id'=>'reservasi',   'label'=>'Antrean Pasien',     'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
+                        ['id'=>'rekam_medis', 'label'=>'Rekam Medis',        'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
                     ];
                 @endphp
 
-                @foreach($menus as $i => $menu)
+                @foreach($menus as $menu)
                 <button @click="switchMenu('{{ $menu['id'] }}')"
-                        class="sidebar-link w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm relative group"
-                        :class="activeMenu === '{{ $menu['id'] }}' ? 'nav-active' : 'text-gray-500 hover:bg-gray-50 hover:text-gray-800 dark:text-gray-400 dark:hover:bg-white/5 dark:hover:text-gray-200'">
-                    <svg class="w-[18px] h-[18px] flex-shrink-0 transition-all duration-300"
+                        class="sidebar-link w-full flex items-center gap-3 px-3 py-2.5 text-sm group"
+                        :class="activeMenu === '{{ $menu['id'] }}' ? 'nav-active' : 'text-gray-500 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200'">
+
+                    {{-- Mini active left bar --}}
+                    <span class="mini-active-bar absolute left-0 inset-y-2.5 w-[3px] rounded-r-full bg-teal-500"
+                          :class="activeMenu === '{{ $menu['id'] }}' ? 'opacity-100' : 'opacity-0'"
+                          style="display: block;"></span>
+
+                    {{-- Icon --}}
+                    <svg class="w-[18px] h-[18px] flex-shrink-0"
                          :class="activeMenu === '{{ $menu['id'] }}' ? 'text-teal-600 dark:text-teal-400' : 'text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300'"
                          fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                        {!! $menu['icon'] !!}
+                        <path stroke-linecap="round" stroke-linejoin="round" d="{{ $menu['icon'] }}"/>
                     </svg>
-                    <span class="flex-1 text-left truncate font-semibold">{{ $menu['label'] }}</span>
-                    <template x-if="('{{ $menu['id'] }}' === 'inventori' && lowStockCount > 0) || ('{{ $menu['id'] }}' === 'reservasi' && pendingCount > 0)">
-                        <span class="text-[10px] font-black px-2 py-0.5 rounded-full"
-                            :class="'{{ $menu['id'] }}' === 'inventori' ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400' : 'bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400'"
-                            x-text="'{{ $menu['id'] }}' === 'inventori' ? lowStockCount : pendingCount">
-                        </span>
-                    </template>
-                    {{-- Active indicator dot --}}
-                    <span x-show="activeMenu === '{{ $menu['id'] }}'" class="w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-400 flex-shrink-0"></span>
+
+                    {{-- Label --}}
+                    <span class="sb-label flex-1 text-left font-semibold truncate">{{ $menu['label'] }}</span>
+
+                    {{-- Badge (always visible, adapts in mini mode) --}}
+                    @if($menu['id'] === 'inventori')
+                    <span class="sb-badge font-black bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-400"
+                          x-show="lowStockCount > 0" x-text="lowStockCount"></span>
+                    @elseif($menu['id'] === 'reservasi')
+                    <span class="sb-badge font-black bg-teal-100 text-teal-700 dark:bg-teal-900/40 dark:text-teal-400"
+                          x-show="pendingCount > 0" x-text="pendingCount"></span>
+                    @endif
+
+                    {{-- Active dot (wide mode only) --}}
+                    <span class="sb-dot w-1.5 h-1.5 rounded-full bg-teal-500 dark:bg-teal-400 flex-shrink-0"
+                          x-show="activeMenu === '{{ $menu['id'] }}'"></span>
                 </button>
                 @endforeach
             </nav>
 
             {{-- User + Logout --}}
-            <div class="p-3 border-t border-gray-100/70 dark:border-gray-800/50 space-y-2 flex-shrink-0">
+            <div class="p-3 border-t border-gray-100/70 dark:border-gray-800/50 space-y-1.5 flex-shrink-0">
                 @auth
-                <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-gradient-to-r from-teal-50 to-cyan-50 dark:from-teal-900/20 dark:to-cyan-900/20 border border-teal-100/60 dark:border-teal-800/30">
-                    <div class="w-8 h-8 logo-icon rounded-full flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0">
+                <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-teal-50/60 dark:bg-teal-900/15 border border-teal-100/50 dark:border-teal-800/30 overflow-hidden">
+                    <div class="w-8 h-8 logo-icon rounded-full flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0 hover:rotate-12 transition-transform duration-300">
                         {{ strtoupper(substr(Auth::user()->username, 0, 1)) }}
                     </div>
-                    <div class="min-w-0 flex-1">
+                    <div class="sb-user-info min-w-0 flex-1">
                         <p class="text-xs font-black text-gray-900 dark:text-white truncate">{{ Auth::user()->username }}</p>
                         <p class="text-[9px] font-bold bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-transparent">Administrator</p>
                     </div>
-                    <div class="w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 dot-pulse"></div>
+                    <span class="sb-live w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 dot-pulse"></span>
                 </div>
                 @endauth
                 <form action="{{ route('logout') }}" method="POST">
                     @csrf
-                    <button type="submit" class="w-full flex items-center gap-2.5 px-3 py-1.5 rounded-lg text-[13px] font-bold text-red-500 dark:text-red-400
-                                                 hover:bg-red-50 dark:hover:bg-red-500/10 hover:text-red-600 dark:hover:text-red-300
-                                                 transition-all duration-200 group">
-                        <svg class="w-4 h-4 group-hover:translate-x-0.5 transition-transform" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <button type="submit"
+                            class="sidebar-link w-full flex items-center gap-2.5 px-3 py-2 text-[13px] font-bold text-rose-500 dark:text-rose-400
+                                   hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 group">
+                        <svg class="w-[18px] h-[18px] flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                         </svg>
-                        Keluar Akun
+                        <span class="sb-logout-text">Keluar Akun</span>
                     </button>
                 </form>
             </div>
+            </div>{{-- /sb-inner --}}
         </aside>
 
+        {{-- Toggle button (outside aside so it's never clipped) --}}
+        <button id="sidebar-toggle"
+                class="sidebar-wide hidden md:flex fixed z-40 items-center justify-center
+                       w-6 h-6 rounded-full bg-white dark:bg-gray-800
+                       border border-gray-200 dark:border-gray-700 shadow-md
+                       hover:bg-teal-50 dark:hover:bg-teal-900/40 hover:border-teal-300
+                       transition-all duration-300 group"
+                id="sidebar-toggle-btn"
+                onclick="toggleSidebar()">
+            <svg id="toggle-icon" class="w-3 h-3 text-gray-400 group-hover:text-teal-600 transition-all duration-300"
+                 fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7"/>
+            </svg>
+        </button>
+
+        <script>
+            function toggleSidebar() {
+                const sb      = document.getElementById('main-sidebar');
+                const btn     = document.getElementById('sidebar-toggle');
+                const ico     = document.getElementById('toggle-icon');
+                const content = document.getElementById('main-content');
+
+                // Toggle classes to trigger CSS transitions (GPU accelerated)
+                const isWide = sb.classList.toggle('sidebar-wide');
+                btn.classList.toggle('sidebar-wide');
+
+                // Save preference to localStorage
+                localStorage.setItem('sidebar-state', isWide ? 'wide' : 'mini');
+
+                ico.style.transform = isWide ? 'rotate(0deg)' : 'rotate(180deg)';
+
+                // Prevent chart lag by disabling resize during animation
+                if (content) {
+                    content.style.pointerEvents = 'none';
+                    if (window.ApexCharts) {
+                        window.dispatchEvent(new Event('sidebar-transitioning'));
+                    }
+
+                    setTimeout(() => {
+                        content.style.pointerEvents = '';
+                        window.dispatchEvent(new Event('resize'));
+                    }, 450);
+                }
+            }
+
+            // Apply sidebar state immediately to prevent flicker
+            (function() {
+                const state = localStorage.getItem('sidebar-state');
+                const sb = document.getElementById('main-sidebar');
+                const btn = document.getElementById('sidebar-toggle');
+                const ico = document.getElementById('toggle-icon');
+
+                if (state === 'mini' && sb) {
+                    sb.classList.remove('sidebar-wide');
+                    if (btn) btn.classList.remove('sidebar-wide');
+                    if (ico) ico.style.transform = 'rotate(180deg)';
+                }
+            })();
+
+            document.addEventListener('DOMContentLoaded', function() {
+                const btn = document.getElementById('sidebar-toggle');
+                const ico = document.getElementById('toggle-icon');
+                if (btn) btn.style.top = '84px';
+                if (ico) ico.style.transition = 'transform 0.4s ease';
+            });
+        </script>
+
         {{-- ========== MAIN CONTENT ========== --}}
-        <div class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F0FDFB] dark:bg-[#080F1E] relative">
+        <div id="main-content" class="flex-1 flex flex-col h-screen overflow-hidden bg-[#F0FDFB] dark:bg-[#080F1E] relative">
 
             {{-- Ambient blobs --}}
             <div class="blob-1 absolute top-[-100px] right-[-100px] w-[500px] h-[500px] rounded-full blur-3xl pointer-events-none blob-float opacity-30"></div>
@@ -498,6 +690,19 @@
             </div>
             <button @click="notification.show = false" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+    </div>
+
+    {{-- Session Message to Alpine --}}
+    @if(session('success'))
+        <input type="hidden" id="initial-success-message" value="{{ session('success') }}">
+    @endif
+
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <script src="{{ asset('js/admin.js') }}"></script>
+</body>
+</html>
             </button>
         </div>
     </div>

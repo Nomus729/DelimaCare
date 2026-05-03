@@ -2,14 +2,14 @@
 
 // ── Tab color themes (acc1 = primary, acc2 = secondary) ──────────────────────
 const TAB_THEMES = {
-    dashboard:  { acc1: '#0D9488', acc2: '#06B6D4', blob1: 'rgba(13,148,136,0.35)',  blob2: 'rgba(6,182,212,0.25)'  },
-    konten:     { acc1: '#7C3AED', acc2: '#A78BFA', blob1: 'rgba(124,58,237,0.28)',  blob2: 'rgba(167,139,250,0.18)' },
-    inventori:  { acc1: '#0369A1', acc2: '#38BDF8', blob1: 'rgba(3,105,161,0.28)',   blob2: 'rgba(56,189,248,0.20)' },
-    keuangan:   { acc1: '#059669', acc2: '#34D399', blob1: 'rgba(5,150,105,0.30)',   blob2: 'rgba(52,211,153,0.20)' },
-    laporan:    { acc1: '#D97706', acc2: '#FCD34D', blob1: 'rgba(217,119,6,0.25)',   blob2: 'rgba(252,211,77,0.18)' },
-    doctors:    { acc1: '#0891B2', acc2: '#67E8F9', blob1: 'rgba(8,145,178,0.28)',   blob2: 'rgba(103,232,249,0.18)' },
-    reservasi:  { acc1: '#0D9488', acc2: '#34D399', blob1: 'rgba(13,148,136,0.30)',  blob2: 'rgba(52,211,153,0.18)' },
-    rekam_medis:{ acc1: '#BE185D', acc2: '#F472B6', blob1: 'rgba(190,24,93,0.22)',   blob2: 'rgba(244,114,182,0.15)' },
+    dashboard: { acc1: '#0D9488', acc2: '#06B6D4', blob1: 'rgba(13,148,136,0.35)', blob2: 'rgba(6,182,212,0.25)' },
+    konten: { acc1: '#7C3AED', acc2: '#A78BFA', blob1: 'rgba(124,58,237,0.28)', blob2: 'rgba(167,139,250,0.18)' },
+    inventori: { acc1: '#0369A1', acc2: '#38BDF8', blob1: 'rgba(3,105,161,0.28)', blob2: 'rgba(56,189,248,0.20)' },
+    keuangan: { acc1: '#059669', acc2: '#34D399', blob1: 'rgba(5,150,105,0.30)', blob2: 'rgba(52,211,153,0.20)' },
+    laporan: { acc1: '#D97706', acc2: '#FCD34D', blob1: 'rgba(217,119,6,0.25)', blob2: 'rgba(252,211,77,0.18)' },
+    doctors: { acc1: '#0891B2', acc2: '#67E8F9', blob1: 'rgba(8,145,178,0.28)', blob2: 'rgba(103,232,249,0.18)' },
+    reservasi: { acc1: '#0D9488', acc2: '#34D399', blob1: 'rgba(13,148,136,0.30)', blob2: 'rgba(52,211,153,0.18)' },
+    rekam_medis: { acc1: '#BE185D', acc2: '#F472B6', blob1: 'rgba(190,24,93,0.22)', blob2: 'rgba(244,114,182,0.15)' },
 };
 
 function applyTabTheme(tab) {
@@ -27,13 +27,13 @@ document.addEventListener("alpine:init", () => {
         darkMode: document.documentElement.classList.contains('dark'),
 
         menuLabels: {
-            dashboard:   'Dashboard',
-            konten:      'Kelola Konten',
-            inventori:   'Inventori Obat',
-            keuangan:    'Keuangan',
-            laporan:     'Laporan Pengunjung',
-            doctors:     'Jadwal Dokter',
-            reservasi:   'Antrean Pasien',
+            dashboard: 'Dashboard',
+            konten: 'Kelola Konten',
+            inventori: 'Inventori Obat',
+            keuangan: 'Keuangan',
+            laporan: 'Laporan Pengunjung',
+            doctors: 'Jadwal Dokter',
+            reservasi: 'Antrean Pasien',
             rekam_medis: 'Rekam Medis',
         },
 
@@ -66,7 +66,7 @@ document.addEventListener("alpine:init", () => {
             try {
                 const res = await fetch('/admin/stats/polling');
                 const data = await res.json();
-                
+
                 // If pending count increases
                 if (!isInitial && data.pendingReservasiCount > this.pendingCount) {
                     // Trigger popout near bell
@@ -79,7 +79,7 @@ document.addEventListener("alpine:init", () => {
                         time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) + ' WIB',
                         type: 'reservasi'
                     });
-                    
+
                     // Keep only last 5
                     if (this.recentNotifications.length > 5) this.recentNotifications.pop();
 
