@@ -33,7 +33,7 @@ class Article extends Model
     public function getImageUrlAttribute()
     {
         if (!$this->image_path) {
-            return asset('images/default-article.jpg'); 
+            return asset('images/default-article.png'); 
         }
         
         if (filter_var($this->image_path, FILTER_VALIDATE_URL)) {
