@@ -2,13 +2,12 @@
 
 namespace App\Models;
 
-use App\Traits\HybridSync;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class ResepMedisItem extends Model
 {
-    use HasFactory, HybridSync;
+    use HasFactory;
 
     protected $table = 'resep_medis_items';
     protected $fillable = [

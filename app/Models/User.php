@@ -13,6 +13,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable, HybridSync;
 
+    const UPDATED_AT = null; // Table doesn't have updated_at
+
     /**
      * The attributes that are mass assignable.
      *
