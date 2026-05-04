@@ -57,6 +57,8 @@ class SyncToRemoteJob implements ShouldQueue
             Log::error("Failed to sync {$this->modelClass} to remote: " . $e->getMessage());
             // Fail the job so it can be retried if configured
             throw $e;
+        } finally {
+            DB::disconnect('mysql_remote');
         }
     }
 }

@@ -32,6 +32,14 @@ class SyncRemoteToLocal extends Command
      */
     public function handle()
     {
+        // Validate configuration
+        if (!config('database.connections.mysql_remote.host')) {
+            $this->error('Remote database configuration is missing!');
+            $this->info('Please configure REMOTE_DB_* variables in your .env file.');
+            $this->info('See .env.example for the required keys.');
+            return 1;
+        }
+
         $isFullSync = $this->option('full');
         $this->info($isFullSync ? 'Starting full sync from remote to local...' : 'Starting incremental sync from remote to local...');
 
@@ -97,6 +105,9 @@ class SyncRemoteToLocal extends Command
                 $this->error("Error syncing {$tableName}: " . $e->getMessage());
             }
         }
+
+        // Close the remote connection to free up resources
+        DB::disconnect('mysql_remote');
 
         $this->info('Sync completed!');
     }
