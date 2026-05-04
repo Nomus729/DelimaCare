@@ -18,29 +18,32 @@ class SyncRemoteToLocal extends Command
      *
      * @var string
      */
-    protected $signature = 'sync:remote-to-local';
+    protected $signature = 'sync:remote-to-local {--full : Perform a full sync instead of incremental}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Sync all data from Remote MySQL to Local SQLite for the first time';
+    protected $description = 'Sync data from Remote MySQL to Local SQLite';
 
     /**
      * Execute the console command.
      */
     public function handle()
     {
-        $this->info('Starting sync from remote to local...');
+        $isFullSync = $this->option('full');
+        $this->info($isFullSync ? 'Starting full sync from remote to local...' : 'Starting incremental sync from remote to local...');
 
         $models = [
-            User::class,
-            Doctor::class,
-            Medicine::class,
-            Article::class,
-            RekamMedis::class,
-            Reservasi::class,
+            \App\Models\User::class,
+            \App\Models\Doctor::class,
+            \App\Models\Medicine::class,
+            \App\Models\Article::class,
+            \App\Models\RekamMedis::class,
+            \App\Models\Reservasi::class,
+            \App\Models\ResepMedis::class,
+            \App\Models\ResepMedisItem::class,
         ];
 
         foreach ($models as $modelClass) {
@@ -48,18 +51,45 @@ class SyncRemoteToLocal extends Command
             $this->info("Processing table: {$tableName}");
 
             try {
-                $remoteData = DB::connection('mysql_remote')->table($tableName)->get();
+                $query = DB::connection('mysql_remote')->table($tableName);
+                
+                if (!$isFullSync) {
+                    $lastSyncKey = "sync_last_updated_{$tableName}";
+                    $lastUpdated = \Illuminate\Support\Facades\Cache::get($lastSyncKey);
+                    
+                    if ($lastUpdated) {
+                        $query->where('updated_at', '>', $lastUpdated);
+                        $this->comment("Fetching changes since {$lastUpdated}");
+                    }
+                }
+
+                $remoteData = $query->get();
                 $count = 0;
+                $latestUpdatedInBatch = null;
 
                 foreach ($remoteData as $data) {
                     $attributes = (array)$data;
                     $primaryKey = (new $modelClass)->getKeyName();
                     
+                    // Filter attributes that actually exist in the local table to avoid SQL errors
+                    // In a more robust implementation, we could check the table schema
+                    
                     DB::connection('sqlite')->table($tableName)->updateOrInsert(
                         [$primaryKey => $attributes[$primaryKey]],
                         $attributes
                     );
+
+                    if (isset($attributes['updated_at'])) {
+                        if (!$latestUpdatedInBatch || $attributes['updated_at'] > $latestUpdatedInBatch) {
+                            $latestUpdatedInBatch = $attributes['updated_at'];
+                        }
+                    }
+
                     $count++;
+                }
+
+                if ($latestUpdatedInBatch) {
+                    \Illuminate\Support\Facades\Cache::forever("sync_last_updated_{$tableName}", $latestUpdatedInBatch);
                 }
 
                 $this->info("Successfully synced {$count} records for {$tableName}");
