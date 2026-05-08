@@ -26,7 +26,7 @@
         .chat-scroll::-webkit-scrollbar-track { background: transparent; }
         .chat-scroll::-webkit-scrollbar-thumb { background-color: var(--primary-light); border-radius: 10px; }
         html.dark .chat-scroll::-webkit-scrollbar-thumb { background-color: #334155; }
-        
+
         /* App Layout Styles */
         body { background-color: #F1F5F9; }
         html.dark body { background-color: #0F172A; }
@@ -51,8 +51,8 @@
         {{-- Nav Links --}}
         <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <div class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-4 px-4 dark:text-gray-500">Menu Pasien</div>
-            
-            <button @click="switchTab('reservasi')" 
+
+            <button @click="switchTab('reservasi')"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'reservasi' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'reservasi'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -60,7 +60,7 @@
                 <span class="relative z-10">Buat Reservasi</span>
             </button>
 
-            <button @click="switchTab('jadwal')" 
+            <button @click="switchTab('jadwal')"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'jadwal' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'jadwal'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -68,7 +68,7 @@
                 <span class="relative z-10">Jadwal Saya</span>
             </button>
 
-            <button @click="switchTab('rekam_medis')" 
+            <button @click="switchTab('rekam_medis')"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'rekam_medis' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'rekam_medis'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -76,7 +76,7 @@
                 <span class="relative z-10">Rekam Medis</span>
             </button>
 
-            <button @click="switchTab('konsultasi')" 
+            <button @click="switchTab('konsultasi')"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'konsultasi' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'konsultasi'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -99,14 +99,14 @@
 
     {{-- Main Content Wrapper --}}
     <div class="flex-1 flex flex-col min-w-0 h-screen overflow-hidden bg-[#FAFFFE] dark:bg-[#0B1120] relative z-10">
-        
+
         {{-- Decorative Background Blobs for Light Mode --}}
         <div class="absolute top-0 right-0 w-[500px] h-[500px] bg-teal-100/40 rounded-full blur-3xl -translate-y-1/2 translate-x-1/3 pointer-events-none dark:hidden"></div>
         <div class="absolute bottom-0 left-0 w-[600px] h-[600px] bg-cyan-50/50 rounded-full blur-3xl translate-y-1/3 -translate-x-1/3 pointer-events-none dark:hidden"></div>
 
         {{-- Top Header --}}
         <header class="h-20 flex items-center justify-between px-6 md:px-10 bg-white/60 backdrop-blur-md border-b border-gray-100 dark:bg-[#1E293B]/80 dark:border-gray-800 z-10 flex-shrink-0">
-            
+
             {{-- Mobile Logo --}}
             <div class="flex items-center gap-3 md:hidden">
                 <a href="{{ route('home') }}" class="w-10 h-10 rounded-xl flex items-center justify-center shadow-md shadow-teal-500/20" style="background: var(--gradient-main);">
@@ -127,16 +127,26 @@
                     <svg x-show="darkMode" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
                 </button>
 
-                {{-- User Profile --}}
+                {{-- User Profile (Langsung Buka Modal Edit) --}}
                 @auth
-                <div class="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
-                    <div class="hidden md:block text-right">
-                        <div class="text-sm font-bold text-gray-900 dark:text-white">{{ Auth::user()->username }}</div>
-                        <div class="text-[11px] font-medium text-teal-600 dark:text-teal-400">Pasien Terdaftar</div>
-                    </div>
-                    <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md shadow-teal-500/20" style="background: var(--gradient-main);">
-                        {{ strtoupper(substr(Auth::user()->username, 0, 1)) }}
-                    </div>
+                <div class="relative flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-700">
+
+                    {{-- Tombol Profil - Klik langsung buka modal --}}
+                    <button type="button" onclick="document.getElementById('modalEditProfil').classList.remove('hidden')" class="flex items-center gap-3 text-left focus:outline-none group transition-transform hover:scale-105 duration-300" title="Edit Profil Anda">
+                        <div class="hidden md:block text-right">
+                            <div class="text-sm font-bold text-gray-900 dark:text-white group-hover:text-teal-600 transition-colors">{{ Auth::user()->username }}</div>
+                            <div class="text-[11px] font-medium text-teal-600 dark:text-teal-400">Pasien Terdaftar</div>
+                        </div>
+
+                        {{-- Icon Foto Profil --}}
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-md shadow-teal-500/20 bg-cover bg-center border-2 border-transparent group-hover:border-teal-400 transition-all"
+                             style="background-image: url('{{ Auth::user()->foto ? asset('storage/' . Auth::user()->foto) : '' }}'); background-color: var(--gradient-main);">
+                            @if(!Auth::user()->foto)
+                                {{ strtoupper(substr(Auth::user()->username, 0, 1)) }}
+                            @endif
+                        </div>
+                    </button>
+
                 </div>
                 @endauth
             </div>
@@ -186,6 +196,9 @@
             </button>
         </div>
     </nav>
+
+    {{-- File Modal Profil Kita Panggil Di Sini Biar Aman --}}
+    @include('portal.tabs.profil')
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="{{ asset('js/portal.js') }}"></script>

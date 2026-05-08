@@ -18,7 +18,7 @@
     isPolling: false,
     lastHash: '',
     openDetail(item) { this.detailItem = item; this.showDetailModal = true; },
-    
+
     init() {
         // Initial poll
         this.pollData();
@@ -49,15 +49,15 @@
 
             const response = await fetch(url);
             const html = await response.text();
-            
+
             const parser = new DOMParser();
             const doc = parser.parseFromString(html, 'text/html');
-            
+
             // Update stats
             const newStats = doc.getElementById('reservasi-stats-container');
             const oldStats = document.getElementById('reservasi-stats-container');
             if (newStats && oldStats) oldStats.innerHTML = newStats.innerHTML;
-            
+
             // Update list with a simple hash check to avoid flicker
             const newList = doc.getElementById('reservasi-list-container');
             const oldList = document.getElementById('reservasi-list-container');
@@ -242,11 +242,14 @@
                         </button>
                     </form>
                     @elseif($status === 'Dikonfirmasi')
-                    <button @click="$dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}' })"
+
+                    {{-- 🔥 INI YANG SAYA BENERIN BIAR NAMA DOKTERNYA KEBAWA 🔥 --}}
+                    <button @click="$dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}', dokter_id: '{{ addslashes($item->dokter_id) }}' })"
                         title="Selesaikan & Buat RM"
                         class="w-8 h-8 rounded-xl flex items-center justify-center text-teal-500 bg-teal-50 hover:bg-teal-500 hover:text-white transition-all shadow-sm">
                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
                     </button>
+
                     @endif
                     <button @click="confirmDelete({{ $item->id }}, '{{ addslashes($item->nama) }}')"
                         title="Hapus Antrean"

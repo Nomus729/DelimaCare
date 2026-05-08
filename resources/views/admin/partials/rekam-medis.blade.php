@@ -3,7 +3,7 @@
     .rm-row { transition: background .15s; }
     .rm-row:hover { background: rgba(13,148,136,.04); }
     .dark .rm-row:hover { background: rgba(13,148,136,.07); }
-    
+
     .rm-modal-inner {
         background: #fff;
         border-radius: 2rem;
@@ -28,7 +28,7 @@
         color:#64748b; margin-bottom:.4rem;
     }
     .dark .rm-field label { color:#94a3b8; }
-    
+
     .rm-field input, .rm-field select, .rm-field textarea {
         width:100%; padding:.75rem 1rem;
         background:#f8fafc; border:1.5px solid #e2e8f0;
@@ -95,9 +95,12 @@
             dokter_pemeriksa: ''
         };
         if (prefill) {
-            this.rm.reservasi_id = prefill.reservasi_id || '';
+            this.rm.reservasi_id = prefill.reservasi_id || prefill.id || '';
             this.rm.nama_pasien  = prefill.nama_pasien  || '';
             this.rm.no_telepon   = prefill.phone        || '';
+
+            // 🔥 OTOMATIS NGAMBIL NAMA DOKTER 🔥
+            this.rm.dokter_pemeriksa = prefill.dokter_id || prefill.dokter?.nama_dokter || '';
 
             // Mapping nama layanan reservasi → kategori rekam medis
             const layananMap = {
@@ -175,7 +178,7 @@
     addMed(med) {
         // Prevent duplicate
         if (this.resepItems.find(i => i.medicine_id === med.id)) return;
-        
+
         this.resepItems.push({
             medicine_id: med.id,
             name: med.name,
@@ -255,13 +258,13 @@
     <div class="bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl p-4 mb-6">
         <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col lg:flex-row gap-4 items-center">
             <input type="hidden" name="tab" value="rekam_medis">
-            
+
             {{-- Search --}}
             <div class="relative w-full lg:flex-1">
                 <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                 </svg>
-                <input type="text" name="rm_search" value="{{ $rmSearch }}" placeholder="Cari No. RM, Nama Pasien, atau Dokter..." 
+                <input type="text" name="rm_search" value="{{ $rmSearch }}" placeholder="Cari No. RM, Nama Pasien, atau Dokter..."
                        class="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-medium transition-all">
             </div>
 
@@ -270,8 +273,8 @@
                 @foreach($rmKategoriCounts as $kat => $count)
                     <a href="{{ route('admin.dashboard', ['tab' => 'rekam_medis', 'rm_kategori' => $kat, 'rm_search' => $rmSearch]) }}"
                        class="rm-filter-pill px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all
-                              {{ $rmKategori === (string)$kat 
-                                 ? 'bg-teal-600 border-teal-600 text-white shadow-md shadow-teal-500/20' 
+                              {{ $rmKategori === (string)$kat
+                                 ? 'bg-teal-600 border-teal-600 text-white shadow-md shadow-teal-500/20'
                                  : 'bg-white dark:bg-[#0f172a] border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-teal-500 hover:text-teal-600' }}">
                         {{ $kat ?: 'Semua' }}
                         <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $rmKategori === (string)$kat ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400' }}">
@@ -356,7 +359,7 @@
                             </td>
                             <td class="px-6 py-5">
                                 <div class="flex justify-end gap-2">
-                                    <button @click="openDetail({{ $item->load('resepMedis.items')->toJson() }})" 
+                                    <button @click="openDetail({{ $item->load('resepMedis.items')->toJson() }})"
                                             class="p-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-cyan-600 hover:border-cyan-200 dark:hover:border-cyan-700 transition-all shadow-sm"
                                             title="Lihat Detail">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -364,14 +367,14 @@
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </button>
-                                    <button @click="openResep({{ $item->toJson() }})" 
+                                    <button @click="openResep({{ $item->toJson() }})"
                                             class="p-2.5 rounded-xl border border-teal-100 dark:border-teal-900/50 bg-teal-50 dark:bg-teal-900/20 text-teal-600 hover:bg-teal-600 hover:text-white transition-all shadow-sm"
                                             title="Buat Resep">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                                         </svg>
                                     </button>
-                                    <button @click="openEdit({{ $item->toJson() }})" 
+                                    <button @click="openEdit({{ $item->toJson() }})"
                                             class="p-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-teal-600 hover:border-teal-200 dark:hover:border-teal-700 transition-all shadow-sm">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
@@ -402,7 +405,7 @@
                 </tbody>
             </table>
         </div>
-        
+
         {{-- Pagination --}}
         @if($rekamMedis->hasPages())
             <div class="px-6 py-5 bg-gray-50/50 dark:bg-gray-800/40 border-t border-gray-100 dark:border-gray-800">
@@ -421,9 +424,9 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            
+
             <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showModal = false"></div>
-            
+
             <div class="rm-modal-inner relative" @click.stop>
                 {{-- Header --}}
                 <div class="flex items-center justify-between px-7 py-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
@@ -437,7 +440,7 @@
                 </div>
 
                 {{-- Form --}}
-                <form :action="editMode ? '{{ url('admin/rekam-medis') }}/' + rm.id : '{{ route('admin.rekam-medis.store') }}'" 
+                <form :action="editMode ? '{{ url('admin/rekam-medis') }}/' + rm.id : '{{ route('admin.rekam-medis.store') }}'"
                       method="POST" class="p-7 space-y-6">
                     @csrf
                     <template x-if="editMode">
@@ -557,8 +560,8 @@
                             </div>
                             <div class="rm-field">
                                 <label class="text-teal-600 font-bold dark:text-teal-400">Catatan Khusus untuk Pasien</label>
-                                <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3" 
-                                          placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien..." 
+                                <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3"
+                                          placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien..."
                                           class="text-xs border-teal-200 focus:ring-teal-500/20 focus:border-teal-500 dark:border-teal-900/30"></textarea>
                             </div>
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -600,9 +603,9 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-            
+
             <div class="absolute inset-0 bg-teal-900/40 backdrop-blur-md" @click="showResepModal = false"></div>
-            
+
             <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-5xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden q-anim h-[85vh]" @click.stop>
                 {{-- Header --}}
                 <div class="px-8 py-7 bg-white dark:bg-[#1E293B] border-b border-gray-100 dark:border-gray-800 flex items-center justify-between shrink-0">
@@ -611,7 +614,7 @@
                             <div class="w-8 h-8 rounded-xl bg-teal-600 flex items-center justify-center text-white shadow-lg shadow-teal-500/20">
                                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
                             </div>
-                            <h3 class="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Prescription Builder</h3>
+                            <h3 class="text-xl font-black tracking-tight text-gray-900 dark:text-white uppercase">Buat Resep</h3>
                         </div>
                         <p class="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 dark:text-teal-400">Inventory Sync Active</p>
                     </div>
@@ -632,7 +635,7 @@
                                        placeholder="Cari obat di inventori..."
                                        class="w-full pl-11 pr-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:border-teal-500 focus:ring-4 focus:ring-teal-500/5 transition-all outline-none font-bold text-xs">
                             </div>
-                            
+
                             <h4 class="text-[10px] font-black uppercase tracking-widest text-gray-400">Hasil Pencarian</h4>
                         </div>
 
@@ -707,7 +710,7 @@
                                     <div class="space-y-4">
                                         <template x-for="(item, index) in resepItems" :key="item.medicine_id">
                                             <div class="bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-3xl p-5 shadow-sm q-anim relative group">
-                                                <button type="button" @click="removeMed(index)" 
+                                                <button type="button" @click="removeMed(index)"
                                                         class="absolute -top-2 -right-2 w-7 h-7 bg-rose-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all shadow-xl hover:scale-110">
                                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
                                                 </button>
@@ -770,9 +773,9 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 z-[1000] flex items-center justify-center p-4">
-            
+
             <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDetailModal = false"></div>
-            
+
             <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-2xl rounded-[2.5rem] shadow-2xl flex flex-col overflow-hidden q-anim" @click.stop>
                 {{-- Header --}}
                 <div class="px-8 py-6 bg-gray-50/50 dark:bg-gray-800/50 border-b border-gray-100 dark:border-gray-800 flex items-center justify-between">
@@ -879,14 +882,14 @@
                             </span>
                             Resep Obat yang Diberikan
                         </h5>
-                        
+
                         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                             <template x-if="!detailData?.resep_medis">
                                 <div class="col-span-full py-8 bg-gray-50/50 dark:bg-gray-800/20 rounded-[2rem] border-2 border-dashed border-gray-100 dark:border-gray-800 text-center">
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">Belum ada resep untuk kunjungan ini</p>
                                 </div>
                             </template>
-                            
+
                             <template x-for="item in detailData?.resep_medis?.items" :key="item.id">
                                 <div class="p-4 bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-2xl flex items-center gap-4">
                                     <div class="w-10 h-10 rounded-xl bg-cyan-50 dark:bg-cyan-900/20 flex items-center justify-center text-cyan-600">
@@ -929,9 +932,9 @@
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
              class="fixed inset-0 z-[999] flex items-center justify-center p-4">
-            
+
             <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showDeleteModal = false"></div>
-            
+
             <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-sm rounded-[2rem] shadow-2xl p-8 text-center" @click.stop>
                 <div class="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mx-auto mb-6">
                     <svg class="w-10 h-10 text-rose-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -943,11 +946,11 @@
                     Anda akan menghapus rekam medis pasien <span class="text-gray-900 dark:text-white font-bold" x-text="rmToDelete.name"></span>. Data yang dihapus tidak dapat dikembalikan.
                 </p>
                 <div class="flex gap-3">
-                    <button @click="showDeleteModal = false" 
+                    <button @click="showDeleteModal = false"
                             class="flex-1 px-4 py-3 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-xl hover:bg-gray-100 transition-all text-xs">
                         Batal
                     </button>
-                    <button @click="executeDelete()" 
+                    <button @click="executeDelete()"
                             class="flex-1 px-4 py-3 bg-rose-600 text-white font-bold rounded-xl shadow-lg shadow-rose-500/20 hover:bg-rose-700 transition-all text-xs">
                         Hapus Data
                     </button>

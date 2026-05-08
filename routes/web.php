@@ -72,7 +72,7 @@ Route::get('/portal', function () {
     // Sekarang cuma ngambil jadwal yang "user_id"-nya sama dengan pasien yang lagi login
     $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
     $doctors = \App\Models\Doctor::all();
-    
+
     // Ambil data rekam medis pasien yang login
     $rekamMedis = \App\Models\RekamMedis::with('resepMedis.items.medicine')
         ->where('nama_pasien', Auth::user()->username)
@@ -81,6 +81,9 @@ Route::get('/portal', function () {
 
     return view('portal', compact('jadwalPasien', 'doctors', 'rekamMedis'));
 })->name('portal')->middleware('patient');
+
+// --- RUTE PROFIL PASIEN (INI YANG TADI HILANG BANG) ---
+Route::put('/portal/profil/update', [\App\Http\Controllers\ProfileController::class, 'update'])->name('portal.profil.update')->middleware('patient');
 
 // --- RUTE RESERVASI ---
 Route::post('/portal/reservasi', [ReservasiController::class, 'store'])->name('reservasi.store')->middleware('patient');
@@ -122,7 +125,7 @@ Route::middleware('admin')->prefix('admin')->name('admin.')->group(function () {
     Route::patch('/reservasi/{id}/konfirmasi', [ReservasiController::class, 'konfirmasiAdmin'])->name('reservasi.konfirmasi');
     Route::patch('/reservasi/{id}/status', [ReservasiController::class, 'updateStatus'])->name('reservasi.status');
     Route::delete('/reservasi/{id}/batal', [ReservasiController::class, 'batalAdmin'])->name('reservasi.batal');
-    
+
     // Polling Partial
     Route::get('/reservasi/partial', [\App\Http\Controllers\AdminController::class, 'getReservasiPartial'])->name('reservasi.partial');
     Route::get('/stats/polling', [\App\Http\Controllers\AdminController::class, 'getPollingStats'])->name('stats.polling');

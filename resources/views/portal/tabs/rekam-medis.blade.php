@@ -13,7 +13,7 @@
         @forelse($rekamMedis as $rm)
         <div class="border border-gray-100 rounded-2xl p-5 hover:border-teal-200 transition-all dark:border-gray-700 dark:hover:border-teal-800 bg-white dark:bg-[#1E293B] relative overflow-hidden group">
             <div class="absolute left-0 top-0 bottom-0 w-1 bg-teal-500 rounded-l-2xl group-hover:w-1.5 transition-all"></div>
-            
+
             <div class="flex flex-col md:flex-row md:items-start justify-between gap-4 mb-5 pl-3">
                 <div>
                     <div class="flex items-center gap-2 mb-1">
@@ -53,26 +53,6 @@
             </div>
             @endif
 
-            <div class="grid grid-cols-1 gap-4 ml-3">
-
-                @if($rm->resepMedis && $rm->resepMedis->items->count() > 0)
-                <div class="bg-teal-50/40 rounded-xl p-4 text-sm text-teal-800 border border-teal-100 dark:bg-teal-900/10 dark:border-teal-900/30 dark:text-teal-300">
-                    <span class="block text-[10px] font-bold text-teal-600 uppercase mb-2 dark:text-teal-400">Resep Obat</span>
-                    <ul class="space-y-2">
-                        @foreach($rm->resepMedis->items as $item)
-                        <li class="flex items-start gap-2">
-                            <div class="w-1.5 h-1.5 rounded-full bg-teal-400 mt-1.5 flex-shrink-0"></div>
-                            <div>
-                                <p class="font-bold text-xs">{{ $item->medicine->name }} <span class="text-teal-600/70 font-normal">({{ $item->jumlah }} {{ $item->medicine->unit }})</span></p>
-                                <p class="text-[10px] opacity-70 italic">{{ $item->aturan_pakai }}</p>
-                            </div>
-                        </li>
-                        @endforeach
-                    </ul>
-                </div>
-                @endif
-            </div>
-            
             @if($rm->jadwal_kontrol_berikutnya)
             <div class="mt-4 ml-3 flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-100 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
