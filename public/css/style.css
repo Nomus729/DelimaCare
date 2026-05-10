@@ -36,17 +36,17 @@ body { font-family: 'Inter', sans-serif; color: #1E293B; overflow-x: hidden; bac
 @keyframes rotate-slow { 0%{ transform:rotate(0deg); } 100%{ transform:rotate(360deg); } }
 
 /* Animation Classes */
-.animate-fade-in-up { opacity:0; animation: fadeInUp .8s ease-out forwards; }
-.animate-fade-in-down { opacity:0; animation: fadeInDown .7s ease-out forwards; }
-.animate-fade-in { opacity:0; animation: fadeIn .6s ease-out forwards; }
+.animate-fade-in-up { opacity:0; animation: fadeInUp .8s ease-out forwards; will-change: transform, opacity; }
+.animate-fade-in-down { opacity:0; animation: fadeInDown .7s ease-out forwards; will-change: transform, opacity; }
+.animate-fade-in { opacity:0; animation: fadeIn .6s ease-out forwards; will-change: opacity; }
 
-.scroll-reveal { opacity:0; transform:translateY(35px); transition: opacity .7s ease-out, transform .7s ease-out; }
+.scroll-reveal { opacity:0; transform:translateY(35px); transition: opacity .7s ease-out, transform .7s ease-out; will-change: transform, opacity; }
 .scroll-reveal.is-visible { opacity:1; transform:translateY(0); }
-.scroll-reveal-left { opacity:0; transform:translateX(-45px); transition: opacity .7s ease-out, transform .7s ease-out; }
+.scroll-reveal-left { opacity:0; transform:translateX(-45px); transition: opacity .7s ease-out, transform .7s ease-out; will-change: transform, opacity; }
 .scroll-reveal-left.is-visible { opacity:1; transform:translateX(0); }
-.scroll-reveal-right { opacity:0; transform:translateX(45px); transition: opacity .7s ease-out, transform .7s ease-out; }
+.scroll-reveal-right { opacity:0; transform:translateX(45px); transition: opacity .7s ease-out, transform .7s ease-out; will-change: transform, opacity; }
 .scroll-reveal-right.is-visible { opacity:1; transform:translateX(0); }
-.scroll-reveal-scale { opacity:0; transform:scale(0.9); transition: opacity .6s ease-out, transform .6s ease-out; }
+.scroll-reveal-scale { opacity:0; transform:scale(0.9); transition: opacity .6s ease-out, transform .6s ease-out; will-change: transform, opacity; }
 .scroll-reveal-scale.is-visible { opacity:1; transform:scale(1); }
 
 .delay-100 { transition-delay:.1s; animation-delay:.1s; }
@@ -57,9 +57,10 @@ body { font-family: 'Inter', sans-serif; color: #1E293B; overflow-x: hidden; bac
 .delay-600 { transition-delay:.6s; animation-delay:.6s; }
 
 /* Hero */
-.hero-section { position:relative; background:var(--gradient-hero); overflow:hidden; min-height:92vh; display:flex; align-items:center; }
+.hero-section { position:relative; background:var(--gradient-hero); overflow:hidden; min-height:92vh; display:flex; align-items:center; transform: translate3d(0,0,0); }
 .hero-section::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 60% 50% at 70% 20%, rgba(6,182,212,.25) 0%, transparent 70%), radial-gradient(ellipse 50% 40% at 20% 80%, rgba(20,184,166,.2) 0%, transparent 70%); pointer-events:none; }
 .particles-container { position:absolute; inset:0; overflow:hidden; pointer-events:none; z-index:1; }
+#boids-canvas { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:1; }
 .particle { position:absolute; border-radius:50%; background:rgba(255,255,255,.15); }
 .particle-1 { width:20px; height:20px; top:15%; left:10%; animation:float-slow 8s ease-in-out infinite; }
 .particle-2 { width:14px; height:14px; top:25%; left:75%; animation:float-medium 10s ease-in-out infinite 1s; }

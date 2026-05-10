@@ -10,6 +10,7 @@
         <div class="particle particle-7"></div>
         <div class="particle particle-8"></div>
     </div>
+    <canvas id="boids-canvas"></canvas>
 
     {{-- Decorative Rings --}}
     <div class="hero-ring hero-ring-1"></div>
