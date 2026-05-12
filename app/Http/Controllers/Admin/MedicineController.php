@@ -37,6 +37,7 @@ class MedicineController extends Controller
             'unit' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',
             'min_stock' => 'nullable|integer|min:0',
+            'expired_at' => 'nullable|date',
         ]);
 
         Medicine::create($request->all());
@@ -73,6 +74,7 @@ class MedicineController extends Controller
             'unit' => 'required|string|max:50',
             'price' => 'required|numeric|min:0',
             'min_stock' => 'nullable|integer|min:0',
+            'expired_at' => 'nullable|date',
         ]);
 
         $medicine->update($request->all());

@@ -40,18 +40,69 @@
     border-color:#0d9488;
     box-shadow:0 0 0 3px rgba(13,148,136,.15);
 }
+    .inv-loading-overlay {
+        position: absolute; inset: 0; 
+        background: rgba(255,255,255,0.4);
+        display: flex; flex-direction: column; align-items: center; justify-content: center; z-index: 50;
+        backdrop-filter: blur(6px); border-radius: 1.5rem;
+        animation: invFadeIn 0.3s ease-out;
+    }
+    .dark .inv-loading-overlay { background: rgba(15,23,42,0.4); }
+    
+    .inv-spinner-container {
+        position: relative; width: 3.5rem; height: 3.5rem;
+    }
+    .inv-spinner-ring {
+        position: absolute; width: 100%; height: 100%;
+        border: 3px solid transparent;
+        border-top-color: #0d9488;
+        border-radius: 50%;
+        animation: invSpin 1.2s cubic-bezier(0.5, 0, 0.5, 1) infinite;
+    }
+    .inv-spinner-ring:nth-child(2) { animation-delay: -0.45s; border-top-color: #06b6d4; opacity: 0.7; }
+    .inv-spinner-ring:nth-child(3) { animation-delay: -0.3s; border-top-color: #2dd4bf; opacity: 0.4; }
+    
+    .inv-loading-text {
+        margin-top: 1.25rem; font-size: 0.65rem; font-weight: 900;
+        color: #0d9488; text-transform: uppercase; letter-spacing: 0.2em;
+        animation: invPulse 1.5s ease-in-out infinite;
+    }
+    .dark .inv-loading-text { color: #2dd4bf; }
+
+    @keyframes invSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    @keyframes invFadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes invPulse { 0%, 100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } }
 </style>
+@php
+    $getSortLink = function($column) use ($medSort, $medSearch, $medFilter) {
+        $direction = ($medSort == $column . '_asc') ? 'desc' : 'asc';
+        return route('admin.dashboard', [
+            'tab' => 'inventori',
+            'med_search' => $medSearch,
+            'med_filter' => $medFilter,
+            'med_sort' => $column . '_' . $direction
+        ]);
+    };
+@endphp
 
 <div x-data="{
     showModal: false,
     editMode: false,
-    medicine: { id:'', name:'', brand:'', category:'', stock:0, unit:'pcs', price:0, min_stock:10 },
+    medicine: { id:'', name:'', brand:'', category:'', stock:0, unit:'pcs', price:0, min_stock:10, expired_at:'' },
     openAdd() {
         this.editMode = false;
-        this.medicine = { id:'', name:'', brand:'', category:'', stock:0, unit:'pcs', price:0, min_stock:10 };
+        this.medicine = { id:'', name:'', brand:'', category:'', stock:0, unit:'pcs', price:0, min_stock:10, expired_at:'' };
         this.showModal = true;
     },
-    openEdit(med) { this.editMode = true; this.medicine = {...med}; this.showModal = true; },
+    openEdit(med) { 
+        this.editMode = true; 
+        this.medicine = {...med};
+        // Format date for input type=date
+        if (this.medicine.expired_at) {
+            this.medicine.expired_at = this.medicine.expired_at.split('T')[0];
+        }
+        this.showModal = true; 
+    },
     showDeleteModal: false,
     medicineToDelete: { id:'', name:'' },
     confirmDelete(id, name) { this.medicineToDelete = {id, name}; this.showDeleteModal = true; },
@@ -65,8 +116,55 @@
     formatRupiah(val) {
         if (!val || val === 0) return '';
         return new Intl.NumberFormat('id-ID').format(val);
+    },
+    loading: false,
+    async updateInventori(url = null) {
+        if (this.loading) return;
+        this.loading = true;
+        
+        // If url is not provided, build it from current form values
+        if (!url) {
+            const form = document.getElementById('inv_search_form');
+            const formData = new FormData(form);
+            const params = new URLSearchParams(formData);
+            url = `{{ route('admin.inventori.partial') }}?${params.toString()}`;
+        } else {
+            // Replace full dashboard URL with partial URL
+            url = url.replace('{{ route('admin.dashboard') }}', '{{ route('admin.inventori.partial') }}');
+        }
+
+        try {
+            const res = await fetch(url);
+            const html = await res.text();
+            
+            // Extract content inside the x-data div and update the current view
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const newContent = doc.querySelector('[data-inv-container]').innerHTML;
+            document.querySelector('[data-inv-container]').innerHTML = newContent;
+            
+            // Update URL in browser without reload
+            window.history.pushState({}, '', url.replace('{{ route('admin.inventori.partial') }}', '{{ route('admin.dashboard') }}'));
+        } catch (e) {
+            console.error('Failed to update inventory:', e);
+        } finally {
+            this.loading = false;
+        }
     }
 }">
+
+    {{-- Main Container with relative positioning for loading overlay --}}
+    <div data-inv-container class="relative">
+        <template x-if="loading">
+            <div class="inv-loading-overlay text-center">
+                <div class="inv-spinner-container mx-auto">
+                    <div class="inv-spinner-ring"></div>
+                    <div class="inv-spinner-ring"></div>
+                    <div class="inv-spinner-ring"></div>
+                </div>
+                <div class="inv-loading-text">Sinkronisasi Data</div>
+            </div>
+        </template>
 
     {{-- Header --}}
     <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
@@ -94,12 +192,13 @@
         $menipis    = $medicines->filter(fn($m) => $m->stock > 0 && $m->stock <= $m->min_stock)->count();
         $habis      = $medicines->filter(fn($m) => $m->stock <= 0)->count();
     @endphp
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         @foreach([
-            ['label'=>'Total Item',    'val'=>$total,   'color'=>'teal',   'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
-            ['label'=>'Stok Cukup',    'val'=>$cukup,   'color'=>'emerald','icon'=>'M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z'],
-            ['label'=>'Stok Menipis',  'val'=>$menipis, 'color'=>'amber',  'icon'=>'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
-            ['label'=>'Habis',         'val'=>$habis,   'color'=>'rose',   'icon'=>'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'],
+            ['label'=>'Total Item',    'val'=>$total,       'color'=>'teal',   'icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4'],
+            ['label'=>'Stok Menipis',  'val'=>$menipis,     'color'=>'amber',  'icon'=>'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
+            ['label'=>'Habis',         'val'=>$habis,       'color'=>'rose',   'icon'=>'M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z'],
+            ['label'=>'Kadaluarsa',    'val'=>$expiredCount,'color'=>'red',    'icon'=>'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'],
+            ['label'=>'Near Expiry',   'val'=>$nearExpiryCount, 'color'=>'orange','icon'=>'M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z'],
         ] as $s)
         <div class="inv-stat bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-xl p-4 shadow-sm">
             <div class="flex items-center gap-2 mb-2">
@@ -115,21 +214,45 @@
         @endforeach
     </div>
 
-    {{-- Low stock alert --}}
-    @if($menipis > 0 || $habis > 0)
-    <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 mb-5 flex items-center gap-3">
-        <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-        </svg>
-        <p class="text-sm font-semibold text-amber-800 dark:text-amber-400">
-            {{ $menipis + $habis }} item perlu perhatian — segera lakukan restock.
-        </p>
+    {{-- Priority Alerts --}}
+    <div class="space-y-3 mb-6">
+        @if($expiredCount > 0)
+        <div class="bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/40 rounded-xl p-4 flex items-center gap-3">
+            <svg class="w-5 h-5 text-rose-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+            </svg>
+            <p class="text-sm font-semibold text-rose-800 dark:text-rose-400">
+                <span class="font-bold underline">{{ $expiredCount }} item telah kadaluarsa!</span> Segera pindahkan dari rak aktif.
+            </p>
+        </div>
+        @endif
+
+        @if($nearExpiryCount > 0)
+        <div class="bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800/40 rounded-xl p-4 flex items-center gap-3">
+            <svg class="w-5 h-5 text-orange-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-sm font-semibold text-orange-800 dark:text-orange-400">
+                {{ $nearExpiryCount }} item mendekati kadaluarsa dalam 30 hari ke depan.
+            </p>
+        </div>
+        @endif
+
+        @if($menipis > 0 || $habis > 0)
+        <div class="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800/40 rounded-xl p-4 flex items-center gap-3">
+            <svg class="w-5 h-5 text-amber-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+            </svg>
+            <p class="text-sm font-semibold text-amber-800 dark:text-amber-400">
+                {{ $menipis + $habis }} item stok menipis atau habis — segera lakukan restock.
+            </p>
+        </div>
+        @endif
     </div>
-    @endif
 
     {{-- Search & Filter --}}
     <div class="mb-5 flex flex-col md:flex-row gap-4 items-center justify-between">
-        <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+        <form id="inv_search_form" @submit.prevent="updateInventori()" action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
             <input type="hidden" name="tab" value="inventori">
             
             <div class="relative group flex-1 sm:w-72">
@@ -139,6 +262,7 @@
                     </svg>
                 </div>
                 <input type="text" name="med_search" value="{{ $medSearch }}"
+                    @input.debounce.500ms="updateInventori()"
                     placeholder="Cari nama obat atau brand..."
                     class="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800
                            rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
@@ -146,7 +270,7 @@
             </div>
 
             <div class="flex gap-2">
-                <select name="med_sort" onchange="this.form.submit()"
+                <select name="med_sort" @change="updateInventori()"
                     class="pl-4 pr-10 py-2.5 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800
                            rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500
                            dark:text-white transition-all shadow-sm appearance-none cursor-pointer">
@@ -156,18 +280,34 @@
                     <option value="stock_desc" {{ $medSort == 'stock_desc' ? 'selected' : '' }}>Stok Tertinggi</option>
                     <option value="price_asc" {{ $medSort == 'price_asc' ? 'selected' : '' }}>Harga Termurah</option>
                     <option value="price_desc" {{ $medSort == 'price_desc' ? 'selected' : '' }}>Harga Termahal</option>
+                    <option value="expired_asc" {{ $medSort == 'expired_asc' ? 'selected' : '' }}>Kadaluarsa (Terdekat)</option>
+                    <option value="expired_desc" {{ $medSort == 'expired_desc' ? 'selected' : '' }}>Kadaluarsa (Terjauh)</option>
                     <option value="latest" {{ $medSort == 'latest' ? 'selected' : '' }}>Terbaru</option>
                 </select>
 
                 <input type="hidden" name="med_filter" id="med_filter_input" value="{{ $medFilter }}">
                 <button type="button" 
-                    onclick="document.getElementById('med_filter_input').value = (document.getElementById('med_filter_input').value === 'low_stock' ? '' : 'low_stock'); this.form.submit();"
+                    onclick="document.getElementById('med_filter_input').value = (document.getElementById('med_filter_input').value === 'low_stock' ? '' : 'low_stock');"
+                    @click="updateInventori()"
                     class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
-                           {{ $medFilter == 'low_stock' ? 'bg-rose-100 text-rose-700 border-rose-200 shadow-rose-100' : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800' }} border shadow-sm hover:shadow-md">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
-                    </svg>
+                           {{ $medFilter == 'low_stock' ? 'bg-amber-100 text-amber-700 border-amber-200 shadow-amber-100' : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800' }} border shadow-sm hover:shadow-md">
                     Stok Menipis
+                </button>
+
+                <button type="button" 
+                    onclick="document.getElementById('med_filter_input').value = (document.getElementById('med_filter_input').value === 'expired' ? '' : 'expired');"
+                    @click="updateInventori()"
+                    class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+                           {{ $medFilter == 'expired' ? 'bg-red-100 text-red-700 border-red-200 shadow-red-100' : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800' }} border shadow-sm hover:shadow-md">
+                    Kadaluarsa
+                </button>
+
+                <button type="button" 
+                    onclick="document.getElementById('med_filter_input').value = (document.getElementById('med_filter_input').value === 'near_expiry' ? '' : 'near_expiry');"
+                    @click="updateInventori()"
+                    class="px-4 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2
+                           {{ $medFilter == 'near_expiry' ? 'bg-orange-100 text-orange-700 border-orange-200 shadow-orange-100' : 'bg-white dark:bg-[#1E293B] text-gray-600 dark:text-gray-400 border-gray-100 dark:border-gray-800' }} border shadow-sm hover:shadow-md">
+                    Hampir Exp
                 </button>
                 
                 @if($medSearch || $medSort != 'name_asc' || $medFilter)
@@ -189,11 +329,44 @@
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-gray-50 dark:bg-gray-800/60 border-b border-gray-100 dark:border-gray-800 text-[10px] uppercase tracking-widest text-gray-500 dark:text-gray-400 font-black">
-                        <th class="px-5 py-3.5">Item</th>
+                        <th class="px-5 py-3.5">
+                            <a href="{{ $getSortLink('name') }}" @click.prevent="updateInventori($el.href)" class="flex items-center gap-1.5 hover:text-teal-600 transition-colors group">
+                                Item
+                                <div class="flex flex-col opacity-30 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-2 h-2 {{ str_contains($medSort, 'name_asc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h16l-8-8z"/></svg>
+                                    <svg class="w-2 h-2 -mt-0.5 {{ str_contains($medSort, 'name_desc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8H4l8 8z"/></svg>
+                                </div>
+                            </a>
+                        </th>
                         <th class="px-5 py-3.5">Kategori</th>
-                        <th class="px-5 py-3.5 text-center">Stok</th>
-                        <th class="px-5 py-3.5">Status</th>
-                        <th class="px-5 py-3.5">Harga</th>
+                        <th class="px-5 py-3.5">
+                            <a href="{{ $getSortLink('stock') }}" @click.prevent="updateInventori($el.href)" class="flex items-center justify-center gap-1.5 hover:text-teal-600 transition-colors group">
+                                Stok
+                                <div class="flex flex-col opacity-30 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-2 h-2 {{ str_contains($medSort, 'stock_asc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h16l-8-8z"/></svg>
+                                    <svg class="w-2 h-2 -mt-0.5 {{ str_contains($medSort, 'stock_desc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8H4l8 8z"/></svg>
+                                </div>
+                            </a>
+                        </th>
+                        <th class="px-5 py-3.5">Status Stok</th>
+                        <th class="px-5 py-3.5">
+                            <a href="{{ $getSortLink('expired') }}" @click.prevent="updateInventori($el.href)" class="flex items-center gap-1.5 hover:text-teal-600 transition-colors group">
+                                Kadaluarsa
+                                <div class="flex flex-col opacity-30 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-2 h-2 {{ str_contains($medSort, 'expired_asc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h16l-8-8z"/></svg>
+                                    <svg class="w-2 h-2 -mt-0.5 {{ str_contains($medSort, 'expired_desc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8H4l8 8z"/></svg>
+                                </div>
+                            </a>
+                        </th>
+                        <th class="px-5 py-3.5">
+                            <a href="{{ $getSortLink('price') }}" @click.prevent="updateInventori($el.href)" class="flex items-center gap-1.5 hover:text-teal-600 transition-colors group">
+                                Harga
+                                <div class="flex flex-col opacity-30 group-hover:opacity-100 transition-opacity">
+                                    <svg class="w-2 h-2 {{ str_contains($medSort, 'price_asc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 4l-8 8h16l-8-8z"/></svg>
+                                    <svg class="w-2 h-2 -mt-0.5 {{ str_contains($medSort, 'price_desc') ? 'text-teal-500 opacity-100' : '' }}" fill="currentColor" viewBox="0 0 24 24"><path d="M12 20l8-8H4l8 8z"/></svg>
+                                </div>
+                            </a>
+                        </th>
                         <th class="px-5 py-3.5 text-right">Aksi</th>
                     </tr>
                 </thead>
@@ -216,17 +389,36 @@
                         <td class="px-5 py-3.5">
                             @if($med->stock <= 0)
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-rose-100 dark:bg-rose-900/30 text-rose-700 dark:text-rose-400 text-[10px] font-black uppercase rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-rose-500 animate-pulse"></span>Habis
+                                    Habis
                                 </span>
                             @elseif($med->stock <= $med->min_stock)
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 text-[10px] font-black uppercase rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse"></span>Menipis
+                                    Menipis
                                 </span>
                             @else
                                 <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase rounded-full">
-                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-500"></span>Cukup
+                                    Cukup
                                 </span>
                             @endif
+                        </td>
+                        <td class="px-5 py-3.5">
+                            @php
+                                $expStatus = $med->expiration_status;
+                            @endphp
+                            @if($expStatus === 'expired')
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 text-[10px] font-black uppercase rounded-full">
+                                    Kadaluarsa
+                                </span>
+                            @elseif($expStatus === 'near_expiry')
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400 text-[10px] font-black uppercase rounded-full">
+                                    Hampir Exp
+                                </span>
+                            @else
+                                <span class="inline-flex items-center gap-1 px-2.5 py-1 bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 text-[10px] font-black uppercase rounded-full">
+                                    Aman
+                                </span>
+                            @endif
+                            <p class="text-[10px] text-gray-400 mt-1 font-bold">{{ $med->expired_at ? $med->expired_at->format('d/m/Y') : '—' }}</p>
                         </td>
                         <td class="px-5 py-3.5 font-bold text-teal-600 dark:text-teal-400 text-sm">
                             Rp {{ number_format($med->price, 0, ',', '.') }}
@@ -349,6 +541,10 @@
                             <label>Min. Stok <span class="text-rose-500">*</span></label>
                             <input type="number" name="min_stock" x-model="medicine.min_stock" required min="0">
                         </div>
+                        <div class="inv-field">
+                            <label>Tgl Kadaluarsa</label>
+                            <input type="date" name="expired_at" x-model="medicine.expired_at">
+                        </div>
                     </div>
 
                     <div class="flex gap-3 mt-6 pt-4 border-t border-gray-100 dark:border-gray-700">
@@ -413,4 +609,5 @@
         </div>
     </template>
 
+    </div> {{-- Close data-inv-container --}}
 </div>

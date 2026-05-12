@@ -34,17 +34,15 @@ class AdminController extends Controller
             ->pluck('total', 'category');
 
         // ─── Inventori ────────────────────────────────────────────
-        $medSearch = $request->query('med_search', '');
-        $medSort   = $request->query('med_sort', 'name_asc');
-        $medFilter = $request->query('med_filter', '');
-
-        $medicines = Medicine::search($medSearch)
-            ->filter($medFilter)
-            ->sort($medSort)
-            ->get();
-
-        $lowStockCount  = Medicine::whereRaw('stock <= min_stock')->count();
-        $totalMedicines = Medicine::count();
+        $invData = $this->getInventoriData($request);
+        $medicines        = $invData['medicines'];
+        $lowStockCount    = $invData['lowStockCount'];
+        $expiredCount     = $invData['expiredCount'];
+        $nearExpiryCount  = $invData['nearExpiryCount'];
+        $totalMedicines   = $invData['totalMedicines'];
+        $medSearch        = $invData['medSearch'];
+        $medSort          = $invData['medSort'];
+        $medFilter        = $invData['medFilter'];
 
         // ─── Rekam Medis ──────────────────────────────────────────
         $rmSearch    = $request->query('rm_search', '');
@@ -99,7 +97,7 @@ class AdminController extends Controller
 
         return view('admin.index', compact(
             'articles', 'categoryCounts', 'activeCategory', 'searchKonten',
-            'medicines', 'lowStockCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
+            'medicines', 'lowStockCount', 'expiredCount', 'nearExpiryCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
             'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
             'semuaReservasi', 'pendingReservasiCount', 'doctors',
             'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
@@ -155,6 +153,41 @@ class AdminController extends Controller
     {
         $data = $this->getReservasiData($request);
         return view('admin.partials.reservasi', $data);
+    }
+
+    /**
+     * Get inventory data.
+     */
+    private function getInventoriData(Request $request)
+    {
+        $medSearch = $request->query('med_search', '');
+        $medSort   = $request->query('med_sort', 'name_asc');
+        $medFilter = $request->query('med_filter', '');
+
+        $medicines = Medicine::search($medSearch)
+            ->filter($medFilter)
+            ->sort($medSort)
+            ->get();
+
+        return [
+            'medicines'       => $medicines,
+            'lowStockCount'   => Medicine::whereRaw('stock <= min_stock')->count(),
+            'expiredCount'    => Medicine::where('expired_at', '<', now())->count(),
+            'nearExpiryCount' => Medicine::whereBetween('expired_at', [now(), now()->addDays(30)])->count(),
+            'totalMedicines'  => Medicine::count(),
+            'medSearch'       => $medSearch,
+            'medSort'         => $medSort,
+            'medFilter'       => $medFilter,
+        ];
+    }
+
+    /**
+     * Return only the inventori partial for AJAX update.
+     */
+    public function getInventoriPartial(Request $request)
+    {
+        $data = $this->getInventoriData($request);
+        return view('admin.partials.inventori', $data);
     }
 
     /**

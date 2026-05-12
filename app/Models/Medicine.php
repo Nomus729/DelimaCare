@@ -18,6 +18,11 @@ class Medicine extends Model
         'unit',
         'price',
         'min_stock',
+        'expired_at',
+    ];
+
+    protected $casts = [
+        'expired_at' => 'date',
     ];
     /**
      * Scope for searching medicines by name or brand.
@@ -50,6 +55,10 @@ class Medicine extends Model
                 return $query->orderBy('price', 'asc');
             case 'price_desc':
                 return $query->orderBy('price', 'desc');
+            case 'expired_asc':
+                return $query->orderBy('expired_at', 'asc');
+            case 'expired_desc':
+                return $query->orderBy('expired_at', 'desc');
             case 'latest':
                 return $query->latest();
             default:
@@ -64,6 +73,28 @@ class Medicine extends Model
     {
         return $query->when($filter == 'low_stock', function ($q) {
             $q->whereRaw('stock <= min_stock');
+        })->when($filter == 'expired', function ($q) {
+            $q->where('expired_at', '<', now());
+        })->when($filter == 'near_expiry', function ($q) {
+            $q->whereBetween('expired_at', [now(), now()->addDays(30)]);
         });
+    }
+
+    /**
+     * Get the expiration status.
+     */
+    public function getExpirationStatusAttribute()
+    {
+        if (!$this->expired_at) return 'safe';
+        
+        if ($this->expired_at->isPast()) {
+            return 'expired';
+        }
+        
+        if ($this->expired_at->diffInDays(now()) <= 30) {
+            return 'near_expiry';
+        }
+        
+        return 'safe';
     }
 }
