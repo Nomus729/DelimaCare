@@ -4,6 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Portal Pasien DelimaCare - Akses layanan kesehatan ibu dan anak, rekam medis, dan reservasi online.">
+
+    {{-- 🔥 INI DIA OBATNYA BANG! (CSRF TOKEN) 🔥 --}}
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>Portal Pasien - DelimaCare</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 

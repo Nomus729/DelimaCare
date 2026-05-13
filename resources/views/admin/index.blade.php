@@ -276,7 +276,7 @@
         .page-content-wrapper {
             opacity: 0;
             transform: translateY(10px);
-            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1), 
+            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
                         transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
         }
         .page-ready .page-content-wrapper {
@@ -348,6 +348,7 @@
                         ['id'=>'doctors',     'label'=>'Jadwal Dokter',      'icon'=>'M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z'],
                         ['id'=>'reservasi',   'label'=>'Antrean Pasien',     'icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z'],
                         ['id'=>'rekam_medis', 'label'=>'Rekam Medis',        'icon'=>'M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z'],
+                        ['id'=>'konsultasi',  'label'=>'Konsultasi Live',    'icon'=>'M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z'],
                     ];
                 @endphp
 
@@ -663,12 +664,19 @@
                     @include('admin.partials.rekam-medis')
                 </div>
 
+                <div x-show="activeMenu === 'konsultasi'" x-cloak
+                     x-transition:enter="transition ease-out duration-350"
+                     x-transition:enter-start="opacity-0 translate-y-5"
+                     x-transition:enter-end="opacity-100 translate-y-0">
+                    @include('admin.partials.konsultasi')
+                </div>
+
             </main>
         </div>
     </div>
 
     {{-- Global Notification --}}
-    <div x-show="notification.show" 
+    <div x-show="notification.show"
          x-transition:enter="transition ease-out duration-500"
          x-transition:enter-start="opacity-0 -translate-y-10 scale-95"
          x-transition:enter-end="opacity-100 translate-y-0 scale-100"
@@ -680,7 +688,7 @@
         <div class="bg-white/90 dark:bg-gray-900/95 backdrop-blur-xl border border-emerald-500/20 shadow-[0_20px_50px_rgba(0,0,0,0.15)] rounded-3xl p-4 flex items-center gap-4 relative overflow-hidden group">
             {{-- Decorative glow --}}
             <div class="absolute -right-4 -bottom-4 w-24 h-24 bg-emerald-500/10 rounded-full blur-2xl group-hover:bg-emerald-500/20 transition-all duration-700"></div>
-            
+
             <div class="w-12 h-12 rounded-2xl bg-emerald-500 flex items-center justify-center text-white shadow-lg shadow-emerald-500/40 flex-shrink-0">
                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M5 13l4 4L19 7"></path></svg>
             </div>
@@ -690,19 +698,6 @@
             </div>
             <button @click="notification.show = false" class="w-8 h-8 rounded-xl flex items-center justify-center text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all">
                 <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"></path></svg>
-            </button>
-        </div>
-    </div>
-
-    {{-- Session Message to Alpine --}}
-    @if(session('success'))
-        <input type="hidden" id="initial-success-message" value="{{ session('success') }}">
-    @endif
-
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
-    <script src="{{ asset('js/admin.js') }}"></script>
-</body>
-</html>
             </button>
         </div>
     </div>
