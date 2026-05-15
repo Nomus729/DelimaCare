@@ -15,13 +15,13 @@ function chatbotApp() {
         pollingInterval: null,
 
         init() {
+            // 1. Langsung tarik data pas halaman dibuka
             this.tarikPesan();
-            // Polling tiap 5 detik buat ngecek balasan dokter
+
+            // 2. Polling setiap 5 detik tanpa peduli URL (selama komponen ini aktif)
             this.pollingInterval = setInterval(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                if (urlParams.get("tab") === "konsultasi") {
-                    this.tarikPesan(false);
-                }
+                // Tarik pesan secara silent di background
+                this.tarikPesan(false);
             }, 5000);
         },
 
@@ -41,24 +41,34 @@ function chatbotApp() {
                 const data = await res.json();
 
                 if (data.messages && data.messages.length > 0) {
-                    // Cek kalau ada pesan baru
+                    // Hanya update UI kalau ada pesan baru dari DB (biar gak kedip)
                     if (this.chatMessages.length !== data.messages.length) {
                         this.chatMessages = data.messages;
                         this.scrollToBottom();
 
-                        // Cek otomatis posisi step
-                        const userMsgs = this.chatMessages.filter(
+                        // Cek apakah user sudah pernah kirim detail keluhan
+                        const userHasSentForm = this.chatMessages.some((m) =>
+                            m.text.includes("DETAIL KELUHAN MEDIS"),
+                        );
+                        const userHasChatted = this.chatMessages.some(
                             (m) => m.sender === "user",
                         );
-                        if (userMsgs.length > 0) this.step = 2; // Kalau pasien udah pernah chat, lewatin bot
+
+                        if (userHasSentForm) {
+                            this.step = 2; // Langsung ke mode nunggu dokter
+                        } else if (userHasChatted) {
+                            this.step = 1; // Kembali ke mode isi form jika baru chat awal
+                        }
                     }
-                } else if (this.chatMessages.length === 0) {
-                    // Kalau database kosong, trigger sapaan bot pertama kali
-                    this.kirimKeDatabase(
-                        "Halo! 👋 Saya Asisten Virtual DelimaCare. Untuk memulai konsultasi hari ini, silakan ceritakan secara singkat keluhan yang Anda rasakan.",
-                        "bot",
-                        "text",
-                    );
+                } else if (this.chatMessages.length === 0 && !showLoading) {
+                    // Cek lagi, kalau beneran kosong di DB, kasih sapaan (HANYA DI UI, jangan simpan ke DB dulu biar gak banjir)
+                    this.chatMessages.push({
+                        id: "welcome",
+                        sender: "bot",
+                        type: "text",
+                        text: "Halo! 👋 Saya Asisten Virtual DelimaCare. Untuk memulai konsultasi hari ini, silakan ceritakan secara singkat keluhan yang Anda rasakan.",
+                        time: this.getTime(),
+                    });
                 }
             } catch (err) {
                 console.error("Gagal memuat pesan", err);
@@ -67,19 +77,19 @@ function chatbotApp() {
         },
 
         async kirimKeDatabase(text, sender = "user", type = "text") {
-            try {
-                // Update UI langsung biar kerasa cepet
-                this.chatMessages.push({
-                    id: Date.now(),
-                    sender: sender,
-                    type: type,
-                    text: text,
-                    time: this.getTime(),
-                });
-                this.scrollToBottom();
+            // Update UI lokal dulu biar responsif
+            const tempId = Date.now();
+            this.chatMessages.push({
+                id: tempId,
+                sender: sender,
+                type: type,
+                text: text,
+                time: this.getTime(),
+            });
+            this.scrollToBottom();
 
-                // Simpan ke Database
-                await fetch("/portal/chat/send", {
+            try {
+                const response = await fetch("/portal/chat/send", {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
@@ -94,8 +104,14 @@ function chatbotApp() {
                         type: type,
                     }),
                 });
+
+                if (!response.ok) throw new Error("Gagal kirim ke server");
+
+                // Setelah berhasil kirim, tarik data terbaru biar ID-nya sinkron sama DB
+                this.tarikPesan(false);
             } catch (err) {
                 console.error("Gagal kirim", err);
+                alert("Pesan gagal terkirim, cek koneksi internet!");
             }
         },
 
@@ -105,10 +121,9 @@ function chatbotApp() {
             const pesan = this.newMessage;
             this.newMessage = "";
 
-            // Simpan chat user
             this.kirimKeDatabase(pesan, "user", "text");
 
-            // Trigger Bot Response kalau masih awal
+            // Logic trigger form otomatis
             if (this.step === 0) {
                 this.step = 1;
                 this.isTyping = true;
@@ -141,10 +156,15 @@ function chatbotApp() {
         },
 
         scrollToBottom() {
-            setTimeout(() => {
+            this.$nextTick(() => {
                 const container = document.getElementById("chat-container");
-                if (container) container.scrollTop = container.scrollHeight;
-            }, 50);
+                if (container) {
+                    container.scrollTo({
+                        top: container.scrollHeight,
+                        behavior: "smooth",
+                    });
+                }
+            });
         },
     };
 }

@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="description" content="Admin Panel DelimaCare - Manajemen klinik kesehatan ibu dan anak.">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Admin Panel - DelimaCare</title>
     <link rel="icon" type="image/svg+xml" href="{{ asset('favicon.svg') }}">
 

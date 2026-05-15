@@ -6,6 +6,7 @@ use App\Http\Controllers\RegisterController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ReservasiController;
 use App\Http\Controllers\ConsultationController; // Tambahan buat Live Chat
+use App\Http\Controllers\ReportController;
 use Illuminate\Support\Facades\Auth;
 
 // ==========================================
@@ -139,4 +140,6 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/reservasi/partial', [\App\Http\Controllers\AdminController::class, 'getReservasiPartial'])->name('reservasi.partial');
     Route::get('/inventori/partial', [\App\Http\Controllers\AdminController::class, 'getInventoriPartial'])->name('inventori.partial');
     Route::get('/stats/polling', [\App\Http\Controllers\AdminController::class, 'getPollingStats'])->name('stats.polling');
+    // 🔥 FITUR BARU: Laporan & Analitik 🔥
+    Route::get('/report/stats', [ReportController::class, 'getStats'])->name('report.stats');
 });
