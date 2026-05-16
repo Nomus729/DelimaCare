@@ -14,24 +14,12 @@ class AdminController extends Controller
     public function index(Request $request)
     {
         // ─── Konten ───────────────────────────────────────────────
-        $activeCategory = $request->query('category', '');
-        $searchKonten   = $request->query('search_konten', '');
-
-        $query = Article::latest();
-        if ($activeCategory && in_array($activeCategory, ['Artikel', 'Berita', 'Acara'])) {
-            $query->where('category', $activeCategory);
-        }
-
-        if ($searchKonten) {
-            $query->where('title', 'like', '%' . $searchKonten . '%');
-        }
-
-        $articles = $query->paginate(9)
-            ->appends(['tab' => 'konten', 'category' => $activeCategory, 'search_konten' => $searchKonten]);
-
-        $categoryCounts = Article::selectRaw('category, count(*) as total')
-            ->groupBy('category')
-            ->pluck('total', 'category');
+        $kontenData = $this->getKontenData($request);
+        $articles       = $kontenData['articles'];
+        $categoryCounts = $kontenData['categoryCounts'];
+        $activeCategory = $kontenData['activeCategory'];
+        $searchKonten   = $kontenData['searchKonten'];
+        $sortKonten     = $kontenData['sortKonten'];
 
         // ─── Inventori ────────────────────────────────────────────
         $invData = $this->getInventoriData($request);
@@ -47,28 +35,32 @@ class AdminController extends Controller
         // ─── Rekam Medis ──────────────────────────────────────────
         $rmSearch    = $request->query('rm_search', '');
         $rmKategori  = $request->query('rm_kategori', '');
+        $rmDate      = $request->query('rm_date', '');
 
         $rmQuery = RekamMedis::latest()
             ->search($rmSearch)
-            ->byKategori($rmKategori);
+            ->byKategori($rmKategori)
+            ->byDate($rmDate);
 
-        $rekamMedisAll  = RekamMedis::get();
         $rekamMedis = $rmQuery->paginate(8)
-            ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori]);
+            ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori, 'rm_date' => $rmDate]);
 
+        // Base query for stats (applies search and date filters, but NOT category filter)
+        $statsBaseQuery = RekamMedis::search($rmSearch)->byDate($rmDate);
+
+        // Optimized Stats queries (dynamic based on current filter)
         $rmStats = [
-            'total'       => $rekamMedisAll->count(),
-            'kehamilan'   => $rekamMedisAll->where('kategori', 'Kehamilan')->count(),
-            'kb'          => $rekamMedisAll->where('kategori', 'Keluarga Berencana')->count(),
-            'risiko_tinggi' => $rekamMedisAll->where('status_risiko', 'Tinggi')->count(),
+            'total'         => (clone $statsBaseQuery)->count(),
+            'kehamilan'     => (clone $statsBaseQuery)->where('kategori', 'Kehamilan')->count(),
+            'kb'            => (clone $statsBaseQuery)->where('kategori', 'Keluarga Berencana')->count(),
+            'risiko_tinggi' => (clone $statsBaseQuery)->where('status_risiko', 'Tinggi')->count(),
         ];
 
         $rmKategoriCounts = [
-            ''                   => $rekamMedisAll->count(),
-            'Kehamilan'          => $rekamMedisAll->where('kategori', 'Kehamilan')->count(),
-            'Keluarga Berencana' => $rekamMedisAll->where('kategori', 'Keluarga Berencana')->count(),
-            'Kontrol Umum'       => $rekamMedisAll->where('kategori', 'Kontrol Umum')->count(),
-            'Konsultasi'         => $rekamMedisAll->where('kategori', 'Konsultasi')->count(),
+            ''                   => $rmStats['total'],
+            'Kehamilan'          => $rmStats['kehamilan'],
+            'Keluarga Berencana' => $rmStats['kb'],
+            'Kontrol Umum'       => (clone $statsBaseQuery)->where('kategori', 'Kontrol Umum')->count(),
         ];
 
         // ─── Reservasi ─────────────────────────────────────────────
@@ -96,9 +88,9 @@ class AdminController extends Controller
         $activeTab = $request->query('tab', 'dashboard');
 
         return view('admin.index', compact(
-            'articles', 'categoryCounts', 'activeCategory', 'searchKonten',
+            'articles', 'categoryCounts', 'activeCategory', 'searchKonten', 'sortKonten',
             'medicines', 'lowStockCount', 'expiredCount', 'nearExpiryCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
-            'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori',
+            'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori', 'rmDate',
             'semuaReservasi', 'pendingReservasiCount', 'doctors',
             'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
             'resFilter', 'resStatus', 'resSearch',
@@ -111,6 +103,9 @@ class AdminController extends Controller
      */
     private function getReservasiData(Request $request)
     {
+        // 🔥 Auto-update reservations that haven't been confirmed in 24h
+        $this->autoUpdateExpiredReservations();
+
         $resFilter = $request->query('res_filter', 'today');
         $resStatus = $request->query('res_status', '');
         $resSearch = $request->query('res_search', '');
@@ -156,6 +151,16 @@ class AdminController extends Controller
     }
 
     /**
+     * Auto-mark reservations as "Tidak Datang" if not confirmed in 24 hours of creation.
+     */
+    private function autoUpdateExpiredReservations()
+    {
+        Reservasi::where('status', 'Menunggu')
+            ->where('created_at', '<', now()->subHours(24))
+            ->update(['status' => 'Tidak Datang']);
+    }
+
+    /**
      * Get inventory data.
      */
     private function getInventoriData(Request $request)
@@ -188,6 +193,66 @@ class AdminController extends Controller
     {
         $data = $this->getInventoriData($request);
         return view('admin.partials.inventori', $data);
+    }
+
+    /**
+     * Get content data (articles) for dashboard.
+     */
+    private function getKontenData(Request $request)
+    {
+        $activeCategory = $request->query('category', '');
+        $searchKonten   = $request->query('search_konten', '');
+        $sortKonten     = $request->query('sort_konten', 'latest');
+
+        $query = Article::query();
+
+        // Sorting logic
+        if ($sortKonten === 'oldest') {
+            $query->oldest();
+        } elseif ($sortKonten === 'title_asc') {
+            $query->orderBy('title', 'asc');
+        } elseif ($sortKonten === 'title_desc') {
+            $query->orderBy('title', 'desc');
+        } else {
+            $query->latest();
+        }
+
+        if ($activeCategory && in_array($activeCategory, ['Artikel', 'Berita', 'Acara'])) {
+            $query->where('category', $activeCategory);
+        }
+
+        if ($searchKonten) {
+            $query->where('title', 'like', '%' . $searchKonten . '%');
+        }
+
+        $articles = $query->paginate(9)
+            ->appends([
+                'tab' => 'konten',
+                'category' => $activeCategory,
+                'search_konten' => $searchKonten,
+                'sort_konten' => $sortKonten
+            ]);
+
+        $categoryCounts = Article::selectRaw('category, count(*) as total')
+            ->groupBy('category')
+            ->pluck('total', 'category');
+
+        return [
+            'articles'       => $articles,
+            'categoryCounts' => $categoryCounts,
+            'activeCategory' => $activeCategory,
+            'searchKonten'   => $searchKonten,
+            'sortKonten'     => $sortKonten,
+        ];
+    }
+
+    /**
+     * Return only the konten partial for AJAX update.
+     */
+    public function getKontenPartial(Request $request)
+    {
+        $data = $this->getKontenData($request);
+        return view('admin.partials.konten', $data);
     }
 
     /**

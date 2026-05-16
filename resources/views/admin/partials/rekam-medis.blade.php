@@ -60,6 +60,8 @@
 <div x-data="{
     showModal: false,
     editMode: false,
+    isSubmitting: false,
+    errors: {},
     activeFilter: 'all',
     rm: {
         id: '',
@@ -118,6 +120,46 @@
             this.rm.kategori = layananMap[layanan] || 'Kontrol Umum';
         }
         this.showModal = true;
+    },
+    async submitForm(e) {
+        this.isSubmitting = true;
+        this.errors = {};
+        const url = this.editMode ? `{{ url('admin/rekam-medis') }}/${this.rm.id}` : `{{ route('admin.rekam-medis.store') }}`;
+        const formData = new FormData(e.target);
+        if(this.editMode) formData.set('_method', 'PUT');
+
+        try {
+            const resp = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            if (resp.status === 422) {
+                const data = await resp.json();
+                this.errors = data.errors;
+            } else if (resp.ok) {
+                const result = await resp.json();
+                this.showModal = false; // Tutup form rekam medis
+                
+                // Buka otomatis form resep medis dengan sedikit delay untuk transisi
+                if (result.data) {
+                    setTimeout(() => {
+                        this.openResep(result.data);
+                    }, 300);
+                } else {
+                    window.location.reload();
+                }
+            } else {
+                alert('Terjadi kesalahan sistem.');
+            }
+        } catch (err) {
+            console.error(err);
+        }
+        this.isSubmitting = false;
     },
     openEdit(data) {
         this.editMode = true;
@@ -238,16 +280,17 @@
             ];
         @endphp
         @foreach($statConfig as $s)
-            <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-3xl p-6 shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-teal-500/5 transition-all duration-500">
+            <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-[1.5rem] p-6 shadow-sm relative overflow-hidden group hover:shadow-xl hover:shadow-{{ $s['color'] }}-500/10 hover:-translate-y-1 transition-all duration-300">
+                <div class="absolute -right-4 -top-4 w-20 h-20 bg-{{ $s['color'] }}-500/5 rounded-full blur-xl group-hover:bg-{{ $s['color'] }}-500/20 transition-all duration-500"></div>
                 <div class="flex items-center gap-5 relative">
-                    <div class="w-14 h-14 rounded-2xl bg-{{ $s['color'] }}-50 dark:bg-{{ $s['color'] }}-900/20 flex items-center justify-center flex-shrink-0 group-hover:rotate-6 transition-all duration-300">
+                    <div class="w-14 h-14 rounded-2xl bg-{{ $s['color'] }}-50 dark:bg-{{ $s['color'] }}-900/20 flex items-center justify-center flex-shrink-0 group-hover:rotate-6 group-hover:scale-110 transition-all duration-300">
                         <svg class="w-7 h-7 text-{{ $s['color'] }}-600 dark:text-{{ $s['color'] }}-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $s['icon'] }}"/>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="{{ $s['icon'] }}"/>
                         </svg>
                     </div>
                     <div>
-                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 mb-1">{{ $s['label'] }}</p>
-                        <p class="text-3xl font-black text-gray-900 dark:text-white tabular-nums">{{ $rmStats[$s['key']] }}</p>
+                        <p class="text-[10px] font-black uppercase tracking-[0.2em] text-gray-400 dark:text-gray-500 mb-1">{{ $s['label'] }}</p>
+                        <p class="text-3xl font-black text-gray-900 dark:text-white tabular-nums leading-none">{{ $rmStats[$s['key']] }}</p>
                     </div>
                 </div>
             </div>
@@ -255,29 +298,75 @@
     </div>
 
     {{-- ── Search & Filters ────────────────────────────────────── --}}
-    <div class="bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl p-4 mb-6">
-        <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col lg:flex-row gap-4 items-center">
+    <div class="bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl p-5 mb-6">
+        <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col gap-5">
             <input type="hidden" name="tab" value="rekam_medis">
 
-            {{-- Search --}}
-            <div class="relative w-full lg:flex-1">
-                <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-                <input type="text" name="rm_search" value="{{ $rmSearch }}" placeholder="Cari No. RM, Nama Pasien, atau Dokter..."
-                       class="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-medium transition-all">
+            {{-- Top Row: Search & Date Filter --}}
+            <div class="flex flex-col md:flex-row gap-4 items-center justify-between w-full">
+                {{-- Search & Reset --}}
+                <div class="relative w-full md:max-w-md lg:max-w-lg flex items-center gap-2">
+                    <div class="relative w-full">
+                        <svg class="w-5 h-5 text-gray-400 absolute left-4 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                        <input type="text" name="rm_search" value="{{ $rmSearch }}" placeholder="Cari No. RM, Nama Pasien, atau Dokter..."
+                               class="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-medium transition-all">
+                    </div>
+                    
+                    @if($rmSearch || $rmDate || $rmKategori)
+                        <a href="{{ route('admin.dashboard', ['tab' => 'rekam_medis']) }}" 
+                           class="shrink-0 w-12 h-12 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm"
+                           title="Reset Semua Filter">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                        </a>
+                    @endif
+                </div>
+
+                {{-- Date Filter Group --}}
+                <div class="flex items-center gap-2 w-full md:w-auto shrink-0" 
+                     x-data="{ dateType: '{{ in_array($rmDate ?? '', ['', 'today', 'week', 'month']) ? 'preset' : (preg_match('/^\d{4}-\d{2}$/', $rmDate ?? '') ? 'month' : 'date') }}' }">
+                    <select x-model="dateType" @change="$dispatch('change-date-type')"
+                            class="px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-600 dark:text-gray-300 transition-all cursor-pointer hover:border-teal-400">
+                        <option value="preset">Periode</option>
+                        <option value="date">Tanggal</option>
+                        <option value="month">Bulan</option>
+                    </select>
+                    
+                    <template x-if="dateType === 'preset'">
+                        <select name="rm_date" onchange="this.form.submit()"
+                                class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all cursor-pointer hover:border-teal-400">
+                            <option value="">Semua Waktu</option>
+                            <option value="today" {{ ($rmDate ?? '') == 'today' ? 'selected' : '' }}>Hari Ini</option>
+                            <option value="week" {{ ($rmDate ?? '') == 'week' ? 'selected' : '' }}>Minggu Ini</option>
+                            <option value="month" {{ ($rmDate ?? '') == 'month' ? 'selected' : '' }}>Bulan Ini</option>
+                        </select>
+                    </template>
+
+                    <template x-if="dateType === 'date'">
+                        <input type="date" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.submit()"
+                               class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all hover:border-teal-400">
+                    </template>
+
+                    <template x-if="dateType === 'month'">
+                        <input type="month" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.submit()"
+                               class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all hover:border-teal-400">
+                    </template>
+                </div>
             </div>
 
-            {{-- Categories --}}
-            <div class="flex flex-wrap items-center gap-2 w-full lg:w-auto">
+            {{-- Bottom Row: Categories --}}
+            <div class="flex flex-wrap items-center gap-2 w-full pt-2 border-t border-gray-100 dark:border-gray-800">
                 @foreach($rmKategoriCounts as $kat => $count)
-                    <a href="{{ route('admin.dashboard', ['tab' => 'rekam_medis', 'rm_kategori' => $kat, 'rm_search' => $rmSearch]) }}"
-                       class="rm-filter-pill px-4 py-2.5 rounded-xl text-xs font-bold flex items-center gap-2 border transition-all
+                    <a href="{{ route('admin.dashboard', ['tab' => 'rekam_medis', 'rm_kategori' => $kat, 'rm_search' => $rmSearch, 'rm_date' => $rmDate ?? '']) }}"
+                       class="rm-filter-pill px-4 py-2 rounded-xl text-[11px] font-bold flex items-center gap-2 border transition-all
                               {{ $rmKategori === (string)$kat
-                                 ? 'bg-teal-600 border-teal-600 text-white shadow-md shadow-teal-500/20'
-                                 : 'bg-white dark:bg-[#0f172a] border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-teal-500 hover:text-teal-600' }}">
-                        {{ $kat ?: 'Semua' }}
-                        <span class="px-1.5 py-0.5 rounded-md text-[10px] {{ $rmKategori === (string)$kat ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400' }}">
+                                 ? 'bg-teal-600 border-teal-600 text-white shadow-md shadow-teal-500/20 scale-105'
+                                 : 'bg-white dark:bg-[#0f172a] border-gray-200 dark:border-gray-700 text-gray-500 dark:text-gray-400 hover:border-teal-500 hover:text-teal-600 hover:bg-teal-50/50' }}">
+                        {{ $kat ?: 'Semua Kategori' }}
+                        <span class="px-1.5 py-0.5 rounded-md text-[9px] {{ $rmKategori === (string)$kat ? 'bg-white/20 text-white' : 'bg-gray-100 dark:bg-gray-800 text-gray-400' }}">
                             {{ $count }}
                         </span>
                     </a>
@@ -302,7 +391,7 @@
                 </thead>
                 <tbody class="divide-y divide-gray-50 dark:divide-gray-800/50 text-sm">
                     @forelse($rekamMedis as $item)
-                        <tr class="group hover:bg-teal-50/30 dark:hover:bg-teal-900/5 transition-all duration-300">
+                        <tr class="group hover:bg-gray-50/80 dark:hover:bg-[#0f172a] transition-all duration-200">
                             <td class="px-6 py-5">
                                 <div class="flex items-center gap-3">
                                     <div class="w-10 h-10 rounded-full bg-gradient-to-br from-teal-50 to-teal-100 dark:from-teal-900/30 dark:to-teal-900/10 flex items-center justify-center text-teal-600 dark:text-teal-400 font-bold text-xs shadow-inner">
@@ -358,32 +447,34 @@
                                 </p>
                             </td>
                             <td class="px-6 py-5">
-                                <div class="flex justify-end gap-2">
+                                <div class="flex justify-end gap-2 opacity-100 lg:opacity-70 group-hover:opacity-100 transition-opacity">
                                     <button @click="openDetail({{ $item->load('resepMedis.items')->toJson() }})"
-                                            class="p-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-cyan-600 hover:border-cyan-200 dark:hover:border-cyan-700 transition-all shadow-sm"
+                                            class="w-9 h-9 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-cyan-600 hover:border-cyan-200 hover:bg-cyan-50 dark:hover:border-cyan-700 dark:hover:bg-cyan-900/20 flex items-center justify-center transition-all shadow-sm hover:scale-105"
                                             title="Lihat Detail">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                         </svg>
                                     </button>
                                     <button @click="openResep({{ $item->toJson() }})"
-                                            class="p-2.5 rounded-xl border border-teal-100 dark:border-teal-900/50 bg-teal-50 dark:bg-teal-900/20 text-teal-600 hover:bg-teal-600 hover:text-white transition-all shadow-sm"
+                                            class="w-9 h-9 rounded-xl border border-teal-200 dark:border-teal-800 bg-teal-50 dark:bg-teal-900/20 text-teal-600 dark:text-teal-400 hover:bg-teal-600 hover:text-white dark:hover:bg-teal-500 dark:hover:text-white flex items-center justify-center transition-all shadow-sm hover:scale-105"
                                             title="Buat Resep">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"/>
                                         </svg>
                                     </button>
                                     <button @click="openEdit({{ $item->toJson() }})"
-                                            class="p-2.5 rounded-xl border border-gray-100 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-teal-600 hover:border-teal-200 dark:hover:border-teal-700 transition-all shadow-sm">
+                                            class="w-9 h-9 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-400 hover:text-teal-600 hover:border-teal-200 hover:bg-teal-50 dark:hover:border-teal-700 dark:hover:bg-teal-900/20 flex items-center justify-center transition-all shadow-sm hover:scale-105"
+                                            title="Edit Data">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </button>
                                     <button @click="confirmDelete({{ $item->id }}, '{{ addslashes($item->nama_pasien) }}')"
-                                            class="p-2.5 rounded-xl border border-rose-50 dark:border-rose-900/50 bg-white dark:bg-gray-800 text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-900/20 transition-all shadow-sm">
+                                            class="w-9 h-9 rounded-xl border border-rose-100 dark:border-rose-900/50 bg-white dark:bg-gray-800 text-rose-400 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 flex items-center justify-center transition-all shadow-sm hover:scale-105"
+                                            title="Hapus Data">
                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                     </button>
                                 </div>
@@ -440,138 +531,156 @@
                 </div>
 
                 {{-- Form --}}
-                <form :action="editMode ? '{{ url('admin/rekam-medis') }}/' + rm.id : '{{ route('admin.rekam-medis.store') }}'"
-                      method="POST" class="p-7 space-y-6">
+                <form @submit.prevent="submitForm" class="p-7 space-y-6">
                     @csrf
                     <template x-if="editMode">
                         <input type="hidden" name="_method" value="PUT">
                     </template>
                     <input type="hidden" name="reservasi_id" x-model="rm.reservasi_id">
 
-                    {{-- Section 1: Identitas --}}
-                    <div>
-                        <h4 class="text-[9px] font-black uppercase tracking-[0.15em] text-teal-600 mb-4 flex items-center gap-2">
-                            <span class="w-4 h-[1.5px] bg-teal-500/30"></span>
-                            1. Identitas Pasien
-                        </h4>
-                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                            <div class="rm-field md:col-span-2">
-                                <label>Nama Lengkap <span class="text-rose-500">*</span></label>
-                                <input type="text" name="nama_pasien" x-model="rm.nama_pasien" required placeholder="Contoh: Siti Aminah" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>Usia <span class="text-rose-500">*</span></label>
-                                <input type="number" name="usia" x-model="rm.usia" required placeholder="Usia" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>No. Telepon</label>
-                                <input type="text" name="no_telepon" x-model="rm.no_telepon" placeholder="08xxxx" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>Golongan Darah</label>
-                                <select name="golongan_darah" x-model="rm.golongan_darah" class="text-xs py-2">
-                                    <option value="">Pilih</option>
-                                    <option value="A">A</option>
-                                    <option value="B">B</option>
-                                    <option value="AB">AB</option>
-                                    <option value="O">O</option>
-                                </select>
-                            </div>
-                            <div class="rm-field">
-                                <label>Kategori <span class="text-rose-500">*</span></label>
-                                <select name="kategori" x-model="rm.kategori" required class="text-xs py-2">
-                                    <option value="Kehamilan">Kehamilan</option>
-                                    <option value="Keluarga Berencana">Keluarga Berencana</option>
-                                    <option value="Kontrol Umum">Kontrol Umum</option>
-                                    <option value="Konsultasi">Konsultasi</option>
-                                    <option value="Imunisasi">Imunisasi</option>
-                                </select>
+                    <div class="space-y-6">
+                        {{-- Section 1: Identitas --}}
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                Identitas Pasien
+                            </h4>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                <div class="rm-field md:col-span-2">
+                                    <label>Nama Lengkap <span class="text-rose-500">*</span></label>
+                                    <input type="text" name="nama_pasien" x-model="rm.nama_pasien" required placeholder="Contoh: Siti Aminah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.nama_pasien}">
+                                    <span x-show="errors.nama_pasien" x-text="errors.nama_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>Usia <span class="text-rose-500">*</span></label>
+                                    <input type="number" name="usia" x-model="rm.usia" required placeholder="Usia" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia}">
+                                    <span x-show="errors.usia" x-text="errors.usia?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>No. Telepon</label>
+                                    <input type="text" name="no_telepon" x-model="rm.no_telepon" placeholder="08xxxx" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.no_telepon}">
+                                    <span x-show="errors.no_telepon" x-text="errors.no_telepon?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>Golongan Darah</label>
+                                    <select name="golongan_darah" x-model="rm.golongan_darah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.golongan_darah}">
+                                        <option value="">Pilih</option>
+                                        <option value="A">A</option>
+                                        <option value="B">B</option>
+                                        <option value="AB">AB</option>
+                                        <option value="O">O</option>
+                                    </select>
+                                    <span x-show="errors.golongan_darah" x-text="errors.golongan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>Kategori <span class="text-rose-500">*</span></label>
+                                    <select name="kategori" x-model="rm.kategori" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.kategori}">
+                                        <option value="Kehamilan">Kehamilan</option>
+                                        <option value="Keluarga Berencana">Keluarga Berencana</option>
+                                        <option value="Kontrol Umum">Kontrol Umum</option>
+                                        <option value="Konsultasi">Konsultasi</option>
+                                        <option value="Imunisasi">Imunisasi</option>
+                                    </select>
+                                    <span x-show="errors.kategori" x-text="errors.kategori?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
                             </div>
                         </div>
-                    </div>
 
-                    {{-- Section 2: Pemeriksaan Fisik --}}
-                    <div>
-                        <h4 class="text-[9px] font-black uppercase tracking-[0.15em] text-teal-600 mb-4 flex items-center gap-2">
-                            <span class="w-4 h-[1.5px] bg-teal-500/30"></span>
-                            2. Pemeriksaan Fisik & Status
-                        </h4>
-                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div class="rm-field">
-                                <label>TD (mmHg)</label>
-                                <input type="text" name="tekanan_darah" x-model="rm.tekanan_darah" placeholder="120/80" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>BB (kg)</label>
-                                <input type="number" step="0.1" name="berat_badan" x-model="rm.berat_badan" placeholder="BB" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>TB (cm)</label>
-                                <input type="number" step="0.1" name="tinggi_badan" x-model="rm.tinggi_badan" placeholder="TB" class="text-xs py-2">
-                            </div>
-                            <div class="rm-field">
-                                <label>Risiko <span class="text-rose-500">*</span></label>
-                                <select name="status_risiko" x-model="rm.status_risiko" required class="text-xs py-2">
-                                    <option value="Rendah">Rendah</option>
-                                    <option value="Sedang">Sedang</option>
-                                    <option value="Tinggi">Tinggi</option>
-                                </select>
-                            </div>
-                            <div class="rm-field md:col-span-2">
-                                <label>Status Kunjungan <span class="text-rose-500">*</span></label>
-                                <select name="status_kunjungan" x-model="rm.status_kunjungan" required class="text-xs py-2">
-                                    <option value="Aktif">Aktif</option>
-                                    <option value="Selesai">Selesai</option>
-                                    <option value="Dirujuk">Dirujuk</option>
-                                </select>
-                            </div>
-                            {{-- Conditional Pregnancy Fields --}}
-                            <template x-if="rm.kategori === 'Kehamilan'">
-                                <div class="grid grid-cols-2 gap-4 md:col-span-2">
-                                    <div class="rm-field">
-                                        <label>UK (Minggu)</label>
-                                        <input type="number" name="usia_kehamilan_minggu" x-model="rm.usia_kehamilan_minggu" class="text-xs py-2">
-                                    </div>
-                                    <div class="rm-field">
-                                        <label>HPHT</label>
-                                        <input type="date" name="hpht" x-model="rm.hpht" class="text-xs py-2">
-                                    </div>
+                        {{-- Section 2: Pemeriksaan Fisik --}}
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                Pemeriksaan Fisik & Status
+                            </h4>
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+                                <div class="rm-field">
+                                    <label>TD (mmHg)</label>
+                                    <input type="text" name="tekanan_darah" x-model="rm.tekanan_darah" placeholder="120/80" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tekanan_darah}">
+                                    <span x-show="errors.tekanan_darah" x-text="errors.tekanan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
                                 </div>
-                            </template>
+                                <div class="rm-field">
+                                    <label>BB (kg)</label>
+                                    <input type="number" step="0.1" name="berat_badan" x-model="rm.berat_badan" placeholder="BB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.berat_badan}">
+                                    <span x-show="errors.berat_badan" x-text="errors.berat_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>TB (cm)</label>
+                                    <input type="number" step="0.1" name="tinggi_badan" x-model="rm.tinggi_badan" placeholder="TB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tinggi_badan}">
+                                    <span x-show="errors.tinggi_badan" x-text="errors.tinggi_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field">
+                                    <label>Risiko <span class="text-rose-500">*</span></label>
+                                    <select name="status_risiko" x-model="rm.status_risiko" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_risiko}">
+                                        <option value="Rendah">Rendah</option>
+                                        <option value="Sedang">Sedang</option>
+                                        <option value="Tinggi">Tinggi</option>
+                                    </select>
+                                    <span x-show="errors.status_risiko" x-text="errors.status_risiko?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                <div class="rm-field md:col-span-2">
+                                    <label>Status Kunjungan <span class="text-rose-500">*</span></label>
+                                    <select name="status_kunjungan" x-model="rm.status_kunjungan" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_kunjungan}">
+                                        <option value="Aktif">Aktif</option>
+                                        <option value="Selesai">Selesai</option>
+                                        <option value="Dirujuk">Dirujuk</option>
+                                    </select>
+                                    <span x-show="errors.status_kunjungan" x-text="errors.status_kunjungan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                </div>
+                                {{-- Conditional Pregnancy Fields --}}
+                                <template x-if="rm.kategori === 'Kehamilan'">
+                                    <div class="grid grid-cols-2 gap-5 md:col-span-2">
+                                        <div class="rm-field">
+                                            <label>UK (Minggu)</label>
+                                            <input type="number" name="usia_kehamilan_minggu" x-model="rm.usia_kehamilan_minggu" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia_kehamilan_minggu}">
+                                            <span x-show="errors.usia_kehamilan_minggu" x-text="errors.usia_kehamilan_minggu?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>HPHT</label>
+                                            <input type="date" name="hpht" x-model="rm.hpht" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.hpht}">
+                                            <span x-show="errors.hpht" x-text="errors.hpht?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
                         </div>
-                    </div>
 
-                    {{-- Section 3: Analisis & Tindakan --}}
-                    <div>
-                        <h4 class="text-[9px] font-black uppercase tracking-[0.15em] text-teal-600 mb-4 flex items-center gap-2">
-                            <span class="w-4 h-[1.5px] bg-teal-500/30"></span>
-                            3. Analisis & Tindakan
-                        </h4>
-                        <div class="space-y-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="rm-field">
-                                    <label>Diagnosis</label>
-                                    <textarea name="diagnosis" x-model="rm.diagnosis" rows="2" placeholder="Diagnosis..." class="text-xs"></textarea>
+                        {{-- Section 3: Analisis & Tindakan --}}
+                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                Analisis & Tindakan
+                            </h4>
+                            <div class="space-y-5">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div class="rm-field">
+                                        <label>Diagnosis</label>
+                                        <textarea name="diagnosis" x-model="rm.diagnosis" rows="2" placeholder="Diagnosis..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.diagnosis}"></textarea>
+                                        <span x-show="errors.diagnosis" x-text="errors.diagnosis?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                    </div>
+                                    <div class="rm-field">
+                                        <label>Tindakan / Terapi</label>
+                                        <textarea name="tindakan" x-model="rm.tindakan" rows="2" placeholder="Tindakan..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tindakan}"></textarea>
+                                        <span x-show="errors.tindakan" x-text="errors.tindakan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                    </div>
                                 </div>
                                 <div class="rm-field">
-                                    <label>Tindakan / Terapi</label>
-                                    <textarea name="tindakan" x-model="rm.tindakan" rows="2" placeholder="Tindakan..." class="text-xs"></textarea>
+                                    <label class="text-teal-600 font-bold dark:text-teal-400">Catatan Khusus untuk Pasien</label>
+                                    <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3"
+                                              placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien di portal..."
+                                              class="text-xs border-teal-200 focus:ring-teal-500/20 focus:border-teal-500 dark:border-teal-900/30" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.catatan_pasien}"></textarea>
+                                    <span x-show="errors.catatan_pasien" x-text="errors.catatan_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
                                 </div>
-                            </div>
-                            <div class="rm-field">
-                                <label class="text-teal-600 font-bold dark:text-teal-400">Catatan Khusus untuk Pasien</label>
-                                <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3"
-                                          placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien..."
-                                          class="text-xs border-teal-200 focus:ring-teal-500/20 focus:border-teal-500 dark:border-teal-900/30"></textarea>
-                            </div>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div class="rm-field">
-                                    <label>Dokter Pemeriksa</label>
-                                    <input type="text" name="dokter_pemeriksa" x-model="rm.dokter_pemeriksa" placeholder="Nama Dokter" class="text-xs py-2">
-                                </div>
-                                <div class="rm-field">
-                                    <label>Kontrol Berikutnya</label>
-                                    <input type="date" name="jadwal_kontrol_berikutnya" x-model="rm.jadwal_kontrol_berikutnya" class="text-xs py-2">
+                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                    <div class="rm-field">
+                                        <label>Dokter Pemeriksa</label>
+                                        <input type="text" name="dokter_pemeriksa" x-model="rm.dokter_pemeriksa" placeholder="Nama Dokter" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.dokter_pemeriksa}">
+                                        <span x-show="errors.dokter_pemeriksa" x-text="errors.dokter_pemeriksa?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                    </div>
+                                    <div class="rm-field">
+                                        <label>Kontrol Berikutnya</label>
+                                        <input type="date" name="jadwal_kontrol_berikutnya" x-model="rm.jadwal_kontrol_berikutnya" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.jadwal_kontrol_berikutnya}">
+                                        <span x-show="errors.jadwal_kontrol_berikutnya" x-text="errors.jadwal_kontrol_berikutnya?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -579,13 +688,14 @@
 
                     {{-- Footer --}}
                     <div class="flex gap-3 pt-2">
-                        <button type="button" @click="showModal = false"
-                                class="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-xl hover:bg-gray-100 transition-all text-xs">
+                        <button type="button" @click="showModal = false" :disabled="isSubmitting"
+                                class="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-xl hover:bg-gray-100 disabled:opacity-50 transition-all text-xs">
                             Batal
                         </button>
-                        <button type="submit"
-                                class="flex-[2] px-5 py-3 bg-gradient-to-r from-teal-600 to-cyan-500 text-white font-black rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 transition-all text-xs">
-                            Simpan Data
+                        <button type="submit" :disabled="isSubmitting"
+                                class="flex-[2] px-5 py-3 bg-gradient-to-r from-teal-600 to-cyan-500 text-white font-black rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 disabled:opacity-50 transition-all text-xs flex items-center justify-center gap-2">
+                            <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                            <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Data'"></span>
                         </button>
                     </div>
                 </form>
@@ -814,27 +924,27 @@
                     </div>
 
                     {{-- Data Grid --}}
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-                        <div class="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Tensi Darah</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div class="bg-blue-50/50 dark:bg-blue-900/10 p-4 rounded-2xl border border-blue-100 dark:border-blue-900/30">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-blue-500 dark:text-blue-400 mb-1">Tensi Darah</p>
                             <p class="text-sm font-black text-gray-900 dark:text-white" x-text="detailData?.tekanan_darah || '—'"></p>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Berat Badan</p>
-                            <p class="text-sm font-black text-gray-900 dark:text-white" x-text="detailData?.berat_badan ? detailData.berat_badan + ' Kg' : '—'"></p>
+                        <div class="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-emerald-500 dark:text-emerald-400 mb-1">Berat Badan</p>
+                            <p class="text-sm font-black text-gray-900 dark:text-white"><span x-text="detailData?.berat_badan || '-'"></span> <span class="text-xs font-medium text-gray-500">kg</span></p>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Tinggi Badan</p>
-                            <p class="text-sm font-black text-gray-900 dark:text-white" x-text="detailData?.tinggi_badan ? detailData.tinggi_badan + ' Cm' : '—'"></p>
+                        <div class="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-amber-500 dark:text-amber-400 mb-1">Tinggi Badan</p>
+                            <p class="text-sm font-black text-gray-900 dark:text-white"><span x-text="detailData?.tinggi_badan || '-'"></span> <span class="text-xs font-medium text-gray-500">cm</span></p>
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-800/30 p-4 rounded-2xl border border-gray-100 dark:border-gray-800">
-                            <p class="text-[9px] font-black uppercase tracking-widest text-gray-400 mb-1">Risiko</p>
-                            <p class="text-sm font-black text-rose-500" x-text="detailData?.status_risiko"></p>
+                        <div class="bg-rose-50/50 dark:bg-rose-900/10 p-4 rounded-2xl border border-rose-100 dark:border-rose-900/30">
+                            <p class="text-[9px] font-black uppercase tracking-widest text-rose-500 dark:text-rose-400 mb-1">Risiko</p>
+                            <p class="text-sm font-black text-rose-600 dark:text-rose-400" x-text="detailData?.status_risiko"></p>
                         </div>
                     </div>
 
                     {{-- Diagnosis & Tindakan --}}
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <div class="space-y-4">
                             <h5 class="text-[10px] font-black uppercase tracking-[0.2em] text-teal-600 flex items-center gap-2">
                                 <span class="w-5 h-5 rounded-lg bg-teal-50 dark:bg-teal-900/30 flex items-center justify-center">
@@ -842,7 +952,7 @@
                                 </span>
                                 Hasil Diagnosis
                             </h5>
-                            <div class="p-5 bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-[2rem] shadow-sm">
+                            <div class="p-5 bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] h-[120px] overflow-y-auto rm-scroll">
                                 <p class="text-xs font-bold text-gray-700 dark:text-gray-300 leading-relaxed italic" x-text="detailData?.diagnosis || 'Tidak ada diagnosis tercatat.'"></p>
                             </div>
                         </div>
@@ -853,7 +963,7 @@
                                 </span>
                                 Tindakan Medis
                             </h5>
-                            <div class="p-5 bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-[2rem] shadow-sm">
+                            <div class="p-5 bg-white dark:bg-[#0f172a] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-[0_2px_10px_rgba(0,0,0,0.02)] h-[120px] overflow-y-auto rm-scroll">
                                 <p class="text-xs font-bold text-gray-700 dark:text-gray-300 leading-relaxed" x-text="detailData?.tindakan || 'Tidak ada tindakan tercatat.'"></p>
                             </div>
                         </div>

@@ -92,4 +92,33 @@ class RekamMedis extends Model
         }
         return $query;
     }
+
+    /**
+     * Scope filter by date
+     */
+    public function scopeByDate($query, $dateFilter)
+    {
+        if ($dateFilter) {
+            $now = \Carbon\Carbon::now();
+            switch ($dateFilter) {
+                case 'today':
+                    return $query->whereDate('created_at', $now->toDateString());
+                case 'week':
+                    return $query->whereBetween('created_at', [$now->startOfWeek()->toDateTimeString(), $now->endOfWeek()->toDateTimeString()]);
+                case 'month':
+                    return $query->whereMonth('created_at', $now->month)->whereYear('created_at', $now->year);
+                default:
+                    // If it's a specific date (YYYY-MM-DD)
+                    if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $dateFilter)) {
+                        return $query->whereDate('created_at', $dateFilter);
+                    }
+                    // If it's a specific month (YYYY-MM)
+                    if (preg_match('/^\d{4}-\d{2}$/', $dateFilter)) {
+                        $parts = explode('-', $dateFilter);
+                        return $query->whereYear('created_at', $parts[0])->whereMonth('created_at', $parts[1]);
+                    }
+            }
+        }
+        return $query;
+    }
 }

@@ -36,6 +36,28 @@ class RekamMedisController extends Controller
             'tanggal_kunjungan_terakhir'=> 'nullable|date',
             'jadwal_kontrol_berikutnya' => 'nullable|date',
             'dokter_pemeriksa'          => 'nullable|string|max:255',
+        ], [
+            'required' => ':attribute wajib diisi.',
+            'integer'  => ':attribute harus berupa angka bulat.',
+            'numeric'  => ':attribute harus berupa angka.',
+            'max'      => ':attribute maksimal :max.',
+            'min'      => ':attribute minimal :min.',
+            'in'       => 'Pilihan :attribute tidak valid.',
+            'date'     => 'Format :attribute tidak sesuai standar.',
+            'exists'   => ':attribute tidak ditemukan dalam sistem.'
+        ], [
+            'nama_pasien' => 'Nama Pasien',
+            'usia' => 'Usia',
+            'kategori' => 'Kategori Layanan',
+            'status_risiko' => 'Tingkat Risiko',
+            'status_kunjungan' => 'Status Kunjungan',
+            'berat_badan' => 'Berat Badan',
+            'tinggi_badan' => 'Tinggi Badan',
+            'tekanan_darah' => 'Tekanan Darah',
+            'hpht' => 'Hari Pertama Haid Terakhir (HPHT)',
+            'taksiran_persalinan' => 'Taksiran Persalinan',
+            'usia_kehamilan_minggu' => 'Usia Kehamilan',
+            'jadwal_kontrol_berikutnya' => 'Jadwal Kontrol Berikutnya',
         ]);
 
         $validated['no_rekam_medis'] = RekamMedis::generateNoRekamMedis();
@@ -49,6 +71,14 @@ class RekamMedisController extends Controller
                 $reservasi->status = 'Datang';
                 $reservasi->save();
             }
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Rekam medis pasien berhasil ditambahkan.',
+                'data' => $rekamMedis
+            ]);
         }
 
         return redirect()
@@ -67,7 +97,7 @@ class RekamMedisController extends Controller
             'no_telepon'                => 'nullable|string|max:20',
             'alamat'                    => 'nullable|string|max:500',
             'golongan_darah'            => 'nullable|string|max:5',
-            'kategori'                  => 'required|in:Kehamilan,Keluarga Berencana,Kontrol Umum,Konsultasi',
+            'kategori'                  => 'required|in:Kehamilan,Keluarga Berencana,Kontrol Umum,Konsultasi,Imunisasi',
             'usia_kehamilan_minggu'     => 'nullable|integer|min:1|max:42',
             'hpht'                      => 'nullable|date',
             'taksiran_persalinan'       => 'nullable|date',
@@ -83,9 +113,39 @@ class RekamMedisController extends Controller
             'tanggal_kunjungan_terakhir'=> 'nullable|date',
             'jadwal_kontrol_berikutnya' => 'nullable|date',
             'dokter_pemeriksa'          => 'nullable|string|max:255',
+        ], [
+            'required' => ':attribute wajib diisi.',
+            'integer'  => ':attribute harus berupa angka bulat.',
+            'numeric'  => ':attribute harus berupa angka.',
+            'max'      => ':attribute maksimal :max.',
+            'min'      => ':attribute minimal :min.',
+            'in'       => 'Pilihan :attribute tidak valid.',
+            'date'     => 'Format :attribute tidak sesuai standar.',
+            'exists'   => ':attribute tidak ditemukan dalam sistem.'
+        ], [
+            'nama_pasien' => 'Nama Pasien',
+            'usia' => 'Usia',
+            'kategori' => 'Kategori Layanan',
+            'status_risiko' => 'Tingkat Risiko',
+            'status_kunjungan' => 'Status Kunjungan',
+            'berat_badan' => 'Berat Badan',
+            'tinggi_badan' => 'Tinggi Badan',
+            'tekanan_darah' => 'Tekanan Darah',
+            'hpht' => 'Hari Pertama Haid Terakhir (HPHT)',
+            'taksiran_persalinan' => 'Taksiran Persalinan',
+            'usia_kehamilan_minggu' => 'Usia Kehamilan',
+            'jadwal_kontrol_berikutnya' => 'Jadwal Kontrol Berikutnya',
         ]);
 
         $rekamMedis->update($validated);
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Rekam medis berhasil diperbarui.',
+                'data' => $rekamMedis
+            ]);
+        }
 
         return redirect()
             ->route('admin.dashboard', ['tab' => 'rekam_medis'])

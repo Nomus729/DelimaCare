@@ -34,10 +34,16 @@
                                     {{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d F Y') }}
                                 </span>
                             </div>
-                            <h3 class="text-xl font-black text-gray-900 tracking-tight">Estimasi Jam: {{ $jadwal->estimated_time ? \Carbon\Carbon::parse($jadwal->estimated_time)->format('H:i') : $jadwal->waktu }}</h3>
-                            <p class="text-sm text-gray-500 font-medium flex items-center gap-1.5 mt-1">
-                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Silakan datang 10 menit sebelum jadwal.
+                            <div class="flex items-baseline gap-2">
+                                <span class="text-xs font-bold text-teal-600 uppercase">Perkiraan Waktu</span>
+                                <h3 class="text-2xl font-black text-gray-900 tracking-tight">
+                                    {{ $jadwal->estimated_time ? \Carbon\Carbon::parse($jadwal->estimated_time)->format('H:i') : $jadwal->waktu }}
+                                    <span class="text-gray-400 text-sm font-medium"> - {{ \Carbon\Carbon::parse($jadwal->estimated_time ?? $jadwal->waktu)->addMinutes(30)->format('H:i') }}</span>
+                                </h3>
+                            </div>
+                            <p class="text-sm text-gray-600 font-bold flex items-center gap-1.5 mt-1 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 inline-flex">
+                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                Mohon hadir 15 menit sebelum estimasi jam di atas.
                             </p>
                         </div>
                     </div>

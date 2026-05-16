@@ -139,6 +139,7 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     // Polling Partial
     Route::get('/reservasi/partial', [\App\Http\Controllers\AdminController::class, 'getReservasiPartial'])->name('reservasi.partial');
     Route::get('/inventori/partial', [\App\Http\Controllers\AdminController::class, 'getInventoriPartial'])->name('inventori.partial');
+    Route::get('/konten/partial', [\App\Http\Controllers\AdminController::class, 'getKontenPartial'])->name('konten.partial');
     Route::get('/stats/polling', [\App\Http\Controllers\AdminController::class, 'getPollingStats'])->name('stats.polling');
     // 🔥 FITUR BARU: Laporan & Analitik 🔥
     Route::get('/report/stats', [ReportController::class, 'getStats'])->name('report.stats');

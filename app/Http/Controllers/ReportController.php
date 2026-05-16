@@ -13,39 +13,76 @@ class ReportController extends Controller
 {
     public function getStats(Request $request)
     {
-        $bulan = $request->bulan ?? date('m');
-        $tahun = $request->tahun ?? date('Y');
+        // 1. Ambil Parameter dari request (JS mengirimkan month, year, type)
+        $bulan = $request->query('month', date('m'));
+        $tahun = $request->query('year', date('Y'));
+        $type = $request->query('type', 'bulanan');
 
-        // 1. Total Pasien (Role Pasien)
+        // 2. Data Statistik (Card Atas)
         $totalPasien = User::where('role', 'pasien')->count();
-
-        // Pasien Baru Bulan Ini
         $pasienBaru = User::where('role', 'pasien')
             ->whereMonth('created_at', $bulan)
             ->whereYear('created_at', $tahun)
             ->count();
 
-        // 2. Data Kehamilan (Misal dari Rekam Medis dengan diagnosa tertentu)
+        // Data Kehamilan & KB dari tabel rekam_medis (Kategori pasien aktif)
         $totalHamil = RekamMedis::where('kategori', 'Kehamilan')->count();
+        $totalKB = RekamMedis::where('kategori', 'Keluarga Berencana')->count();
 
-        // 3. Data KB
-        $totalKB = RekamMedis::where('kategori', 'KB')->count();
-
-        // 4. Total Kunjungan (Reservasi yang sudah selesai)
-        $totalKunjungan = Reservasi::whereMonth('tanggal_kunjungan', $bulan)
-            ->whereYear('tanggal_kunjungan', $tahun)
+        // Total Kunjungan (Berdasarkan reservasi yang selesai/datang di bulan terpilih)
+        $totalKunjungan = Reservasi::where('status', 'Datang')
+            ->whereMonth('tanggal', $bulan)
+            ->whereYear('tanggal', $tahun)
             ->count();
 
-        // 5. Data Tabel Bulanan (Grouping per bulan)
-        $tableData = Reservasi::select(
-                DB::raw('strftime("%m", tanggal_kunjungan) as bulan'),
-                DB::raw('count(*) as total'),
-                DB::raw('SUM(CASE WHEN kategori = "Kehamilan" THEN 1 ELSE 0 END) as hamil'),
-                DB::raw('SUM(CASE WHEN kategori = "KB" THEN 1 ELSE 0 END) as kb')
-            )
-            ->whereYear('tanggal_kunjungan', $tahun)
-            ->groupBy('bulan')
+        // 3. Data Tabel & Grafik (Grouping per bulan untuk tahun terpilih)
+        // Karena data mungkin sedikit, kita bisa ambil semua di tahun tersebut lalu group by di PHP menggunakan Collection.
+        $reservasiTahunan = Reservasi::where('status', 'Datang')
+            ->whereYear('tanggal', $tahun)
             ->get();
+
+        $bulanIndo = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+            5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+            9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $tableData = [];
+        
+        // Asumsi pendapatan rata-rata per kunjungan untuk demonstrasi
+        $rataRataBiayaHamil = 150000;
+        $rataRataBiayaKB = 100000;
+        $rataRataBiayaUmum = 75000;
+
+        for ($i = 1; $i <= 12; $i++) {
+            $dataBulanIni = $reservasiTahunan->filter(function ($item) use ($i) {
+                return Carbon::parse($item->tanggal)->month == $i;
+            });
+
+            $hamilCount = $dataBulanIni->where('layanan', 'Kehamilan')->count();
+            $kbCount = $dataBulanIni->where('layanan', 'Keluarga Berencana')->count();
+            $umumCount = $dataBulanIni->whereNotIn('layanan', ['Kehamilan', 'Keluarga Berencana'])->count();
+
+            $total = $dataBulanIni->count();
+            
+            // Perhitungan estimasi income (karena belum ada tabel transaksi khusus)
+            $income = ($hamilCount * $rataRataBiayaHamil) + ($kbCount * $rataRataBiayaKB) + ($umumCount * $rataRataBiayaUmum);
+
+            // Hanya tambahkan bulan sampai bulan saat ini (jika tahun ini) atau semua (jika tahun lalu)
+            // Atau tampilkan semua bulan untuk laporan tahunan
+            if ($type === 'tahunan' || ($type === 'bulanan' && $i == $bulan)) {
+                 $tableData[] = [
+                    'month_index' => $i,
+                    'month' => $bulanIndo[$i],
+                    'total' => $total,
+                    'hamil' => $hamilCount,
+                    'kb' => $kbCount,
+                    'income' => number_format($income, 0, ',', '.')
+                ];
+            }
+        }
+
+        // Jika bulanan, hanya kembalikan 1 row di tabel. Jika tahunan, kembalikan 12 row.
 
         return response()->json([
             'totalPasien' => $totalPasien,
@@ -53,7 +90,9 @@ class ReportController extends Controller
             'totalHamil' => $totalHamil,
             'totalKB' => $totalKB,
             'totalKunjungan' => $totalKunjungan,
-            'table' => $tableData
+            'table' => $tableData,
+            'chartLabels' => collect($tableData)->pluck('month'),
+            'chartData' => collect($tableData)->pluck('total')
         ]);
     }
 }

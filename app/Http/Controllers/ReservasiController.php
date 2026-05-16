@@ -32,25 +32,34 @@ class ReservasiController extends Controller
             return redirect()->back()->with('error', 'Dokter sedang ' . $doctor->status . '. Silakan pilih dokter lain.');
         }
 
-        // --- LOGIKA ANTREAN OTOMATIS WOK ---
+        // Ambil jam mulai dari jadwal praktek dokter
+        $startTime = '08:00'; // Default jika gagal parse
+        $regex = '/\((..):(..) - (..):(..)\)/';
+        if (preg_match($regex, $doctor->jadwal_praktek, $matches)) {
+            $startTime = $matches[1] . ':' . $matches[2];
+        }
+
+        // --- LOGIKA ANTREAN OTOMATIS (GLOBAL CLINIC QUEUE) ---
+        // Cari reservasi terakhir untuk TANGGAL tersebut (siapapun dokternya)
         $lastReservasi = Reservasi::whereDate('tanggal', $request->tanggal)
-            ->where('dokter_id', $request->dokter_id) // Filter per dokter biar gak numpuk
-            ->where('status', '!=', 'Batal')
             ->orderBy('queue_number', 'desc')
             ->first();
 
         $newQueue = 1;
-        $startTime = '08:00'; // Default jam buka
+        $estimatedTime = $startTime;
 
-        if ($lastReservasi && $lastReservasi->estimated_time) {
+        if ($lastReservasi) {
             $newQueue = $lastReservasi->queue_number + 1;
-            $newTimeObj = new \DateTime($lastReservasi->estimated_time);
-            $newTimeObj->modify('+20 minutes');
-            $startTime = $newTimeObj->format('H:i');
+            
+            // Tambahkan gap 30 menit dari pasien terakhir di klinik
+            $lastTime = $lastReservasi->estimated_time ?? $lastReservasi->waktu;
+            $newTimeObj = new \DateTime($lastTime);
+            $newTimeObj->modify('+30 minutes');
+            $estimatedTime = $newTimeObj->format('H:i');
         }
 
         // --- CEK APAKAH TANGGAL & JAM MASUK JADWAL DOKTER ---
-        $availability = $this->checkDoctorAvailability($doctor, $request->tanggal, $startTime);
+        $availability = $this->checkDoctorAvailability($doctor, $request->tanggal, $estimatedTime);
         if (!$availability['status']) {
             return redirect()->back()->with('error', $availability['message']);
         }
@@ -62,14 +71,14 @@ class ReservasiController extends Controller
             'layanan' => $request->layanan,
             'dokter_id' => $request->dokter_id,
             'tanggal' => $request->tanggal,
-            'waktu' => $startTime,
+            'waktu' => $estimatedTime,
             'queue_number' => $newQueue,
-            'estimated_time' => $startTime,
+            'estimated_time' => $estimatedTime,
             'keluhan' => $request->keluhan,
             'status' => 'Menunggu',
         ]);
 
-        return redirect()->route('portal')->with('success', 'Reservasi Berhasil! No. Antrean Anda: ' . $newQueue . ' (Estimasi Jam ' . $startTime . ')');
+        return redirect()->route('portal')->with('success', 'Reservasi Berhasil! No. Antrean Anda: ' . $newQueue . ' (Estimasi Jam ' . $estimatedTime . ')');
     }
 
     private function checkDoctorAvailability($doctor, $tanggal, $jam)
@@ -114,37 +123,52 @@ class ReservasiController extends Controller
             'nama' => 'required',
             'phone' => 'required',
             'layanan' => 'required',
+            'dokter_id' => 'required', // Admin harus pilih dokter
             'tanggal' => 'required|date',
         ]);
 
+        $doctor = \App\Models\Doctor::where('nama', $request->dokter_id)->first();
+        if (!$doctor) {
+            return redirect()->back()->with('error', 'Dokter tidak ditemukan.');
+        }
+
+        // Ambil jam mulai dari jadwal praktek dokter
+        $startTime = '08:00';
+        $regex = '/\((..):(..) - (..):(..)\)/';
+        if (preg_match($regex, $doctor->jadwal_praktek, $matches)) {
+            $startTime = $matches[1] . ':' . $matches[2];
+        }
+
+        // --- LOGIKA ANTREAN OTOMATIS (GLOBAL CLINIC QUEUE) ---
         $lastReservasi = Reservasi::whereDate('tanggal', $request->tanggal)
-            ->where('status', '!=', 'Batal')
             ->orderBy('queue_number', 'desc')
             ->first();
 
         $newQueue = 1;
-        $startTime = '08:00';
+        $estimatedTime = $startTime;
 
-        if ($lastReservasi && $lastReservasi->estimated_time) {
+        if ($lastReservasi) {
             $newQueue = $lastReservasi->queue_number + 1;
-            $newTimeObj = new \DateTime($lastReservasi->estimated_time);
-            $newTimeObj->modify('+20 minutes');
-            $startTime = $newTimeObj->format('H:i');
+            $lastTime = $lastReservasi->estimated_time ?? $lastReservasi->waktu;
+            $newTimeObj = new \DateTime($lastTime);
+            $newTimeObj->modify('+30 minutes');
+            $estimatedTime = $newTimeObj->format('H:i');
         }
 
         Reservasi::create([
             'nama' => $request->nama,
             'phone' => $request->phone,
             'layanan' => $request->layanan,
+            'dokter_id' => $request->dokter_id,
             'tanggal' => $request->tanggal,
-            'waktu' => $startTime,
+            'waktu' => $estimatedTime,
             'queue_number' => $newQueue,
-            'estimated_time' => $startTime,
+            'estimated_time' => $estimatedTime,
             'keluhan' => $request->keluhan,
-            'status' => 'Dikonfirmasi', // Admin langsung konfirmasi
+            'status' => 'Dikonfirmasi',
         ]);
 
-        return redirect()->back()->with('success', 'Reservasi manual berhasil ditambahkan! No. Antrean: ' . $newQueue);
+        return redirect()->back()->with('success', 'Reservasi manual berhasil ditambahkan! No. Antrean: ' . $newQueue . ' (Estimasi Jam ' . $estimatedTime . ')');
     }
 
     // 2. Menampilkan data jadwal ke Portal Pasien
