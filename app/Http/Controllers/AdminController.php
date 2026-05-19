@@ -87,6 +87,9 @@ class AdminController extends Controller
         $kpiStats = $keuanganData['kpiStats'];
         $donutChartData = $keuanganData['donutChartData'];
         $topMedicines = $keuanganData['topMedicines'];
+        $topDoctors = $keuanganData['topDoctors'];
+        $topExpenses = $keuanganData['topExpenses'];
+        $summaryTable = $keuanganData['summaryTable'];
 
         // ─── Dashboard Stats ──────────────────────────────────────
         // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah)
@@ -118,7 +121,8 @@ class AdminController extends Controller
             'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
             'resFilter', 'resStatus', 'resSearch',
             'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList',
-            'kpiStats', 'donutChartData', 'topMedicines'
+            'kpiStats', 'donutChartData', 'topMedicines',
+            'topDoctors', 'topExpenses', 'summaryTable'
         ));
     }
 
@@ -369,6 +373,18 @@ class AdminController extends Controller
         $pctExp = $expLalu > 0 ? (($expIni - $expLalu) / $expLalu) * 100 : ($expIni > 0 ? 100 : 0);
         $pctLaba = $labaLalu != 0 ? (($labaIni - $labaLalu) / abs($labaLalu)) * 100 : ($labaIni > 0 ? 100 : 0);
 
+        // --- Tambahan: Rata-rata Nilai Resep & Profit Margin ---
+        $countResepIni = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year)->count();
+        $countResepLalu = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateLalu->month)->whereYear('tanggal_resep', $dateLalu->year)->count();
+
+        $avgRevIni = $countResepIni > 0 ? $revIni / $countResepIni : 0;
+        $avgRevLalu = $countResepLalu > 0 ? $revLalu / $countResepLalu : 0;
+        $pctAvgRev = $avgRevLalu > 0 ? (($avgRevIni - $avgRevLalu) / $avgRevLalu) * 100 : ($avgRevIni > 0 ? 100 : 0);
+
+        $marginIni = $revIni > 0 ? ($labaIni / $revIni) * 100 : 0;
+        $marginLalu = $revLalu > 0 ? ($labaLalu / $revLalu) * 100 : 0;
+        $diffMargin = $marginIni - $marginLalu;
+
         $kpiStats = [
             'revIni' => $revIni,
             'revLalu' => $revLalu,
@@ -379,6 +395,10 @@ class AdminController extends Controller
             'labaIni' => $labaIni,
             'labaLalu' => $labaLalu,
             'pctLaba' => $pctLaba,
+            'avgRevIni' => $avgRevIni,
+            'pctAvgRev' => $pctAvgRev,
+            'marginIni' => $marginIni,
+            'diffMargin' => $diffMargin,
         ];
 
         // --- DISTRIBUSI PENGELUARAN (Donut Chart) ---
@@ -401,6 +421,38 @@ class AdminController extends Controller
             ->limit(5)
             ->get();
 
+        // --- Tambahan: Top 3 Dokter Kontributor Omzet ---
+        $topDoctors = ResepMedisItem::join('resep_medis', 'resep_medis_items.resep_medis_id', '=', 'resep_medis.id')
+            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('resep_medis.dokter_pemeriksa as name, SUM(resep_medis_items.jumlah * medicines.price) as total_revenue, COUNT(DISTINCT resep_medis.id) as total_prescriptions')
+            ->groupBy('resep_medis.dokter_pemeriksa')
+            ->orderBy('total_revenue', 'desc')
+            ->limit(3)
+            ->get();
+
+        // --- Tambahan: Top 3 Pengeluaran Terbesar (Expense Drivers) ---
+        $topExpenses = Pengeluaran::orderBy('nominal', 'desc')
+            ->limit(3)
+            ->get();
+
+        // --- Tambahan: Tabel Ikhtisar Tabular 6 Bulan ---
+        $summaryTable = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $p = $pendapatanData[5 - $i] ?? 0;
+            $e = $pengeluaranData[5 - $i] ?? 0;
+            $l = $labaData[5 - $i] ?? 0;
+            $m = $p > 0 ? ($l / $p) * 100 : 0;
+            $summaryTable[] = [
+                'month' => $date->isoFormat('MMMM YYYY'),
+                'pendapatan' => $p,
+                'pengeluaran' => $e,
+                'laba' => $l,
+                'margin' => $m,
+                'status' => $l >= 0 ? 'Surplus' : 'Defisit'
+            ];
+        }
+
         // Fetch recent expenses
         $pengeluaranList = Pengeluaran::orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page_keuangan')->appends(['tab' => 'keuangan']);
 
@@ -409,7 +461,10 @@ class AdminController extends Controller
             'pengeluaranList' => $pengeluaranList,
             'kpiStats' => $kpiStats,
             'donutChartData' => $donutChartData,
-            'topMedicines' => $topMedicines
+            'topMedicines' => $topMedicines,
+            'topDoctors' => $topDoctors,
+            'topExpenses' => $topExpenses,
+            'summaryTable' => $summaryTable
         ];
     }
 }
