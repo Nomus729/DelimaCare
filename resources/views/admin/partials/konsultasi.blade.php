@@ -136,7 +136,7 @@
 
                 {{-- Chat Input Bar --}}
                 <div class="p-6 bg-white dark:bg-[#0E1A2E] border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
-                    <form @submit.prevent="kirimBalasan" class="relative">
+                    <form method="post" @submit.prevent="kirimBalasan" class="relative">
                         <input type="text" x-model="replyMessage"
                                placeholder="Tulis balasan atau saran medis di sini..."
                                class="w-full pl-6 pr-28 py-4 bg-gray-50 dark:bg-gray-800 border-0 focus:ring-2 focus:ring-teal-500 rounded-xl outline-none text-sm font-semibold dark:text-white"
