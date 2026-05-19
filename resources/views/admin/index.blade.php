@@ -730,8 +730,22 @@
     <!-- Universal AJAX Router for Admin Dashboard -->
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            // Prevent duplicate initialization when DOMContentLoaded is re-fired programmatically
+            if (window.__ajaxRouterInitialized) return;
+            window.__ajaxRouterInitialized = true;
+
             const mainEl = document.querySelector('main');
             if (!mainEl) return;
+
+            // Helper to robustly get tab name from URL
+            function getTabFromUrl(urlStr) {
+                try {
+                    const url = new URL(urlStr, window.location.origin);
+                    return url.searchParams.get('tab');
+                } catch (e) {
+                    return null;
+                }
+            }
 
             // Monkeypatch HTMLFormElement.submit to dispatch standard submit events on programmatic calls
             const originalSubmit = HTMLFormElement.prototype.submit;
@@ -816,13 +830,15 @@
                 try {
                     const url = new URL(href, window.location.origin);
                     if (url.origin === window.location.origin && url.pathname.includes('/admin')) {
-                        let activeMenu = 'dashboard';
-                        try {
-                            if (window.Alpine && document.body) {
-                                activeMenu = window.Alpine.$data(document.body).activeMenu;
+                        let activeMenu = getTabFromUrl(href);
+                        if (!activeMenu) {
+                            try {
+                                if (window.Alpine && document.body) {
+                                    activeMenu = window.Alpine.$data(document.body).activeMenu;
+                                }
+                            } catch (err) {
+                                activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
                             }
-                        } catch (err) {
-                            activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
                         }
 
                         // Prevent default browser full page load
@@ -844,13 +860,15 @@
                 const formData = new FormData(form);
                 const params = new URLSearchParams(formData);
 
-                let activeMenu = 'dashboard';
-                try {
-                    if (window.Alpine && document.body) {
-                        activeMenu = window.Alpine.$data(document.body).activeMenu;
+                let activeMenu = getTabFromUrl(form.getAttribute('action') || window.location.href);
+                if (!activeMenu) {
+                    try {
+                        if (window.Alpine && document.body) {
+                            activeMenu = window.Alpine.$data(document.body).activeMenu;
+                        }
+                    } catch (err) {
+                        activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
                     }
-                } catch (err) {
-                    activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
                 }
 
                 if (!params.has('tab')) {
