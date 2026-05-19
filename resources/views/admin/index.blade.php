@@ -726,5 +726,143 @@
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="{{ asset('js/admin.js') }}"></script>
+
+    <!-- Universal AJAX Router for Admin Dashboard -->
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const mainEl = document.querySelector('main');
+            if (!mainEl) return;
+
+            // Monkeypatch HTMLFormElement.submit to dispatch standard submit events on programmatic calls
+            const originalSubmit = HTMLFormElement.prototype.submit;
+            HTMLFormElement.prototype.submit = function() {
+                const event = new Event('submit', { cancelable: true, bubbles: true });
+                this.dispatchEvent(event);
+                if (!event.defaultPrevented) {
+                    originalSubmit.call(this);
+                }
+            };
+
+            // Partial content loader via Fetch API
+            async function loadPartial(url, activeMenu) {
+                const activeContainer = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`);
+                if (activeContainer) {
+                    activeContainer.style.opacity = '0.5';
+                    activeContainer.style.pointerEvents = 'none';
+                    activeContainer.style.transition = 'opacity 0.2s ease';
+                }
+
+                try {
+                    const response = await fetch(url);
+                    const html = await response.text();
+                    
+                    const parser = new DOMParser();
+                    const doc = parser.parseFromString(html, 'text/html');
+                    
+                    const newMain = doc.querySelector('main');
+                    if (newMain) {
+                        const newTabs = newMain.querySelectorAll('div[x-show^="activeMenu === \u0027"]');
+                        newTabs.forEach(newTab => {
+                            const tabNameMatch = newTab.getAttribute('x-show').match(/activeMenu === '([^']+)'/);
+                            if (tabNameMatch && tabNameMatch[1] === activeMenu) {
+                                const currentTab = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`);
+                                if (currentTab) {
+                                    // Inject new HTML
+                                    currentTab.innerHTML = newTab.innerHTML;
+                                    currentTab.style.opacity = '1';
+                                    currentTab.style.pointerEvents = 'auto';
+
+                                    // Extract and re-run all newly injected script tags
+                                    const scripts = currentTab.querySelectorAll('script');
+                                    scripts.forEach(script => {
+                                        const newScript = document.createElement('script');
+                                        Array.from(script.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                                        newScript.appendChild(document.createTextNode(script.innerHTML));
+                                        script.parentNode.replaceChild(newScript, script);
+                                    });
+
+                                    // Re-trigger DOMContentLoaded listeners (like ApexCharts)
+                                    document.dispatchEvent(new Event('DOMContentLoaded'));
+
+                                    // Let Alpine process the newly inserted components
+                                    if (window.Alpine) {
+                                        window.Alpine.nextTick(() => {});
+                                    }
+                                }
+                            }
+                        });
+                    }
+
+                    // Update address bar and session history
+                    window.history.pushState({ path: url }, '', url);
+
+                } catch (error) {
+                    console.error('AJAX Load Error:', error);
+                    if (activeContainer) {
+                        activeContainer.style.opacity = '1';
+                        activeContainer.style.pointerEvents = 'auto';
+                    }
+                }
+            }
+
+            // Intercept pagination clicks and other same-domain admin links
+            mainEl.addEventListener('click', (e) => {
+                const link = e.target.closest('a');
+                if (!link) return;
+
+                const href = link.getAttribute('href');
+                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+                try {
+                    const url = new URL(href, window.location.origin);
+                    if (url.origin === window.location.origin && url.pathname.includes('/admin')) {
+                        let activeMenu = 'dashboard';
+                        try {
+                            if (window.Alpine && document.body) {
+                                activeMenu = window.Alpine.$data(document.body).activeMenu;
+                            }
+                        } catch (err) {
+                            activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
+                        }
+
+                        // Prevent default browser full page load
+                        e.preventDefault();
+                        loadPartial(href, activeMenu);
+                    }
+                } catch (err) {
+                    // Ignore invalid URLs
+                }
+            });
+
+            // Intercept form GET submissions (Search, Filter, Sort)
+            mainEl.addEventListener('submit', (e) => {
+                const form = e.target;
+                if (form.method.toLowerCase() !== 'get') return;
+
+                e.preventDefault();
+
+                const formData = new FormData(form);
+                const params = new URLSearchParams(formData);
+
+                let activeMenu = 'dashboard';
+                try {
+                    if (window.Alpine && document.body) {
+                        activeMenu = window.Alpine.$data(document.body).activeMenu;
+                    }
+                } catch (err) {
+                    activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
+                }
+
+                if (!params.has('tab')) {
+                    params.set('tab', activeMenu);
+                }
+
+                const action = form.getAttribute('action') || window.location.pathname;
+                const targetUrl = action + '?' + params.toString();
+
+                loadPartial(targetUrl, activeMenu);
+            });
+        });
+    </script>
 </body>
 </html>
