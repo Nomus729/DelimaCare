@@ -314,7 +314,7 @@
                                class="w-full pl-12 pr-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-medium transition-all">
                     </div>
                     
-                    @if($rmSearch || $rmDate || $rmKategori)
+                    @if($rmSearch || $rmKategori || $rmDate !== 'today')
                         <a href="{{ route('admin.dashboard', ['tab' => 'rekam_medis']) }}" 
                            class="shrink-0 w-12 h-12 flex items-center justify-center bg-rose-50 dark:bg-rose-900/20 text-rose-500 dark:text-rose-400 rounded-2xl hover:bg-rose-500 hover:text-white transition-all shadow-sm"
                            title="Reset Semua Filter">

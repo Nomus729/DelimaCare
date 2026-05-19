@@ -38,7 +38,7 @@ class AdminController extends Controller
         // ─── Rekam Medis ──────────────────────────────────────────
         $rmSearch    = $request->query('rm_search', '');
         $rmKategori  = $request->query('rm_kategori', '');
-        $rmDate      = $request->query('rm_date', '');
+        $rmDate      = $request->has('rm_date') ? $request->query('rm_date') : 'today';
 
         $rmQuery = RekamMedis::latest()
             ->search($rmSearch)

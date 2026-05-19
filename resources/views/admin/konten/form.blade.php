@@ -319,7 +319,7 @@
     <div class="max-w-4xl mx-auto py-10 px-6">
         
         <div class="flex items-center gap-4 mb-8">
-            <a href="{{ route('admin.dashboard') }}" class="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm transition-all">
+            <a href="{{ route('admin.dashboard', ['tab' => 'konten']) }}" class="w-10 h-10 rounded-full flex items-center justify-center bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-500 hover:text-teal-600 dark:hover:text-teal-400 shadow-sm transition-all">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18"/></svg>
             </a>
             <div>
@@ -414,7 +414,7 @@
             </div>
 
             <div class="pt-6 border-t border-gray-100 dark:border-gray-800 flex justify-end gap-3">
-                <a href="{{ route('admin.dashboard') }}" class="px-6 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">Batal</a>
+                <a href="{{ route('admin.dashboard', ['tab' => 'konten']) }}" class="px-6 py-3 rounded-xl font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700 transition-colors">Batal</a>
                 <button type="submit" class="px-6 py-3 rounded-xl font-semibold text-white bg-teal-600 hover:bg-teal-700 shadow-lg shadow-teal-500/30 transition-all flex items-center gap-2">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7"/></svg>
                     Simpan Publikasi

@@ -759,52 +759,47 @@
 
             // Partial content loader via Fetch API
             async function loadPartial(url, activeMenu) {
-                const activeContainer = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`);
-                if (activeContainer) {
-                    activeContainer.style.opacity = '0.5';
-                    activeContainer.style.pointerEvents = 'none';
-                    activeContainer.style.transition = 'opacity 0.2s ease';
+                const currentTab = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`) || 
+                                   mainEl.querySelector(`div[x-show*='activeMenu === "${activeMenu}"']`);
+
+                if (currentTab) {
+                    currentTab.style.opacity = '0.5';
+                    currentTab.style.transition = 'opacity 0.15s ease';
                 }
 
                 try {
                     const response = await fetch(url);
+                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
                     const html = await response.text();
                     
                     const parser = new DOMParser();
                     const doc = parser.parseFromString(html, 'text/html');
                     
-                    const newMain = doc.querySelector('main');
-                    if (newMain) {
-                        const newTabs = newMain.querySelectorAll('div[x-show^="activeMenu === \u0027"]');
-                        newTabs.forEach(newTab => {
-                            const tabNameMatch = newTab.getAttribute('x-show').match(/activeMenu === '([^']+)'/);
-                            if (tabNameMatch && tabNameMatch[1] === activeMenu) {
-                                const currentTab = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`);
-                                if (currentTab) {
-                                    // Inject new HTML
-                                    currentTab.innerHTML = newTab.innerHTML;
-                                    currentTab.style.opacity = '1';
-                                    currentTab.style.pointerEvents = 'auto';
+                    const newTab = doc.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`) || 
+                                   doc.querySelector(`div[x-show*='activeMenu === "${activeMenu}"']`);
+                    
+                    if (newTab && currentTab) {
+                        // Inject new HTML
+                        currentTab.innerHTML = newTab.innerHTML;
 
-                                    // Extract and re-run all newly injected script tags
-                                    const scripts = currentTab.querySelectorAll('script');
-                                    scripts.forEach(script => {
-                                        const newScript = document.createElement('script');
-                                        Array.from(script.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                                        newScript.appendChild(document.createTextNode(script.innerHTML));
-                                        script.parentNode.replaceChild(newScript, script);
-                                    });
-
-                                    // Re-trigger DOMContentLoaded listeners (like ApexCharts)
-                                    document.dispatchEvent(new Event('DOMContentLoaded'));
-
-                                    // Let Alpine process the newly inserted components
-                                    if (window.Alpine) {
-                                        window.Alpine.nextTick(() => {});
-                                    }
-                                }
-                            }
+                        // Extract and re-run all newly injected script tags
+                        const scripts = currentTab.querySelectorAll('script');
+                        scripts.forEach(script => {
+                            const newScript = document.createElement('script');
+                            Array.from(script.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
+                            newScript.appendChild(document.createTextNode(script.innerHTML));
+                            script.parentNode.replaceChild(newScript, script);
                         });
+
+                        // Re-trigger DOMContentLoaded listeners (like ApexCharts)
+                        document.dispatchEvent(new Event('DOMContentLoaded'));
+
+                        // Let Alpine process the newly inserted components
+                        if (window.Alpine) {
+                            window.Alpine.nextTick(() => {});
+                        }
+                    } else {
+                        console.warn(`Tab container for '${activeMenu}' not found in AJAX response.`);
                     }
 
                     // Update address bar and session history
@@ -812,9 +807,9 @@
 
                 } catch (error) {
                     console.error('AJAX Load Error:', error);
-                    if (activeContainer) {
-                        activeContainer.style.opacity = '1';
-                        activeContainer.style.pointerEvents = 'auto';
+                } finally {
+                    if (currentTab) {
+                        currentTab.style.opacity = '1';
                     }
                 }
             }
@@ -829,7 +824,12 @@
 
                 try {
                     const url = new URL(href, window.location.origin);
-                    if (url.origin === window.location.origin && url.pathname.includes('/admin')) {
+                    
+                    // ONLY intercept if the link targets the admin dashboard base path AND contains query parameters (pagination, filter, tab)
+                    const isDashboardPath = url.pathname === '/admin' || url.pathname === '/admin/dashboard';
+                    const hasQueryParams = url.search.length > 0;
+
+                    if (url.origin === window.location.origin && isDashboardPath && hasQueryParams) {
                         let activeMenu = getTabFromUrl(href);
                         if (!activeMenu) {
                             try {
