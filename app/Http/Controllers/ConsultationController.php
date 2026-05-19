@@ -31,14 +31,16 @@ class ConsultationController extends Controller
 
     public function sendMessage(Request $request)
     {
-        ConsultationMessage::create([
+        $message = ConsultationMessage::create([
             'username' => Auth::user()->username,
             'sender' => $request->sender ?? 'user',
             'type' => $request->type ?? 'text',
             'message' => $request->message,
         ]);
 
-        return response()->json(['success' => true]);
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 
     // --- SISI ADMIN ---
@@ -47,22 +49,41 @@ class ConsultationController extends Controller
         // Ambil semua username unik yang pernah chat
         $usernames = ConsultationMessage::select('username')->distinct()->pluck('username');
 
-        // Ambil info user tersebut
+        // Ambil info user tersebut dan sertakan last message info
         $users = \App\Models\User::whereIn('username', $usernames)->get()->map(function($user) {
             $lastMsg = ConsultationMessage::where('username', $user->username)->latest()->first();
+            $unreadCount = ConsultationMessage::where('username', $user->username)
+                ->where('sender', 'user')
+                ->where('is_read', false)
+                ->count();
+
             return [
-                'id' => $user->username, // ID di sini kita isi string username
+                'id' => $user->username,
                 'name' => $user->username,
                 'last_message' => $lastMsg ? \Illuminate\Support\Str::limit($lastMsg->message, 30) : '',
-                'time' => $lastMsg ? $lastMsg->created_at->format('H:i') : ''
+                'time' => $lastMsg ? $lastMsg->created_at->format('H:i') : '',
+                'last_time_obj' => $lastMsg ? $lastMsg->created_at : \Carbon\Carbon::create(1970, 1, 1),
+                'unread_count' => $unreadCount
             ];
         });
 
-        return response()->json(['users' => $users]);
+        // Urutkan berdasarkan waktu pesan terbaru
+        $sortedUsers = $users->sortByDesc('last_time_obj')->values()->map(function($user) {
+            unset($user['last_time_obj']);
+            return $user;
+        });
+
+        return response()->json(['users' => $sortedUsers]);
     }
 
     public function getAdminMessages($username)
     {
+        // Tandai pesan sebagai telah dibaca
+        ConsultationMessage::where('username', $username)
+            ->where('sender', 'user')
+            ->where('is_read', false)
+            ->update(['is_read' => true]);
+
         $messages = ConsultationMessage::where('username', $username)
             ->orderBy('created_at', 'asc')
             ->get()
@@ -81,13 +102,15 @@ class ConsultationController extends Controller
 
     public function sendAdminMessage(Request $request)
     {
-        ConsultationMessage::create([
+        $message = ConsultationMessage::create([
             'username' => $request->user_id, // Isinya sebenernya username dari JS admin
             'sender' => 'admin',
             'type' => 'text',
             'message' => $request->message,
         ]);
 
-        return response()->json(['success' => true]);
+        broadcast(new \App\Events\MessageSent($message))->toOthers();
+
+        return response()->json(['success' => true, 'message' => $message]);
     }
 }

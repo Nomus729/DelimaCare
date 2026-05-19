@@ -607,7 +607,7 @@
             </header>
 
             {{-- ===== PAGE CONTENT ===== --}}
-            <main class="flex-1 overflow-y-auto p-6 md:p-8 relative z-10">
+            <main class="flex-1 relative z-10" :class="activeMenu === 'konsultasi' ? 'overflow-hidden p-0' : 'overflow-y-auto p-6 md:p-8'">
 
                 <div x-show="activeMenu === 'dashboard'" x-cloak
                      x-transition:enter="transition ease-out duration-350"
@@ -707,6 +707,22 @@
     @if(session('success'))
         <input type="hidden" id="initial-success-message" value="{{ session('success') }}">
     @endif
+
+    <!-- Pusher & Echo -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js"></script>
+    <script>
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'pusher',
+            key: '{{ env("PUSHER_APP_KEY") }}',
+            cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
+            forceTLS: true
+        });
+        @auth
+        window.currentAdmin = '{{ Auth::user()->username }}';
+        @endauth
+    </script>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="{{ asset('js/admin.js') }}"></script>

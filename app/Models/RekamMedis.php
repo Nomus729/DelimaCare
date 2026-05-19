@@ -5,14 +5,16 @@ namespace App\Models;
 use App\Traits\HybridSync;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class RekamMedis extends Model
 {
-    use HasFactory, HybridSync;
+    use HasFactory, HybridSync, SoftDeletes;
 
     protected $table = 'rekam_medis';
     protected $fillable = [
         'reservasi_id',
+        'user_id',
         'no_rekam_medis',
         'nama_pasien',
         'usia',
@@ -40,6 +42,14 @@ class RekamMedis extends Model
     public function reservasi()
     {
         return $this->belongsTo(Reservasi::class);
+    }
+
+    /**
+     * Relasi ke user (pasien) — lebih reliable daripada match by nama_pasien.
+     */
+    public function user()
+    {
+        return $this->belongsTo(\App\Models\User::class);
     }
 
     public function resepMedis()

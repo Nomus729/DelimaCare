@@ -18,11 +18,27 @@ function chatbotApp() {
             // 1. Langsung tarik data pas halaman dibuka
             this.tarikPesan();
 
-            // 2. Polling setiap 5 detik tanpa peduli URL (selama komponen ini aktif)
-            this.pollingInterval = setInterval(() => {
-                // Tarik pesan secara silent di background
-                this.tarikPesan(false);
-            }, 5000);
+            // 2. Listen ke channel WebSocket menggunakan Laravel Echo
+            if (typeof window.Echo !== 'undefined' && window.currentUsername) {
+                window.Echo.channel('chat.' + window.currentUsername)
+                    .listen('MessageSent', (e) => {
+                        // Jika pengirim bukan user (berarti admin), tambahkan ke chatMessages
+                        if (e.message.sender !== 'user') {
+                            // Cek agar tidak duplikat
+                            const exists = this.chatMessages.find(m => m.id === e.message.id);
+                            if (!exists) {
+                                this.chatMessages.push({
+                                    id: e.message.id,
+                                    sender: e.message.sender,
+                                    type: e.message.type,
+                                    text: e.message.message,
+                                    time: this.getTime()
+                                });
+                                this.scrollToBottom();
+                            }
+                        }
+                    });
+            }
         },
 
         getTime() {
@@ -107,8 +123,15 @@ function chatbotApp() {
 
                 if (!response.ok) throw new Error("Gagal kirim ke server");
 
-                // Setelah berhasil kirim, tarik data terbaru biar ID-nya sinkron sama DB
-                this.tarikPesan(false);
+                const responseData = await response.json();
+                
+                // Update ID sementara dengan ID asli dari DB
+                const msgIndex = this.chatMessages.findIndex(m => m.id === tempId);
+                if (msgIndex !== -1 && responseData.message) {
+                    this.chatMessages[msgIndex].id = responseData.message.id;
+                }
+                
+                // Hapus tarikPesan() karena kita pakai WebSocket
             } catch (err) {
                 console.error("Gagal kirim", err);
                 alert("Pesan gagal terkirim, cek koneksi internet!");

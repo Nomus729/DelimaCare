@@ -3,71 +3,32 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Http\Requests\RekamMedisRequest;
 use App\Models\RekamMedis;
-use Illuminate\Http\Request;
 
 class RekamMedisController extends Controller
 {
     /**
      * Store a newly created record.
      */
-    public function store(Request $request)
+    public function store(RekamMedisRequest $request)
     {
-        $validated = $request->validate([
-            'reservasi_id'              => 'nullable|exists:reservasi,id',
-            'nama_pasien'               => 'required|string|max:255',
-            'usia'                      => 'required|integer|min:1|max:120',
-            'no_telepon'                => 'nullable|string|max:20',
-            'alamat'                    => 'nullable|string|max:500',
-            'golongan_darah'            => 'nullable|string|max:5',
-            'kategori'                  => 'required|in:Kehamilan,Keluarga Berencana,Kontrol Umum,Konsultasi,Imunisasi',
-            'usia_kehamilan_minggu'     => 'nullable|integer|min:1|max:42',
-            'hpht'                      => 'nullable|date',
-            'taksiran_persalinan'       => 'nullable|date',
-            'status_risiko'             => 'required|in:Rendah,Sedang,Tinggi',
-            'status_kunjungan'          => 'required|in:Aktif,Selesai,Dirujuk',
-            'tekanan_darah'             => 'nullable|string|max:20',
-            'berat_badan'               => 'nullable|numeric|min:1|max:300',
-            'tinggi_badan'              => 'nullable|numeric|min:50|max:250',
-            'catatan_medis'             => 'nullable|string',
-            'catatan_pasien'            => 'nullable|string',
-            'diagnosis'                 => 'nullable|string',
-            'tindakan'                  => 'nullable|string',
-            'tanggal_kunjungan_terakhir'=> 'nullable|date',
-            'jadwal_kontrol_berikutnya' => 'nullable|date',
-            'dokter_pemeriksa'          => 'nullable|string|max:255',
-        ], [
-            'required' => ':attribute wajib diisi.',
-            'integer'  => ':attribute harus berupa angka bulat.',
-            'numeric'  => ':attribute harus berupa angka.',
-            'max'      => ':attribute maksimal :max.',
-            'min'      => ':attribute minimal :min.',
-            'in'       => 'Pilihan :attribute tidak valid.',
-            'date'     => 'Format :attribute tidak sesuai standar.',
-            'exists'   => ':attribute tidak ditemukan dalam sistem.'
-        ], [
-            'nama_pasien' => 'Nama Pasien',
-            'usia' => 'Usia',
-            'kategori' => 'Kategori Layanan',
-            'status_risiko' => 'Tingkat Risiko',
-            'status_kunjungan' => 'Status Kunjungan',
-            'berat_badan' => 'Berat Badan',
-            'tinggi_badan' => 'Tinggi Badan',
-            'tekanan_darah' => 'Tekanan Darah',
-            'hpht' => 'Hari Pertama Haid Terakhir (HPHT)',
-            'taksiran_persalinan' => 'Taksiran Persalinan',
-            'usia_kehamilan_minggu' => 'Usia Kehamilan',
-            'jadwal_kontrol_berikutnya' => 'Jadwal Kontrol Berikutnya',
-        ]);
-
+        $validated = $request->validated();
         $validated['no_rekam_medis'] = RekamMedis::generateNoRekamMedis();
+
+        // Jika ada reservasi, ambil user_id dari reservasi untuk relasi yang reliable
+        if ($request->filled('reservasi_id')) {
+            $reservasi = \App\Models\Reservasi::find($request->reservasi_id);
+            if ($reservasi && $reservasi->user_id) {
+                $validated['user_id'] = $reservasi->user_id;
+            }
+        }
 
         $rekamMedis = RekamMedis::create($validated);
 
-        // --- UPDATE STATUS RESERVASI OTOMATIS WOK ---
+        // Update status reservasi otomatis
         if ($request->filled('reservasi_id')) {
-            $reservasi = \App\Models\Reservasi::find($request->reservasi_id);
-            if ($reservasi) {
+            if (isset($reservasi) && $reservasi) {
                 $reservasi->status = 'Datang';
                 $reservasi->save();
             }
@@ -89,55 +50,9 @@ class RekamMedisController extends Controller
     /**
      * Update the specified record.
      */
-    public function update(Request $request, RekamMedis $rekamMedis)
+    public function update(RekamMedisRequest $request, RekamMedis $rekamMedis)
     {
-        $validated = $request->validate([
-            'nama_pasien'               => 'required|string|max:255',
-            'usia'                      => 'required|integer|min:1|max:120',
-            'no_telepon'                => 'nullable|string|max:20',
-            'alamat'                    => 'nullable|string|max:500',
-            'golongan_darah'            => 'nullable|string|max:5',
-            'kategori'                  => 'required|in:Kehamilan,Keluarga Berencana,Kontrol Umum,Konsultasi,Imunisasi',
-            'usia_kehamilan_minggu'     => 'nullable|integer|min:1|max:42',
-            'hpht'                      => 'nullable|date',
-            'taksiran_persalinan'       => 'nullable|date',
-            'status_risiko'             => 'required|in:Rendah,Sedang,Tinggi',
-            'status_kunjungan'          => 'required|in:Aktif,Selesai,Dirujuk',
-            'tekanan_darah'             => 'nullable|string|max:20',
-            'berat_badan'               => 'nullable|numeric|min:1|max:300',
-            'tinggi_badan'              => 'nullable|numeric|min:50|max:250',
-            'catatan_medis'             => 'nullable|string',
-            'catatan_pasien'            => 'nullable|string',
-            'diagnosis'                 => 'nullable|string',
-            'tindakan'                  => 'nullable|string',
-            'tanggal_kunjungan_terakhir'=> 'nullable|date',
-            'jadwal_kontrol_berikutnya' => 'nullable|date',
-            'dokter_pemeriksa'          => 'nullable|string|max:255',
-        ], [
-            'required' => ':attribute wajib diisi.',
-            'integer'  => ':attribute harus berupa angka bulat.',
-            'numeric'  => ':attribute harus berupa angka.',
-            'max'      => ':attribute maksimal :max.',
-            'min'      => ':attribute minimal :min.',
-            'in'       => 'Pilihan :attribute tidak valid.',
-            'date'     => 'Format :attribute tidak sesuai standar.',
-            'exists'   => ':attribute tidak ditemukan dalam sistem.'
-        ], [
-            'nama_pasien' => 'Nama Pasien',
-            'usia' => 'Usia',
-            'kategori' => 'Kategori Layanan',
-            'status_risiko' => 'Tingkat Risiko',
-            'status_kunjungan' => 'Status Kunjungan',
-            'berat_badan' => 'Berat Badan',
-            'tinggi_badan' => 'Tinggi Badan',
-            'tekanan_darah' => 'Tekanan Darah',
-            'hpht' => 'Hari Pertama Haid Terakhir (HPHT)',
-            'taksiran_persalinan' => 'Taksiran Persalinan',
-            'usia_kehamilan_minggu' => 'Usia Kehamilan',
-            'jadwal_kontrol_berikutnya' => 'Jadwal Kontrol Berikutnya',
-        ]);
-
-        $rekamMedis->update($validated);
+        $rekamMedis->update($request->validated());
 
         if ($request->ajax() || $request->wantsJson()) {
             return response()->json([
@@ -153,11 +68,11 @@ class RekamMedisController extends Controller
     }
 
     /**
-     * Remove the specified record.
+     * Soft-delete the specified record.
      */
     public function destroy(RekamMedis $rekamMedis)
     {
-        $rekamMedis->delete();
+        $rekamMedis->delete(); // Now soft-deletes thanks to SoftDeletes trait
 
         return redirect()
             ->route('admin.dashboard', ['tab' => 'rekam_medis'])

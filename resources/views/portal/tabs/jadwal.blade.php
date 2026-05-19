@@ -107,7 +107,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 font-bold uppercase">Layanan & Dokter</p>
-                            <p class="text-gray-900 font-semibold">{{ $jadwal->layanan }} ({{ $jadwal->dokter_id ?? '-' }})</p>
+                            <p class="text-gray-900 font-semibold">{{ $jadwal->layanan }} ({{ $jadwal->dokter_nama ?? $jadwal->dokter_id ?? '-' }})</p>
                         </div>
                         <div class="p-4 bg-gray-50 rounded-xl border border-gray-100">
                             <p class="text-xs text-gray-500 font-bold uppercase mb-1">Keluhan / Catatan</p>

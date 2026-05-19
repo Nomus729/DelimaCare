@@ -8,6 +8,8 @@ use App\Models\Medicine;
 use App\Models\RekamMedis;
 use App\Models\Reservasi;
 use App\Models\Doctor;
+use App\Models\ResepMedisItem;
+use App\Models\Pengeluaran;
 
 class AdminController extends Controller
 {
@@ -77,12 +79,29 @@ class AdminController extends Controller
         $totalPasien = RekamMedis::count();
         $doctors = Doctor::all();
 
+        // ─── Keuangan ──────────────────────────────────────────────
+        $keuanganData = $this->getKeuanganData($request);
+        $chartKeuangan = $keuanganData['chartData'];
+        $pengeluaranList = $keuanganData['pengeluaranList'];
+
         // ─── Dashboard Stats ──────────────────────────────────────
+        // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah)
+        $pendapatanBulanIni = ResepMedisItem::whereHas('resepMedis', function ($q) {
+                $q->whereMonth('tanggal_resep', now()->month)
+                  ->whereYear('tanggal_resep', now()->year);
+            })
+            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+            ->value('total') ?? 0;
+
+        // Format pendapatan (contoh: 1500000 → "1,5Jt", 45000000 → "45Jt")
+        $pendapatanFormatted = $this->formatRupiah($pendapatanBulanIni);
+
         $stats = [
             'total_pasien'         => $totalPasien,
             'reservasi_hari_ini'   => $reservasiHariIni,
             'stok_menipis'         => $lowStockCount,
-            'pendapatan_bulan_ini' => '45,2M', // Ini masih dummy karena butuh tabel transaksi
+            'pendapatan_bulan_ini' => $pendapatanFormatted,
         ];
 
         $activeTab = $request->query('tab', 'dashboard');
@@ -94,7 +113,7 @@ class AdminController extends Controller
             'semuaReservasi', 'pendingReservasiCount', 'doctors',
             'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
             'resFilter', 'resStatus', 'resSearch',
-            'stats', 'activeTab'
+            'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList'
         ));
     }
 
@@ -110,7 +129,7 @@ class AdminController extends Controller
         $resStatus = $request->query('res_status', '');
         $resSearch = $request->query('res_search', '');
 
-        $resQuery = Reservasi::query();
+        $resQuery = Reservasi::with('doctor');
 
         if ($resFilter === 'today') {
             $resQuery->whereDate('tanggal', today());
@@ -264,5 +283,71 @@ class AdminController extends Controller
             'pendingReservasiCount' => Reservasi::where('status', 'Menunggu')->count(),
             'lowStockCount'         => Medicine::whereRaw('stock <= min_stock')->count(),
         ]);
+    }
+
+    /**
+     * Format angka ke format rupiah ringkas.
+     * Contoh: 1500000 → "1,5Jt", 45200000 → "45,2Jt", 500000 → "500Rb"
+     */
+    private function formatRupiah($amount)
+    {
+        if ($amount >= 1000000000) {
+            return number_format($amount / 1000000000, 1, ',', '.') . 'M';
+        } elseif ($amount >= 1000000) {
+            return number_format($amount / 1000000, 1, ',', '.') . 'Jt';
+        } elseif ($amount >= 1000) {
+            return number_format($amount / 1000, 0, ',', '.') . 'Rb';
+        }
+        return number_format($amount, 0, ',', '.');
+    }
+
+    /**
+     * Get financial data for the last 6 months.
+     */
+    private function getKeuanganData(Request $request)
+    {
+        $months = [];
+        $pendapatanData = [];
+        $pengeluaranData = [];
+        $labaData = [];
+
+        // Last 6 months
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $months[] = $date->isoFormat('MMM');
+
+            // 1. Pendapatan (Revenue)
+            $pendapatan = ResepMedisItem::whereHas('resepMedis', function ($q) use ($date) {
+                $q->whereMonth('tanggal_resep', $date->month)
+                  ->whereYear('tanggal_resep', $date->year);
+            })
+            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+            ->value('total') ?? 0;
+
+            // 2. Pengeluaran (Expenses)
+            $pengeluaran = Pengeluaran::whereMonth('tanggal', $date->month)
+                ->whereYear('tanggal', $date->year)
+                ->sum('nominal');
+
+            $pendapatanData[] = (float) $pendapatan;
+            $pengeluaranData[] = (float) $pengeluaran;
+            $labaData[] = (float) ($pendapatan - $pengeluaran);
+        }
+
+        $chartData = [
+            'categories' => $months,
+            'pendapatan' => $pendapatanData,
+            'pengeluaran' => $pengeluaranData,
+            'laba' => $labaData,
+        ];
+
+        // Fetch recent expenses
+        $pengeluaranList = Pengeluaran::orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page_keuangan')->appends(['tab' => 'keuangan']);
+
+        return [
+            'chartData' => json_encode($chartData),
+            'pengeluaranList' => $pengeluaranList
+        ];
     }
 }

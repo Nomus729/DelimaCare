@@ -204,6 +204,20 @@
     {{-- File Modal Profil Kita Panggil Di Sini Biar Aman --}}
     @include('portal.tabs.profil')
 
+    <!-- Pusher & Echo -->
+    <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js"></script>
+    <script>
+        window.Pusher = Pusher;
+        window.Echo = new Echo({
+            broadcaster: 'pusher',
+            key: '{{ env("PUSHER_APP_KEY") }}',
+            cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
+            forceTLS: true
+        });
+        window.currentUsername = '{{ Auth::user()->username }}';
+    </script>
+
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="{{ asset('js/portal.js') }}"></script>
 </body>

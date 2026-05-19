@@ -44,4 +44,12 @@ class User extends Authenticatable
     protected $casts = [
         // 'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Relasi ke rekam medis milik pasien ini.
+     */
+    public function rekamMedis()
+    {
+        return $this->hasMany(\App\Models\RekamMedis::class);
+    }
 }

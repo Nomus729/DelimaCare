@@ -38,7 +38,7 @@
             ['label'=>'Total Pasien','value'=>$stats['total_pasien'],'sub'=>'dari bulan lalu','badge'=>'+12%','badge_color'=>'emerald','color'=>'teal','icon'=>'M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z','up'=>true],
             ['label'=>'Reservasi Hari Ini','value'=>$stats['reservasi_hari_ini'],'sub'=>'dari kemarin','badge'=>'+5','badge_color'=>'emerald','color'=>'cyan','icon'=>'M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z','up'=>true],
             ['label'=>'Stok Menipis','value'=>$stats['stok_menipis'],'sub'=>'item perlu restock','badge'=>$stats['stok_menipis'] > 0 ? 'Perhatian' : 'Aman','badge_color'=>$stats['stok_menipis'] > 0 ? 'amber' : 'emerald','color'=>'amber','icon'=>'M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4','up'=>false],
-            ['label'=>'Pendapatan Bulan Ini','value'=>'Rp '.$stats['pendapatan_bulan_ini'],'sub'=>'dari bulan lalu','badge'=>'+18%','badge_color'=>'emerald','color'=>'emerald','icon'=>'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6','up'=>true],
+            ['label'=>'Pendapatan Bulan Ini','value'=>'Rp '.$stats['pendapatan_bulan_ini'],'sub'=>'total resep bulan ini','badge'=>'Live','badge_color'=>'teal','color'=>'emerald','icon'=>'M13 7h8m0 0v8m0-8l-8 8-4-4-6 6','up'=>false],
         ];
         @endphp
         @foreach($statsData as $i => $s)

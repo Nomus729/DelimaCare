@@ -87,7 +87,9 @@ document.addEventListener("alpine:init", () => {
 
     Alpine.data("reservasiApp", (initialDoctors, initialDate) => ({
         isSubmitting: false,
-        selectedDoctor: '', 
+        selectedDoctor: '',      // Sekarang menyimpan ID (integer)
+        selectedDoctorName: '',  // Nama dokter untuk display
+        doctorMap: {},           // Map ID -> Nama (di-populate dari x-init di blade)
         selectedDate: initialDate,
         doctors: initialDoctors,
         days: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
@@ -102,7 +104,8 @@ document.addEventListener("alpine:init", () => {
             this.warning = "";
             if (!this.selectedDoctor || !this.selectedDate) return;
 
-            const doc = this.doctors.find(d => d.nama === this.selectedDoctor);
+            // Cari dokter by ID (bukan by nama)
+            const doc = this.doctors.find(d => d.id == this.selectedDoctor);
             if (!doc) return;
 
             const dateObj = new Date(this.selectedDate);

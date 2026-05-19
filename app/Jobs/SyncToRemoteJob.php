@@ -33,6 +33,10 @@ class SyncToRemoteJob implements ShouldQueue
      */
     public function handle()
     {
+        if (app()->environment('testing')) {
+            return;
+        }
+
         try {
             $remoteConn = DB::connection('mysql_remote');
             $tableName = (new $this->modelClass)->getTable();

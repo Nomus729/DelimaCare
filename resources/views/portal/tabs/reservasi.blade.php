@@ -1,5 +1,6 @@
 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8"
-     x-data="reservasiApp(@js($doctors), '{{ date('Y-m-d') }}')">
+     x-data="reservasiApp(@js($doctors), '{{ date('Y-m-d') }}')"
+     x-init="doctorMap = { @foreach($doctors as $doc) {{ $doc->id }}: '{{ addslashes($doc->nama) }}', @endforeach }">
     {{-- Left Column: Doctor Availability --}}
     <div class="lg:col-span-5 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
         <div class="flex items-center gap-3 mb-6">
@@ -14,8 +15,8 @@
 
         <div class="space-y-4">
             @forelse($doctors->filter->is_available as $doc)
-            <div @click="selectedDoctor = '{{ $doc->nama }}'; checkAvailability()"
-                 :class="selectedDoctor === '{{ $doc->nama }}' ? 'border-teal-500 bg-teal-50/80 ring-2 ring-teal-500/20 dark:bg-teal-900/30' : 'border-gray-100 dark:border-gray-700'"
+            <div @click="selectedDoctor = '{{ $doc->id }}'; selectedDoctorName = '{{ addslashes($doc->nama) }}'; checkAvailability()"
+                 :class="selectedDoctor === '{{ $doc->id }}' ? 'border-teal-500 bg-teal-50/80 ring-2 ring-teal-500/20 dark:bg-teal-900/30' : 'border-gray-100 dark:border-gray-700'"
                  class="flex items-center justify-between p-4 border rounded-2xl hover:border-teal-200 hover:bg-teal-50/50 transition-all cursor-pointer group">
                 <div class="flex items-center gap-4">
                     <div class="w-12 h-12 bg-teal-100 text-teal-600 rounded-full flex items-center justify-center font-bold dark:bg-teal-900/50 dark:text-teal-400">
@@ -118,7 +119,7 @@
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Dokter Terpilih</label>
                     <div class="px-4 py-3 rounded-xl border border-dashed border-teal-200 bg-teal-50/30 flex items-center justify-between dark:border-teal-900/50 dark:bg-teal-900/10 transition-all">
-                        <span class="text-sm font-bold text-teal-700 dark:text-teal-400" x-text="selectedDoctor || 'Silakan klik dokter di sebelah kiri'"></span>
+                        <span class="text-sm font-bold text-teal-700 dark:text-teal-400" x-text="selectedDoctorName || 'Silakan klik dokter di sebelah kiri'"></span>
                         <input type="hidden" name="dokter_id" :value="selectedDoctor">
                         <template x-if="selectedDoctor">
                             <svg class="w-5 h-5 text-teal-500" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/></svg>

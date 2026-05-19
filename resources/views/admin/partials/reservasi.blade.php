@@ -251,10 +251,10 @@
                     </span>
                 @endif
                 
-                @if($item->dokter_id)
+                @if($item->dokter_nama)
                 <span class="flex items-center gap-1.5 bg-gray-50 dark:bg-gray-800 px-2.5 py-1.5 rounded-lg border border-gray-100 dark:border-gray-700/50">
                     <svg class="w-3.5 h-3.5 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
-                    {{ $item->dokter_id }}
+                    {{ $item->dokter_nama }}
                 </span>
                 @endif
                 
@@ -319,7 +319,7 @@
                     </button>
                 </form>
                 @elseif($status === 'Dikonfirmasi')
-                <button @click="$dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}', dokter_id: '{{ addslashes($item->dokter_id) }}' })"
+                <button @click="$dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}', dokter_id: '{{ addslashes($item->dokter_nama) }}' })"
                     title="Buat Rekam Medis & Selesaikan"
                     class="w-10 h-10 rounded-2xl flex items-center justify-center text-teal-600 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-600 hover:text-white hover:scale-110 transition-all shadow-sm">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
@@ -412,7 +412,7 @@
                         <select name="dokter_id" class="q-input q-select font-semibold">
                             <option value="">-- Pilih Dokter --</option>
                             @foreach($doctors as $doc)
-                            <option value="{{ $doc->nama }}">{{ $doc->nama }}</option>
+                            <option value="{{ $doc->id }}">{{ $doc->nama }}</option>
                             @endforeach
                         </select>
                     </div>

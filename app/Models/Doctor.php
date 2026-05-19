@@ -55,6 +55,14 @@ class Doctor extends Model
         return false;
     }
 
+    /**
+     * Relasi ke reservasi yang menggunakan dokter ini.
+     */
+    public function reservasis()
+    {
+        return $this->hasMany(Reservasi::class, 'doctor_id');
+    }
+
     public function getCurrentStatusAttribute()
     {
         // Prioritas status manual jika Libur

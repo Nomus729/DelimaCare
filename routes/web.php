@@ -75,9 +75,12 @@ Route::middleware(['auth', 'patient'])->group(function () {
         $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
         $doctors = \App\Models\Doctor::all();
 
-        // Ambil rekam medis spesifik milik pasien
+        // Ambil rekam medis via user_id (reliable FK) dengan fallback ke nama_pasien
         $rekamMedis = \App\Models\RekamMedis::with('resepMedis.items.medicine')
-            ->where('nama_pasien', Auth::user()->username)
+            ->where(function ($query) {
+                $query->where('user_id', Auth::id())
+                      ->orWhere('nama_pasien', Auth::user()->username);
+            })
             ->latest()
             ->get();
 
@@ -141,6 +144,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/inventori/partial', [\App\Http\Controllers\AdminController::class, 'getInventoriPartial'])->name('inventori.partial');
     Route::get('/konten/partial', [\App\Http\Controllers\AdminController::class, 'getKontenPartial'])->name('konten.partial');
     Route::get('/stats/polling', [\App\Http\Controllers\AdminController::class, 'getPollingStats'])->name('stats.polling');
+
+    // Keuangan (Pengeluaran)
+    Route::post('/pengeluaran', [\App\Http\Controllers\Admin\PengeluaranController::class, 'store'])->name('pengeluaran.store');
+    Route::delete('/pengeluaran/{id}', [\App\Http\Controllers\Admin\PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
     // 🔥 FITUR BARU: Laporan & Analitik 🔥
     Route::get('/report/stats', [ReportController::class, 'getStats'])->name('report.stats');
 });
