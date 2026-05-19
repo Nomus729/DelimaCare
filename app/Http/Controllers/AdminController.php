@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Models\Article;
 use App\Models\Medicine;
 use App\Models\RekamMedis;
@@ -83,6 +84,9 @@ class AdminController extends Controller
         $keuanganData = $this->getKeuanganData($request);
         $chartKeuangan = $keuanganData['chartData'];
         $pengeluaranList = $keuanganData['pengeluaranList'];
+        $kpiStats = $keuanganData['kpiStats'];
+        $donutChartData = $keuanganData['donutChartData'];
+        $topMedicines = $keuanganData['topMedicines'];
 
         // ─── Dashboard Stats ──────────────────────────────────────
         // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah)
@@ -113,7 +117,8 @@ class AdminController extends Controller
             'semuaReservasi', 'pendingReservasiCount', 'doctors',
             'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
             'resFilter', 'resStatus', 'resSearch',
-            'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList'
+            'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList',
+            'kpiStats', 'donutChartData', 'topMedicines'
         ));
     }
 
@@ -342,12 +347,69 @@ class AdminController extends Controller
             'laba' => $labaData,
         ];
 
+        // --- KPI STATS (Bulan Ini vs Bulan Lalu) ---
+        $dateIni = now();
+        $dateLalu = now()->subMonth();
+
+        $revIni = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateIni) {
+            $q->whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year);
+        })->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')->value('total') ?? 0;
+
+        $revLalu = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateLalu) {
+            $q->whereMonth('tanggal_resep', $dateLalu->month)->whereYear('tanggal_resep', $dateLalu->year);
+        })->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')->value('total') ?? 0;
+
+        $expIni = Pengeluaran::whereMonth('tanggal', $dateIni->month)->whereYear('tanggal', $dateIni->year)->sum('nominal');
+        $expLalu = Pengeluaran::whereMonth('tanggal', $dateLalu->month)->whereYear('tanggal', $dateLalu->year)->sum('nominal');
+
+        $labaIni = $revIni - $expIni;
+        $labaLalu = $revLalu - $expLalu;
+
+        $pctRev = $revLalu > 0 ? (($revIni - $revLalu) / $revLalu) * 100 : ($revIni > 0 ? 100 : 0);
+        $pctExp = $expLalu > 0 ? (($expIni - $expLalu) / $expLalu) * 100 : ($expIni > 0 ? 100 : 0);
+        $pctLaba = $labaLalu != 0 ? (($labaIni - $labaLalu) / abs($labaLalu)) * 100 : ($labaIni > 0 ? 100 : 0);
+
+        $kpiStats = [
+            'revIni' => $revIni,
+            'revLalu' => $revLalu,
+            'pctRev' => $pctRev,
+            'expIni' => $expIni,
+            'expLalu' => $expLalu,
+            'pctExp' => $pctExp,
+            'labaIni' => $labaIni,
+            'labaLalu' => $labaLalu,
+            'pctLaba' => $pctLaba,
+        ];
+
+        // --- DISTRIBUSI PENGELUARAN (Donut Chart) ---
+        $kategoriDistribution = Pengeluaran::selectRaw('kategori, SUM(nominal) as total')
+            ->groupBy('kategori')
+            ->pluck('total', 'kategori')
+            ->toArray();
+
+        $categoriesList = ['Operasional', 'Gaji Pegawai', 'Pembelian Alat', 'Lainnya'];
+        $donutChartData = [];
+        foreach ($categoriesList as $cat) {
+            $donutChartData[] = (float) ($kategoriDistribution[$cat] ?? 0);
+        }
+
+        // --- TOP 5 OBAT PENYUMBANG PENDAPATAN ---
+        $topMedicines = ResepMedisItem::join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('medicines.name as name, SUM(resep_medis_items.jumlah) as total_qty, SUM(resep_medis_items.jumlah * medicines.price) as total_revenue')
+            ->groupBy('medicines.name')
+            ->orderBy('total_revenue', 'desc')
+            ->limit(5)
+            ->get();
+
         // Fetch recent expenses
         $pengeluaranList = Pengeluaran::orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page_keuangan')->appends(['tab' => 'keuangan']);
 
         return [
             'chartData' => json_encode($chartData),
-            'pengeluaranList' => $pengeluaranList
+            'pengeluaranList' => $pengeluaranList,
+            'kpiStats' => $kpiStats,
+            'donutChartData' => $donutChartData,
+            'topMedicines' => $topMedicines
         ];
     }
 }
