@@ -22,11 +22,21 @@ function chatbotApp() {
             if (typeof window.Echo !== 'undefined' && window.currentUsername) {
                 window.Echo.channel('chat.' + window.currentUsername)
                     .listen('MessageSent', (e) => {
-                        // Jika pengirim bukan user (berarti admin), tambahkan ke chatMessages
+                        // Jika pengirim bukan user (berarti admin/bot), tambahkan ke chatMessages
                         if (e.message.sender !== 'user') {
-                            // Cek agar tidak duplikat
-                            const exists = this.chatMessages.find(m => m.id === e.message.id);
+                            // Cek agar tidak duplikat (utamakan kecocokan ID, atau cari pesan temporer lokal yang sama persis)
+                            let exists = this.chatMessages.find(m => m.id === e.message.id);
                             if (!exists) {
+                                exists = this.chatMessages.find(m => 
+                                    m.isTemp && m.sender === e.message.sender && m.text === e.message.message
+                                );
+                            }
+
+                            if (exists) {
+                                // Update ID asli dan hapus status temporer
+                                exists.id = e.message.id;
+                                delete exists.isTemp;
+                            } else {
                                 this.chatMessages.push({
                                     id: e.message.id,
                                     sender: e.message.sender,
@@ -101,6 +111,7 @@ function chatbotApp() {
                 type: type,
                 text: text,
                 time: this.getTime(),
+                isTemp: true // Tandai sebagai pesan sementara/lokal
             });
             this.scrollToBottom();
 
@@ -125,10 +136,11 @@ function chatbotApp() {
 
                 const responseData = await response.json();
                 
-                // Update ID sementara dengan ID asli dari DB
+                // Update ID sementara dengan ID asli dari DB jika belum dirubah oleh WebSocket
                 const msgIndex = this.chatMessages.findIndex(m => m.id === tempId);
                 if (msgIndex !== -1 && responseData.message) {
                     this.chatMessages[msgIndex].id = responseData.message.id;
+                    delete this.chatMessages[msgIndex].isTemp;
                 }
                 
                 // Hapus tarikPesan() karena kita pakai WebSocket

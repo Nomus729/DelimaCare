@@ -177,14 +177,36 @@ function adminChatApp() {
                 }
             }, 15000);
 
-            // 3. Listen WebSocket secara global untuk semua pesan masuk agar Auto-Bump ke atas bekerja
+            // 3. Listen WebSocket secara global pada channel admin.chat untuk semua pesan masuk
             if (typeof window.Echo !== 'undefined') {
-                // Kita perbarui status list pasien saat ada event MessageSent baru
-                // Laravel Echo tidak mendukung wildcard secara bawaan, 
-                // namun karena kita kirim event dengan Channel publik `chat.{username}`, kita bisa dengarkan
-                // langsung di WebSocket. Untuk menyederhanakan, kita pasang hook WebSocket.
-                // Jika ingin Echo lebih spesifik, kita bisa memicu broadcast tambahan ke Channel global 'admin.chat-notification'
-                // atau kita update user list secara real-time saat pesan dari siapapun dikirim.
+                // Bersihkan channel/listener sebelumnya agar tidak terjadi duplikasi saat pindah tab
+                window.Echo.leave('admin.chat');
+
+                window.Echo.channel('admin.chat')
+                    .listen('MessageSent', (e) => {
+                        // Hanya proses pesan yang datang dari pasien (sender !== 'admin')
+                        if (e.message.sender !== 'admin') {
+                            const isCurrentlyActive = this.activeUser && this.activeUser.id === e.message.username;
+                            
+                            if (isCurrentlyActive) {
+                                // Masukkan langsung ke chat window jika sedang aktif
+                                const exists = this.chatMessages.find(m => m.id === e.message.id);
+                                if (!exists) {
+                                    this.chatMessages.push({
+                                        id: e.message.id,
+                                        sender: e.message.sender,
+                                        type: e.message.type,
+                                        text: e.message.message,
+                                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
+                                    });
+                                    this.scrollToBottom();
+                                }
+                            }
+                            
+                            // Auto-Bump Pasien ke urutan paling atas di Sidebar & tingkatkan unread count jika tidak aktif
+                            this.bumpUserToTop(e.message.username, e.message.message, !isCurrentlyActive);
+                        }
+                    });
             }
         },
 
@@ -209,11 +231,6 @@ function adminChatApp() {
         },
 
         async pilihPasien(user) {
-            // Tinggalkan channel lama jika ada
-            if (this.activeUser && typeof window.Echo !== 'undefined') {
-                window.Echo.leave('chat.' + this.activeUser.id);
-            }
-
             this.activeUser = user;
             this.chatMessages = [];
             
@@ -221,35 +238,6 @@ function adminChatApp() {
             user.unread_count = 0;
 
             await this.tarikPesanPasien(user.id);
-
-            // Subscribe ke channel WebSocket user yang dipilih
-            if (typeof window.Echo !== 'undefined') {
-                window.Echo.channel('chat.' + user.id)
-                    .listen('MessageSent', (e) => {
-                        // Jika pesan datang dari user
-                        if (e.message.sender === 'user') {
-                            const isCurrentlyActive = this.activeUser && this.activeUser.id === e.message.username;
-                            
-                            if (isCurrentlyActive) {
-                                // Masukkan langsung ke chat window jika sedang aktif
-                                const exists = this.chatMessages.find(m => m.id === e.message.id);
-                                if (!exists) {
-                                    this.chatMessages.push({
-                                        id: e.message.id,
-                                        sender: e.message.sender,
-                                        type: e.message.type,
-                                        text: e.message.message,
-                                        time: new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })
-                                    });
-                                    this.scrollToBottom();
-                                }
-                            }
-                            
-                            // Auto-Bump Pasien ke urutan paling atas di Sidebar
-                            this.bumpUserToTop(e.message.username, e.message.message, !isCurrentlyActive);
-                        }
-                    });
-            }
         },
 
         // Helper untuk Auto-Bump list pasien ke paling atas ketika ada pesan baru

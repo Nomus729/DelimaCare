@@ -34,6 +34,7 @@ class MessageSent implements ShouldBroadcastNow
     {
         return [
             new Channel('chat.' . $this->message->username),
+            new Channel('admin.chat'),
         ];
     }
 }
