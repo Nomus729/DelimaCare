@@ -22,11 +22,11 @@
             </span>
             <span class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-xl text-xs font-bold">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                28 Reservasi Hari Ini
+                {{ $stats['reservasi_hari_ini'] }} Reservasi Hari Ini
             </span>
             <span class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-xl text-xs font-bold">
                 <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
-                342 Total Pasien
+                {{ $stats['total_pasien'] }} Total Pasien
             </span>
         </div>
     </div>
@@ -171,38 +171,48 @@
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function () {
+(function () {
     const isDark = document.documentElement.classList.contains('dark');
     const textColor = isDark ? '#94A3B8' : '#64748B';
     const gridColor = isDark ? '#1E293B' : '#F1F5F9';
 
-    new ApexCharts(document.querySelector('#chartKunjungan'), {
-        series: [
-            { name: 'Kunjungan', data: [240, 260, 180, 280, 310, 290] },
-            { name: 'Pasien Baru', data: [50, 60, 40, 70, 65, 55] }
-        ],
-        chart: { type: 'bar', height: 220, toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 800 } },
-        plotOptions: { bar: { horizontal: false, columnWidth: '44%', borderRadius: 7, borderRadiusApplication: 'end' } },
-        dataLabels: { enabled: false },
-        xaxis: { categories: ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun'], labels: { style: { colors: textColor, fontSize: '12px', fontWeight: 600 } }, axisBorder: { show: false }, axisTicks: { show: false } },
-        yaxis: { labels: { style: { colors: textColor, fontSize: '12px' } } },
-        grid: { borderColor: gridColor, strokeDashArray: 4, padding: { left: 0, right: 0 } },
-        colors: ['#0D9488', '#06B6D4'],
-        legend: { show: false },
-        theme: { mode: isDark ? 'dark' : 'light' },
-        tooltip: { theme: isDark ? 'dark' : 'light', y: { formatter: val => val + ' pasien' } },
-    }).render();
+    const chartKunjunganEl = document.querySelector('#chartKunjungan');
+    const chartDistribusiEl = document.querySelector('#chartDistribusi');
+    if (chartKunjunganEl) chartKunjunganEl.innerHTML = '';
+    if (chartDistribusiEl) chartDistribusiEl.innerHTML = '';
 
-    new ApexCharts(document.querySelector('#chartDistribusi'), {
-        series: [45, 30, 15, 10],
-        chart: { type: 'donut', height: 220, background: 'transparent', fontFamily: 'Inter, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 900 } },
-        labels: ['Kehamilan', 'KB', 'Konsultasi', 'Kontrol'],
-        colors: ['#0D9488', '#06B6D4', '#10B981', '#14B8A6'],
-        dataLabels: { enabled: false },
-        legend: { position: 'bottom', fontFamily: 'Inter, sans-serif', fontSize: '11px', labels: { colors: textColor } },
-        plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total', color: textColor, fontSize: '11px', fontWeight: 700 } } } } },
-        theme: { mode: isDark ? 'dark' : 'light' },
-        tooltip: { theme: isDark ? 'dark' : 'light' },
-    }).render();
-});
+    if (chartKunjunganEl) {
+        var rawKunjungan = {!! $chartKunjunganData ?? '{"categories":[],"kunjungan":[],"pasien_baru":[]}' !!};
+        new ApexCharts(chartKunjunganEl, {
+            series: [
+                { name: 'Kunjungan', data: rawKunjungan.kunjungan },
+                { name: 'Pasien Baru', data: rawKunjungan.pasien_baru }
+            ],
+            chart: { type: 'bar', height: 220, toolbar: { show: false }, background: 'transparent', fontFamily: 'Inter, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 800 } },
+            plotOptions: { bar: { horizontal: false, columnWidth: '44%', borderRadius: 7, borderRadiusApplication: 'end' } },
+            dataLabels: { enabled: false },
+            xaxis: { categories: rawKunjungan.categories, labels: { style: { colors: textColor, fontSize: '12px', fontWeight: 600 } }, axisBorder: { show: false }, axisTicks: { show: false } },
+            yaxis: { labels: { style: { colors: textColor, fontSize: '12px' } } },
+            grid: { borderColor: gridColor, strokeDashArray: 4, padding: { left: 0, right: 0 } },
+            colors: ['#0D9488', '#06B6D4'],
+            legend: { show: false },
+            theme: { mode: isDark ? 'dark' : 'light' },
+            tooltip: { theme: isDark ? 'dark' : 'light', y: { formatter: val => val + ' pasien' } },
+        }).render();
+    }
+
+    if (chartDistribusiEl) {
+        new ApexCharts(chartDistribusiEl, {
+            series: {!! $chartDistribusiData ?? '[0, 0, 0, 0]' !!},
+            chart: { type: 'donut', height: 220, background: 'transparent', fontFamily: 'Inter, sans-serif', animations: { enabled: true, easing: 'easeinout', speed: 900 } },
+            labels: ['Kehamilan', 'KB', 'Konsultasi', 'Lainnya'],
+            colors: ['#0D9488', '#06B6D4', '#10B981', '#14B8A6'],
+            dataLabels: { enabled: false },
+            legend: { position: 'bottom', fontFamily: 'Inter, sans-serif', fontSize: '11px', labels: { colors: textColor } },
+            plotOptions: { pie: { donut: { size: '70%', labels: { show: true, total: { show: true, label: 'Total', color: textColor, fontSize: '11px', fontWeight: 700 } } } } },
+            theme: { mode: isDark ? 'dark' : 'light' },
+            tooltip: { theme: isDark ? 'dark' : 'light' },
+        }).render();
+    }
+})();
 </script>

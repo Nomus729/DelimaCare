@@ -92,14 +92,20 @@ class AdminController extends Controller
         $summaryTable = $keuanganData['summaryTable'];
 
         // ─── Dashboard Stats ──────────────────────────────────────
-        // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah)
-        $pendapatanBulanIni = ResepMedisItem::whereHas('resepMedis', function ($q) {
+        // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah + biaya dokter)
+        $resepObatBulanIni = ResepMedisItem::whereHas('resepMedis', function ($q) {
                 $q->whereMonth('tanggal_resep', now()->month)
                   ->whereYear('tanggal_resep', now()->year);
             })
             ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
             ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
             ->value('total') ?? 0;
+
+        $resepDokterBulanIni = \App\Models\ResepMedis::whereMonth('tanggal_resep', now()->month)
+            ->whereYear('tanggal_resep', now()->year)
+            ->sum('biaya_dokter');
+
+        $pendapatanBulanIni = $resepObatBulanIni + $resepDokterBulanIni;
 
         // Format pendapatan (contoh: 1500000 → "1,5Jt", 45000000 → "45Jt")
         $pendapatanFormatted = $this->formatRupiah($pendapatanBulanIni);
@@ -110,6 +116,49 @@ class AdminController extends Controller
             'stok_menipis'         => $lowStockCount,
             'pendapatan_bulan_ini' => $pendapatanFormatted,
         ];
+
+        // --- 6-Month Kunjungan & Pasien Baru Chart ---
+        $kunjunganCategories = [];
+        $kunjunganData = [];
+        $pasienBaruData = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $kunjunganCategories[] = $date->isoFormat('MMM');
+
+            $kunjunganCount = RekamMedis::whereMonth('created_at', $date->month)
+                ->whereYear('created_at', $date->year)
+                ->count();
+
+            $pasienBaruCount = RekamMedis::whereMonth('created_at', $date->month)
+                ->whereYear('created_at', $date->year)
+                ->whereNotExists(function($query) use ($date) {
+                    $query->selectRaw(1)
+                          ->from('rekam_medis as rm2')
+                          ->whereColumn('rm2.no_telepon', 'rekam_medis.no_telepon')
+                          ->where('rm2.created_at', '<', $date->copy()->startOfMonth());
+                })
+                ->count();
+
+            $kunjunganData[] = $kunjunganCount;
+            $pasienBaruData[] = $pasienBaruCount;
+        }
+
+        $chartKunjunganData = json_encode([
+            'categories' => $kunjunganCategories,
+            'kunjungan' => $kunjunganData,
+            'pasien_baru' => $pasienBaruData
+        ]);
+
+        // --- Current Month Service Distribution Donut ---
+        $distribusiLayanan = [
+            'Kehamilan' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kehamilan')->count(),
+            'Keluarga Berencana' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Keluarga Berencana')->count(),
+            'Kontrol Umum' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kontrol Umum')->count(),
+            'Lainnya' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->whereNotIn('kategori', ['Kehamilan', 'Keluarga Berencana', 'Kontrol Umum'])->count(),
+        ];
+        
+        $chartDistribusiData = json_encode(array_values($distribusiLayanan));
 
         $activeTab = $request->query('tab', 'dashboard');
 
@@ -122,7 +171,8 @@ class AdminController extends Controller
             'resFilter', 'resStatus', 'resSearch',
             'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList',
             'kpiStats', 'donutChartData', 'topMedicines',
-            'topDoctors', 'topExpenses', 'summaryTable'
+            'topDoctors', 'topExpenses', 'summaryTable',
+            'chartKunjunganData', 'chartDistribusiData'
         ));
     }
 
@@ -316,17 +366,17 @@ class AdminController extends Controller
     private function getKeuanganData(Request $request)
     {
         $months = [];
-        $pendapatanData = [];
-        $pengeluaranData = [];
-        $labaData = [];
+        $pendapatanObatData = [];
+        $pendapatanDokterData = [];
+        $totalPendapatanData = [];
 
         // Last 6 months
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $months[] = $date->isoFormat('MMM');
 
-            // 1. Pendapatan (Revenue)
-            $pendapatan = ResepMedisItem::whereHas('resepMedis', function ($q) use ($date) {
+            // 1. Pendapatan Obat
+            $pendapatanObat = ResepMedisItem::whereHas('resepMedis', function ($q) use ($date) {
                 $q->whereMonth('tanggal_resep', $date->month)
                   ->whereYear('tanggal_resep', $date->year);
             })
@@ -334,84 +384,80 @@ class AdminController extends Controller
             ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
             ->value('total') ?? 0;
 
-            // 2. Pengeluaran (Expenses)
-            $pengeluaran = Pengeluaran::whereMonth('tanggal', $date->month)
-                ->whereYear('tanggal', $date->year)
-                ->sum('nominal');
+            // 2. Pendapatan Jasa Dokter
+            $pendapatanDokter = \App\Models\ResepMedis::whereMonth('tanggal_resep', $date->month)
+                ->whereYear('tanggal_resep', $date->year)
+                ->sum('biaya_dokter');
 
-            $pendapatanData[] = (float) $pendapatan;
-            $pengeluaranData[] = (float) $pengeluaran;
-            $labaData[] = (float) ($pendapatan - $pengeluaran);
+            $pendapatanObatData[] = (float) $pendapatanObat;
+            $pendapatanDokterData[] = (float) $pendapatanDokter;
+            $totalPendapatanData[] = (float) ($pendapatanObat + $pendapatanDokter);
         }
 
         $chartData = [
             'categories' => $months,
-            'pendapatan' => $pendapatanData,
-            'pengeluaran' => $pengeluaranData,
-            'laba' => $labaData,
+            'pendapatan_obat' => $pendapatanObatData,
+            'pendapatan_dokter' => $pendapatanDokterData,
+            'total' => $totalPendapatanData,
         ];
 
         // --- KPI STATS (Bulan Ini vs Bulan Lalu) ---
         $dateIni = now();
         $dateLalu = now()->subMonth();
 
-        $revIni = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateIni) {
+        $obatIni = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateIni) {
             $q->whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year);
         })->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')->value('total') ?? 0;
 
-        $revLalu = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateLalu) {
+        $dokterIni = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year)->sum('biaya_dokter');
+
+        $totalIni = $obatIni + $dokterIni;
+
+        $obatLalu = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateLalu) {
             $q->whereMonth('tanggal_resep', $dateLalu->month)->whereYear('tanggal_resep', $dateLalu->year);
         })->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')->value('total') ?? 0;
 
-        $expIni = Pengeluaran::whereMonth('tanggal', $dateIni->month)->whereYear('tanggal', $dateIni->year)->sum('nominal');
-        $expLalu = Pengeluaran::whereMonth('tanggal', $dateLalu->month)->whereYear('tanggal', $dateLalu->year)->sum('nominal');
+        $dokterLalu = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateLalu->month)->whereYear('tanggal_resep', $dateLalu->year)->sum('biaya_dokter');
 
-        $labaIni = $revIni - $expIni;
-        $labaLalu = $revLalu - $expLalu;
+        $totalLalu = $obatLalu + $dokterLalu;
 
-        $pctRev = $revLalu > 0 ? (($revIni - $revLalu) / $revLalu) * 100 : ($revIni > 0 ? 100 : 0);
-        $pctExp = $expLalu > 0 ? (($expIni - $expLalu) / $expLalu) * 100 : ($expIni > 0 ? 100 : 0);
-        $pctLaba = $labaLalu != 0 ? (($labaIni - $labaLalu) / abs($labaLalu)) * 100 : ($labaIni > 0 ? 100 : 0);
+        $pctTotal = $totalLalu > 0 ? (($totalIni - $totalLalu) / $totalLalu) * 100 : ($totalIni > 0 ? 100 : 0);
+        $pctObat = $obatLalu > 0 ? (($obatIni - $obatLalu) / $obatLalu) * 100 : ($obatIni > 0 ? 100 : 0);
+        $pctDokter = $dokterLalu > 0 ? (($dokterIni - $dokterLalu) / $dokterLalu) * 100 : ($dokterIni > 0 ? 100 : 0);
 
-        // --- Tambahan: Rata-rata Nilai Resep & Profit Margin ---
+        // --- Rata-rata Nilai Resep & Profit Margin ---
         $countResepIni = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year)->count();
         $countResepLalu = \App\Models\ResepMedis::whereMonth('tanggal_resep', $dateLalu->month)->whereYear('tanggal_resep', $dateLalu->year)->count();
 
-        $avgRevIni = $countResepIni > 0 ? $revIni / $countResepIni : 0;
-        $avgRevLalu = $countResepLalu > 0 ? $revLalu / $countResepLalu : 0;
+        $avgRevIni = $countResepIni > 0 ? $totalIni / $countResepIni : 0;
+        $avgRevLalu = $countResepLalu > 0 ? $totalLalu / $countResepLalu : 0;
         $pctAvgRev = $avgRevLalu > 0 ? (($avgRevIni - $avgRevLalu) / $avgRevLalu) * 100 : ($avgRevIni > 0 ? 100 : 0);
 
-        $marginIni = $revIni > 0 ? ($labaIni / $revIni) * 100 : 0;
-        $marginLalu = $revLalu > 0 ? ($labaLalu / $revLalu) * 100 : 0;
+        $marginIni = $totalIni > 0 ? ($dokterIni / $totalIni) * 100 : 0;
+        $marginLalu = $totalLalu > 0 ? ($dokterLalu / $totalLalu) * 100 : 0;
         $diffMargin = $marginIni - $marginLalu;
 
         $kpiStats = [
-            'revIni' => $revIni,
-            'revLalu' => $revLalu,
-            'pctRev' => $pctRev,
-            'expIni' => $expIni,
-            'expLalu' => $expLalu,
-            'pctExp' => $pctExp,
-            'labaIni' => $labaIni,
-            'labaLalu' => $labaLalu,
-            'pctLaba' => $pctLaba,
+            'revIni' => $totalIni,
+            'revLalu' => $totalLalu,
+            'pctRev' => $pctTotal,
+            'expIni' => $dokterIni,
+            'expLalu' => $dokterLalu,
+            'pctExp' => $pctDokter,
+            'labaIni' => $obatIni,
+            'labaLalu' => $obatLalu,
+            'pctLaba' => $pctObat,
             'avgRevIni' => $avgRevIni,
             'pctAvgRev' => $pctAvgRev,
             'marginIni' => $marginIni,
             'diffMargin' => $diffMargin,
         ];
 
-        // --- DISTRIBUSI PENGELUARAN (Donut Chart) ---
-        $kategoriDistribution = Pengeluaran::selectRaw('kategori, SUM(nominal) as total')
-            ->groupBy('kategori')
-            ->pluck('total', 'kategori')
-            ->toArray();
-
-        $categoriesList = ['Operasional', 'Gaji Pegawai', 'Pembelian Alat', 'Lainnya'];
-        $donutChartData = [];
-        foreach ($categoriesList as $cat) {
-            $donutChartData[] = (float) ($kategoriDistribution[$cat] ?? 0);
-        }
+        // --- DISTRIBUSI PENDAPATAN (Donut Chart) ---
+        $donutChartData = [
+            (float) $dokterIni,
+            (float) $obatIni
+        ];
 
         // --- TOP 5 OBAT PENYUMBANG PENDAPATAN ---
         $topMedicines = ResepMedisItem::join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
@@ -421,40 +467,66 @@ class AdminController extends Controller
             ->limit(5)
             ->get();
 
-        // --- Tambahan: Top 3 Dokter Kontributor Omzet ---
-        $topDoctors = ResepMedisItem::join('resep_medis', 'resep_medis_items.resep_medis_id', '=', 'resep_medis.id')
-            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
-            ->selectRaw('resep_medis.dokter_pemeriksa as name, SUM(resep_medis_items.jumlah * medicines.price) as total_revenue, COUNT(DISTINCT resep_medis.id) as total_prescriptions')
-            ->groupBy('resep_medis.dokter_pemeriksa')
-            ->orderBy('total_revenue', 'desc')
-            ->limit(3)
-            ->get();
+        // --- Top 3 Dokter Kontributor Omzet ---
+        $topDoctors = \App\Models\ResepMedis::selectRaw('dokter_pemeriksa as name, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_prescriptions')
+            ->groupBy('dokter_pemeriksa')
+            ->get()
+            ->map(function ($doc) {
+                $medicineRevenue = ResepMedisItem::whereHas('resepMedis', function ($q) use ($doc) {
+                        $q->where('dokter_pemeriksa', $doc->name);
+                    })
+                    ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+                    ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+                    ->value('total') ?? 0;
+                $doc->total_revenue = $doc->total_biaya_dokter + $medicineRevenue;
+                return $doc;
+            })
+            ->sortByDesc('total_revenue')
+            ->take(3)
+            ->values();
 
-        // --- Tambahan: Top 3 Pengeluaran Terbesar (Expense Drivers) ---
-        $topExpenses = Pengeluaran::orderBy('nominal', 'desc')
-            ->limit(3)
-            ->get();
+        // --- Top 3 Pasien Kontributor Omzet ---
+        $topExpenses = \App\Models\ResepMedis::selectRaw('nama_pasien as title, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_visits')
+            ->groupBy('nama_pasien')
+            ->get()
+            ->map(function ($p) {
+                $medRev = ResepMedisItem::whereHas('resepMedis', function ($q) use ($p) {
+                        $q->where('nama_pasien', $p->title);
+                    })
+                    ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+                    ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+                    ->value('total') ?? 0;
+                $p->nominal = $p->total_biaya_dokter + $medRev;
+                $p->keterangan = "Total Kunjungan: " . $p->total_visits . "x";
+                return $p;
+            })
+            ->sortByDesc('nominal')
+            ->take(3)
+            ->values();
 
-        // --- Tambahan: Tabel Ikhtisar Tabular 6 Bulan ---
+        // --- Tabel Ikhtisar Tabular 6 Bulan ---
         $summaryTable = [];
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
-            $p = $pendapatanData[5 - $i] ?? 0;
-            $e = $pengeluaranData[5 - $i] ?? 0;
-            $l = $labaData[5 - $i] ?? 0;
-            $m = $p > 0 ? ($l / $p) * 100 : 0;
+            $p_obat = $pendapatanObatData[5 - $i] ?? 0;
+            $p_dokter = $pendapatanDokterData[5 - $i] ?? 0;
+            $total = $totalPendapatanData[5 - $i] ?? 0;
+            $m = $total > 0 ? ($p_dokter / $total) * 100 : 0;
             $summaryTable[] = [
                 'month' => $date->isoFormat('MMMM YYYY'),
-                'pendapatan' => $p,
-                'pengeluaran' => $e,
-                'laba' => $l,
+                'jasa_dokter' => $p_dokter,
+                'obat_sales' => $p_obat,
+                'total' => $total,
                 'margin' => $m,
-                'status' => $l >= 0 ? 'Surplus' : 'Defisit'
+                'status' => 'Stabil'
             ];
         }
 
-        // Fetch recent expenses
-        $pengeluaranList = Pengeluaran::orderBy('tanggal', 'desc')->paginate(10, ['*'], 'page_keuangan')->appends(['tab' => 'keuangan']);
+        // Fetch recent billing invoices
+        $pengeluaranList = \App\Models\ResepMedis::with('items.medicine')
+            ->orderBy('tanggal_resep', 'desc')
+            ->paginate(10, ['*'], 'page_keuangan')
+            ->appends(['tab' => 'keuangan']);
 
         return [
             'chartData' => json_encode($chartData),

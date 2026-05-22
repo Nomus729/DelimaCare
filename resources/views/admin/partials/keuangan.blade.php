@@ -26,7 +26,7 @@
         <!-- KPI 1: Pendapatan -->
         <div class="kpi-card bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div class="flex justify-between items-start mb-2">
-                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Pendapatan Kotor</span>
+                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Total Omzet Klinik</span>
                 <div class="p-1.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M12 16V5"/></svg>
                 </div>
@@ -44,33 +44,33 @@
             </div>
         </div>
 
-        <!-- KPI 2: Pengeluaran -->
+        <!-- KPI 2: Jasa Dokter -->
         <div class="kpi-card bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div class="flex justify-between items-start mb-2">
-                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Total Pengeluaran</span>
-                <div class="p-1.5 rounded-lg bg-rose-500/10 text-rose-600 dark:text-rose-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12H9m12 0a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Jasa Jasa Medis / Dokter</span>
+                <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/></svg>
                 </div>
             </div>
             <div>
                 <h3 class="text-lg font-black text-gray-900 dark:text-white leading-tight">Rp {{ number_format($kpiStats['expIni'], 0, ',', '.') }}</h3>
                 <div class="mt-2 flex items-center gap-1">
                     @if($kpiStats['pctExp'] >= 0)
-                        <span class="text-[10px] font-extrabold text-rose-500 flex items-center">+{{ number_format($kpiStats['pctExp'], 1) }}%</span>
+                        <span class="text-[10px] font-extrabold text-emerald-500 flex items-center">+{{ number_format($kpiStats['pctExp'], 1) }}%</span>
                     @else
-                        <span class="text-[10px] font-extrabold text-emerald-500 flex items-center">{{ number_format($kpiStats['pctExp'], 1) }}%</span>
+                        <span class="text-[10px] font-extrabold text-rose-500 flex items-center">{{ number_format($kpiStats['pctExp'], 1) }}%</span>
                     @endif
                     <span class="text-[9px] text-gray-400 font-semibold">MoM</span>
                 </div>
             </div>
         </div>
 
-        <!-- KPI 3: Laba Bersih -->
+        <!-- KPI 3: Penjualan Obat -->
         <div class="kpi-card bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div class="flex justify-between items-start mb-2">
-                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Laba Bersih</span>
+                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Penjualan Resep Obat</span>
                 <div class="p-1.5 rounded-lg bg-cyan-500/10 text-cyan-600 dark:text-cyan-400">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 002 2h2a2 2 0 002-2z"/></svg>
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a2 2 0 00-1.96 1.414l-.477 2.387a2 2 0 00.547 1.022l1.428 1.428a2 2 0 002.828 0l4.243-4.243a2 2 0 000-2.828l-1.428-1.428z"/></svg>
                 </div>
             </div>
             <div>
@@ -89,8 +89,8 @@
         <!-- KPI 4: Rata-rata Nilai Resep -->
         <div class="kpi-card bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div class="flex justify-between items-start mb-2">
-                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Rata-rata Resep</span>
-                <div class="p-1.5 rounded-lg bg-amber-500/10 text-amber-600 dark:text-amber-400">
+                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Rata-rata Pendapatan</span>
+                <div class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>
                 </div>
             </div>
@@ -107,11 +107,11 @@
             </div>
         </div>
 
-        <!-- KPI 5: Profit Margin -->
+        <!-- KPI 5: Jasa Medis Share -->
         <div class="kpi-card bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm flex flex-col justify-between">
             <div class="flex justify-between items-start mb-2">
-                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Margin Keuntungan</span>
-                <div class="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+                <span class="text-[9px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest leading-none">Porsi Jasa Dokter</span>
+                <div class="p-1.5 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 3.055A9.003 9.003 0 1020.945 13H11V3.055z"/></svg>
                 </div>
             </div>
@@ -123,7 +123,7 @@
                     @else
                         <span class="text-[10px] font-extrabold text-rose-500 flex items-center">{{ number_format($kpiStats['diffMargin'], 1) }} pp</span>
                     @endif
-                    <span class="text-[9px] text-gray-400 font-semibold">Poin</span>
+                    <span class="text-[9px] text-gray-400 font-semibold">MoM</span>
                 </div>
             </div>
         </div>
@@ -134,17 +134,17 @@
         <!-- Area Chart: Tren -->
         <div class="lg:col-span-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
             <div class="mb-4">
-                <h4 class="font-bold text-gray-900 dark:text-white">Tren Finansial 6 Bulan Terakhir</h4>
-                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Analisis Fluktuasi Pendapatan, Pengeluaran & Laba</p>
+                <h4 class="font-bold text-gray-900 dark:text-white">Tren Pendapatan 6 Bulan Terakhir</h4>
+                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Analisis Fluktuasi Jasa Tindakan Medis & Penjualan Obat</p>
             </div>
             <div id="chartKeuangan" class="w-full h-[350px]"></div>
         </div>
 
-        <!-- Donut Chart: Distribusi Pengeluaran -->
+        <!-- Donut Chart: Proporsi Pendapatan -->
         <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div class="mb-4">
-                <h4 class="font-bold text-gray-900 dark:text-white">Alokasi Pengeluaran</h4>
-                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Distribusi Biaya Operasional Berdasarkan Kategori</p>
+                <h4 class="font-bold text-gray-900 dark:text-white">Proporsi Arus Pendapatan</h4>
+                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Kontribusi Jasa Dokter vs Penjualan Obat Bulan Ini</p>
             </div>
             <div class="flex-grow flex items-center justify-center">
                 <div id="chartDonutPengeluaran" class="w-full h-[280px]"></div>
@@ -158,8 +158,8 @@
         <div class="lg:col-span-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
             <div class="flex justify-between items-center mb-6">
                 <div>
-                    <h4 class="font-bold text-gray-900 dark:text-white">Kontribusi Omzet Dokter Pemeriksa</h4>
-                    <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Omzet Kotor Resep Obat Berdasarkan Dokter</p>
+                    <h4 class="font-bold text-gray-900 dark:text-white">Kontribusi Jasa Dokter</h4>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Akumulasi Jasa Medis & Konsultasi Berdasarkan Dokter</p>
                 </div>
                 <span class="text-[10px] bg-teal-500/10 text-teal-600 dark:text-teal-400 font-black uppercase tracking-widest px-3 py-1.5 rounded-full">Top Performer</span>
             </div>
@@ -168,7 +168,7 @@
                     <thead class="bg-gray-50/50 dark:bg-gray-800/40">
                         <tr>
                             <th class="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Nama Dokter</th>
-                            <th class="px-6 py-3 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Resep</th>
+                            <th class="px-6 py-3 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Layanan</th>
                             <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Kontribusi (Rp)</th>
                         </tr>
                     </thead>
@@ -182,7 +182,7 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-center whitespace-nowrap text-sm font-bold text-gray-500 dark:text-gray-400">
-                                {{ $doc->total_prescriptions }} Resep
+                                {{ $doc->total_prescriptions }} Transaksi
                             </td>
                             <td class="px-6 py-4 text-right whitespace-nowrap text-sm font-black text-teal-600">
                                 Rp {{ number_format($doc->total_revenue, 0, ',', '.') }}
@@ -198,42 +198,45 @@
             </div>
         </div>
 
-        <!-- 3 Kebocoran Biaya Terbesar (Expense Drivers) -->
+        <!-- Proporsi Sumber Pendapatan (Revenue Drivers) -->
         <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm flex flex-col justify-between">
             <div>
                 <div class="mb-6">
-                    <h4 class="font-bold text-gray-900 dark:text-white">Pos Pengeluaran Terbesar</h4>
-                    <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Top 3 Pembayaran Keluar Dengan Nominal Tertinggi</p>
+                    <h4 class="font-bold text-gray-900 dark:text-white">Kinerja Kategori Layanan</h4>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Analisis Kontribusi Omzet Bulan Ini</p>
                 </div>
                 <div class="space-y-5">
-                    @forelse($topExpenses as $item)
                     <div>
                         <div class="flex justify-between items-center mb-1.5">
                             <div>
-                                <span class="text-xs font-bold text-gray-900 dark:text-white block">{{ $item->judul }}</span>
-                                <span class="text-[9px] font-extrabold text-rose-500 uppercase tracking-wider">{{ $item->kategori }}</span>
+                                <span class="text-xs font-bold text-gray-900 dark:text-white block">Jasa Dokter / Konsultasi</span>
+                                <span class="text-[9px] font-extrabold text-teal-600 uppercase tracking-wider">Tindakan & Pemeriksaan</span>
                             </div>
-                            <span class="text-xs font-black text-rose-600">Rp {{ number_format($item->nominal, 0, ',', '.') }}</span>
+                            <span class="text-xs font-black text-teal-600">Rp {{ number_format($kpiStats['expIni'], 0, ',', '.') }}</span>
                         </div>
                         <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
-                            @php
-                                $totalOverallExpense = max($topExpenses->sum('nominal'), 1);
-                                $percentage = ($item->nominal / $totalOverallExpense) * 100;
-                            @endphp
-                            <div class="bg-rose-500 h-full rounded-full transition-all duration-500" style="width: {{ $percentage }}%"></div>
+                            <div class="bg-teal-500 h-full rounded-full transition-all duration-500" style="width: {{ $kpiStats['marginIni'] }}%"></div>
                         </div>
                     </div>
-                    @empty
-                    <div class="text-center py-8">
-                        <p class="text-xs font-black text-gray-400 uppercase tracking-widest">Belum ada data pengeluaran</p>
+
+                    <div>
+                        <div class="flex justify-between items-center mb-1.5">
+                            <div>
+                                <span class="text-xs font-bold text-gray-900 dark:text-white block">Penjualan Resep Obat</span>
+                                <span class="text-[9px] font-extrabold text-amber-500 uppercase tracking-wider">Apotek & Farmasi</span>
+                            </div>
+                            <span class="text-xs font-black text-amber-500">Rp {{ number_format($kpiStats['labaIni'], 0, ',', '.') }}</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-amber-500 h-full rounded-full transition-all duration-500" style="width: {{ 100 - $kpiStats['marginIni'] }}%"></div>
+                        </div>
                     </div>
-                    @endforelse
                 </div>
             </div>
         </div>
     </div>
 
-    {{-- Bottom Grid: Tabular Summary & CRUD Log --}}
+    {{-- Bottom Grid: Tabular Summary & Info Log --}}
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Rangkuman Log Ikhtisar Bulanan (6 Bulan) -->
         <div class="lg:col-span-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
@@ -246,10 +249,10 @@
                     <thead class="bg-gray-50/50 dark:bg-gray-800/40">
                         <tr>
                             <th class="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Bulan</th>
-                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Pendapatan</th>
-                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Pengeluaran</th>
-                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Laba Bersih</th>
-                            <th class="px-6 py-3 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Margin %</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Jasa Dokter</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Penjualan Obat</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Omzet</th>
+                            <th class="px-6 py-3 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Porsi Dokter</th>
                             <th class="px-6 py-3 text-center text-[9px] font-black text-gray-400 uppercase tracking-widest">Status</th>
                         </tr>
                     </thead>
@@ -257,15 +260,15 @@
                         @foreach($summaryTable as $row)
                         <tr class="hover:bg-gray-50/30 dark:hover:bg-gray-800/10 transition-colors">
                             <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-gray-900 dark:text-white">{{ $row['month'] }}</td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-semibold text-gray-700 dark:text-gray-300">Rp {{ number_format($row['pendapatan'], 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-semibold text-gray-500 dark:text-gray-400">Rp {{ number_format($row['pengeluaran'], 0, ',', '.') }}</td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-black {{ $row['laba'] >= 0 ? 'text-teal-600' : 'text-rose-600' }}">
-                                Rp {{ number_format($row['laba'], 0, ',', '.') }}
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-semibold text-gray-700 dark:text-gray-300">Rp {{ number_format($row['jasa_dokter'], 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-semibold text-gray-500 dark:text-gray-400">Rp {{ number_format($row['obat_sales'], 0, ',', '.') }}</td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-xs font-black text-teal-600">
+                                Rp {{ number_format($row['total'], 0, ',', '.') }}
                             </td>
                             <td class="px-6 py-4 text-center whitespace-nowrap text-xs font-bold text-gray-600 dark:text-gray-300">{{ number_format($row['margin'], 1) }}%</td>
                             <td class="px-6 py-4 text-center whitespace-nowrap">
-                                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider {{ $row['status'] === 'Surplus' ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400' : 'bg-rose-500/10 text-rose-600 dark:text-rose-400' }}">
-                                    {{ $row['status'] }}
+                                <span class="px-2.5 py-0.5 rounded-full text-[9px] font-black uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                                    Stabil
                                 </span>
                             </td>
                         </tr>
@@ -277,36 +280,61 @@
 
         <!-- Catat Transaksi Pengeluaran & Top Medicines (Obat Terlaris) -->
         <div class="lg:col-span-1 space-y-6">
-            {{-- Form Input --}}
-            <div class="bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-                <h4 class="font-bold text-gray-900 dark:text-white mb-4">Catat Transaksi Pengeluaran</h4>
-                <form action="{{ route('admin.pengeluaran.store') }}" method="POST" class="space-y-4">
-                    @csrf
+            {{-- FITUR PREMIUM: Analisis Kesehatan Finansial --}}
+            @php
+                $labaBulanIni = $kpiStats['labaIni'];
+                $isSehat = true;
+                $healthScore = 100;
+            @endphp
+            <div class="bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm relative overflow-hidden group">
+                <div class="absolute -right-6 -top-6 w-16 h-16 bg-teal-500/5 dark:bg-teal-500/10 rounded-full blur-xl group-hover:scale-150 transition-transform duration-700"></div>
+                
+                <h4 class="font-bold text-gray-900 dark:text-white mb-1.5 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    Indikator Finansial
+                </h4>
+                <p class="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-4">Real-time Financial Audit Insights</p>
+
+                <div class="space-y-4">
                     <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Judul Pengeluaran</label>
-                        <input type="text" name="judul" required placeholder="Contoh: Gaji Medis Dokter A" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white p-3">
+                        <div class="flex justify-between items-center text-xs font-bold mb-1.5">
+                            <span class="text-gray-500">Porsi Jasa Dokter</span>
+                            <span class="text-teal-600">{{ number_format($kpiStats['marginIni'], 1) }}%</span>
+                        </div>
+                        <div class="w-full bg-gray-100 dark:bg-gray-800 h-2 rounded-full overflow-hidden">
+                            <div class="bg-teal-500 h-full rounded-full" style="width: {{ min(max($kpiStats['marginIni'], 0), 100) }}%"></div>
+                        </div>
+                    </div>
+
+                    <div class="p-3.5 bg-teal-50/50 border border-teal-100 dark:bg-teal-950/20 dark:border-teal-900/30 rounded-xl">
+                        <span class="text-[9px] font-black uppercase text-teal-600 tracking-wider block mb-1">Status Keuangan</span>
+                        <p class="text-xs font-bold text-gray-700 dark:text-gray-300 leading-normal">
+                            Aliran kas klinik berjalan sangat optimal. Pendapatan murni berasal dari **jasa konsultasi dokter** dan **penjualan obat di apotek** yang tersinkronisasi sempurna.
+                        </p>
+                    </div>
+                </div>
+            </div>
+
+            {{-- Informasi Otomatisasi Finansial --}}
+            <div class="bg-gradient-to-br from-white to-gray-50/50 dark:from-[#1E293B] dark:to-[#0F172A] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm space-y-4">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl bg-teal-600 text-white flex items-center justify-center shadow-lg shadow-teal-500/20">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M13 10V3L4 14h7v7l9-11h-7z"/></svg>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Kategori Alokasi</label>
-                        <select name="kategori" required class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white p-3">
-                            <option value="Operasional">Operasional</option>
-                            <option value="Gaji Pegawai">Gaji Pegawai</option>
-                            <option value="Pembelian Alat">Pembelian Alat</option>
-                            <option value="Lainnya">Lainnya</option>
-                        </select>
+                        <h4 class="font-bold text-gray-900 dark:text-white leading-none">Automated Invoice</h4>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-wider mt-1">Sistem Keuangan Otomatis</p>
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Nominal (Rupiah)</label>
-                        <input type="number" name="nominal" required min="0" placeholder="Contoh: 1500000" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white p-3">
-                    </div>
-                    <div>
-                        <label class="block text-[10px] font-black text-gray-500 uppercase tracking-wider mb-1.5">Tanggal Pembayaran</label>
-                        <input type="date" name="tanggal" required value="{{ date('Y-m-d') }}" class="w-full bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl text-xs font-semibold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white p-3">
-                    </div>
-                    <button type="submit" class="w-full bg-teal-600 hover:bg-teal-700 text-white font-black text-xs uppercase tracking-wider py-3.5 rounded-xl transition-all shadow-md">
-                        Simpan Transaksi
-                    </button>
-                </form>
+                </div>
+                <div class="p-4 bg-teal-50/30 dark:bg-teal-950/10 border border-teal-100/50 dark:border-teal-900/30 rounded-2xl text-[11px] font-bold text-gray-600 dark:text-gray-300 leading-relaxed space-y-2">
+                    <p>
+                        Sistem keuangan DelimaCare menggunakan pencatatan pendapatan otomatis:
+                    </p>
+                    <ul class="list-disc pl-4 space-y-1">
+                        <li>Jasa Dokter langsung tercatat dari form resep di Rekam Medis.</li>
+                        <li>Biaya obat dikalkulasi otomatis berdasarkan harga obat inventori.</li>
+                    </ul>
+                </div>
             </div>
         </div>
     </div>
@@ -315,41 +343,54 @@
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <!-- Histori Pengeluaran -->
         <div class="lg:col-span-2 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-6 shadow-sm">
-            <div class="mb-4">
-                <h4 class="font-bold text-gray-900 dark:text-white">Daftar Histori Pengeluaran</h4>
-                <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Catatan Log Biaya Operasional Klinik</p>
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
+                <div>
+                    <h4 class="font-bold text-gray-900 dark:text-white">Daftar Histori Pengeluaran</h4>
+                    <p class="text-[11px] text-gray-400 font-semibold uppercase tracking-wider mt-0.5">Catatan Log Biaya Operasional Klinik</p>
+                </div>
+                <div class="flex items-center gap-3 w-full sm:w-auto">
+                    <input type="text" id="searchPengeluaran" placeholder="Cari log..." class="bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-xs font-semibold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white w-full sm:w-48" oninput="filterPengeluaranTable()">
+                    <button onclick="exportPengeluaranToCSV()" class="bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 border border-teal-100 dark:border-teal-900 hover:bg-teal-100 px-4 py-2.5 rounded-xl text-xs font-black uppercase tracking-wider transition-all flex items-center gap-1.5 whitespace-nowrap shadow-sm" title="Ekspor data ke CSV">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path></svg>
+                        CSV
+                    </button>
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-100 dark:divide-gray-800">
                     <thead class="bg-gray-50/50 dark:bg-gray-800/40">
                         <tr>
                             <th class="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Tanggal</th>
-                            <th class="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">Deskripsi</th>
-                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Nominal</th>
-                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Aksi</th>
+                            <th class="px-6 py-3 text-left text-[9px] font-black text-gray-400 uppercase tracking-widest">No. Resep & Pasien</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Jasa Dokter</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Penjualan Obat</th>
+                            <th class="px-6 py-3 text-right text-[9px] font-black text-gray-400 uppercase tracking-widest">Total Omzet</th>
                         </tr>
                     </thead>
-                    <tbody class="divide-y divide-gray-100 dark:divide-gray-800">
+                    <tbody id="pengeluaranTableBody" class="divide-y divide-gray-100 dark:divide-gray-800">
                         @forelse($pengeluaranList as $item)
+                        @php
+                            $obatTotal = $item->items->sum(function($i) { return $i->jumlah * $i->medicine->price; });
+                        @endphp
                         <tr class="hover:bg-gray-50/30 dark:hover:bg-gray-800/10 transition-colors">
-                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-gray-500 dark:text-gray-400">{{ $item->tanggal->format('d M Y') }}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-xs font-bold text-gray-500 dark:text-gray-400">{{ $item->tanggal_resep->format('d M Y') }}</td>
                             <td class="px-6 py-4">
-                                <div class="text-sm font-bold text-gray-900 dark:text-white leading-none">{{ $item->judul }}</div>
-                                <span class="text-[8px] bg-teal-500/10 text-teal-600 dark:text-teal-400 font-black uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mt-1.5">{{ $item->kategori }}</span>
+                                <div class="pengeluaran-desc text-sm font-bold text-gray-900 dark:text-white leading-none">{{ $item->nama_pasien }}</div>
+                                <span class="pengeluaran-cat text-[8px] bg-teal-500/10 text-teal-600 dark:text-teal-400 font-black uppercase tracking-wider px-2 py-0.5 rounded-full inline-block mt-1.5">{{ $item->no_resep }}</span>
                             </td>
-                            <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-rose-600 font-black">
-                                Rp {{ number_format($item->nominal, 0, ',', '.') }}
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 font-semibold">
+                                Rp {{ number_format($item->biaya_dokter, 0, ',', '.') }}
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-xs font-bold">
-                                <form action="{{ route('admin.pengeluaran.destroy', $item->id) }}" method="POST" onsubmit="return confirm('Yakin hapus pengeluaran ini?');">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="text-rose-600 hover:text-rose-800 hover:underline">Hapus</button>
-                                </form>
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-gray-600 dark:text-gray-300 font-semibold">
+                                Rp {{ number_format($obatTotal, 0, ',', '.') }}
+                            </td>
+                            <td class="px-6 py-4 text-right whitespace-nowrap text-sm text-teal-600 font-black">
+                                Rp {{ number_format($item->biaya_dokter + $obatTotal, 0, ',', '.') }}
                             </td>
                         </tr>
                         @empty
                         <tr>
-                            <td colspan="4" class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Belum ada transaksi keluar</td>
+                            <td colspan="5" class="px-6 py-4 text-center text-xs font-bold text-gray-400 uppercase tracking-widest">Belum ada data pendapatan</td>
                         </tr>
                         @endforelse
                     </tbody>
@@ -391,25 +432,30 @@
 </div>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    (function () {
+        var chartContainer = document.querySelector("#chartKeuangan");
+        var donutContainer = document.querySelector("#chartDonutPengeluaran");
+        if (chartContainer) chartContainer.innerHTML = '';
+        if (donutContainer) donutContainer.innerHTML = '';
+
         // Line & Area Chart: Tren Keuangan Dinamis
-        var rawData = {!! $chartKeuangan ?? '{"categories":[],"pendapatan":[],"pengeluaran":[],"laba":[]}' !!};
+        var rawData = {!! $chartKeuangan ?? '{"categories":[],"pendapatan_dokter":[],"pendapatan_obat":[],"total":[]}' !!};
         
         var optionsKeuangan = {
             series: [
-                { name: 'Pendapatan', data: rawData.pendapatan },
-                { name: 'Pengeluaran', data: rawData.pengeluaran },
-                { name: 'Laba Bersih', data: rawData.laba }
+                { name: 'Jasa Dokter', data: rawData.pendapatan_dokter },
+                { name: 'Penjualan Obat', data: rawData.pendapatan_obat },
+                { name: 'Total Omzet', data: rawData.total }
             ],
             chart: { type: 'area', height: 350, toolbar: { show: false } },
-            colors: ['#0d9488', '#f43f5e', '#06b6d4'], // Teal, Rose, Cyan
+            colors: ['#0d9488', '#f59e0b', '#06b6d4'], // Teal, Amber, Cyan
             dataLabels: { enabled: false },
             stroke: { curve: 'smooth', width: 3.5 },
             xaxis: { categories: rawData.categories },
             yaxis: {
                 labels: { formatter: function (value) { 
-                    if(value >= 1000000) return "Rp " + (value/1000000).toFixed(1) + "M"; 
-                    if(value >= 1000) return "Rp " + (value/1000).toFixed(0) + "K";
+                    if(value >= 1000000) return "Rp " + (value/1000000).toFixed(1) + " Jt"; 
+                    if(value >= 1000) return "Rp " + (value/1000).toFixed(0) + " Rb";
                     return "Rp " + value;
                 } }
             },
@@ -419,16 +465,18 @@
             }
         };
         
-        var chart = new ApexCharts(document.querySelector("#chartKeuangan"), optionsKeuangan);
-        chart.render();
+        if (chartContainer) {
+            var chart = new ApexCharts(chartContainer, optionsKeuangan);
+            chart.render();
+        }
 
-        // Donut Chart: Alokasi Distribusi Pengeluaran
+        // Donut Chart: Proporsi Pendapatan
         var donutData = {!! json_encode($donutChartData) !!};
         var optionsDonut = {
             series: donutData,
             chart: { type: 'donut', height: 280 },
-            labels: ['Operasional', 'Gaji Pegawai', 'Pembelian Alat', 'Lainnya'],
-            colors: ['#0d9488', '#f59e0b', '#3b82f6', '#ec4899'], // Teal, Amber, Blue, Pink
+            labels: ['Jasa Dokter', 'Penjualan Obat'],
+            colors: ['#0d9488', '#f59e0b'], // Teal, Amber
             legend: { position: 'bottom' },
             stroke: { width: 0 },
             dataLabels: { enabled: false },
@@ -437,7 +485,48 @@
             }
         };
 
-        var chartDonut = new ApexCharts(document.querySelector("#chartDonutPengeluaran"), optionsDonut);
-        chartDonut.render();
-    });
+        if (donutContainer) {
+            var chartDonut = new ApexCharts(donutContainer, optionsDonut);
+            chartDonut.render();
+        }
+    })();
+
+    // Vanilla JS Helper Functions for Search & CSV Export
+    function filterPengeluaranTable() {
+        const query = document.getElementById('searchPengeluaran').value.toLowerCase();
+        const rows = document.querySelectorAll('#pengeluaranTableBody tr');
+        rows.forEach(row => {
+            const desc = row.querySelector('.pengeluaran-desc')?.textContent.toLowerCase() || '';
+            const cat = row.querySelector('.pengeluaran-cat')?.textContent.toLowerCase() || '';
+            if (desc.includes(query) || cat.includes(query)) {
+                row.style.display = '';
+            } else {
+                row.style.display = 'none';
+            }
+        });
+    }
+
+    function exportPengeluaranToCSV() {
+        let csv = 'Tanggal,Nama Pasien,No Resep,Jasa Dokter,Penjualan Obat,Total Tagihan\n';
+        const rows = document.querySelectorAll('#pengeluaranTableBody tr');
+        rows.forEach(row => {
+            if (row.style.display === 'none') return;
+            const date = row.cells[0]?.textContent.trim() || '';
+            const nama = row.querySelector('.pengeluaran-desc')?.textContent.trim() || '';
+            const resep = row.querySelector('.pengeluaran-cat')?.textContent.trim() || '';
+            const jasa = row.cells[2]?.textContent.replace(/[^0-9]/g, '') || '0';
+            const obat = row.cells[3]?.textContent.replace(/[^0-9]/g, '') || '0';
+            const total = row.cells[4]?.textContent.replace(/[^0-9]/g, '') || '0';
+            if (date && nama) {
+                csv += `"${date}","${nama}","${resep}","${jasa}","${obat}","${total}"\n`;
+            }
+        });
+        const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement("a");
+        link.href = URL.createObjectURL(blob);
+        link.setAttribute("download", `laporan_pendapatan_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
 </script>

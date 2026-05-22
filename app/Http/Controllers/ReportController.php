@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\User;
 use App\Models\Reservasi;
 use App\Models\RekamMedis;
+use App\Models\ResepMedis;
+use App\Models\ResepMedisItem;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -13,31 +15,32 @@ class ReportController extends Controller
 {
     public function getStats(Request $request)
     {
-        // 1. Ambil Parameter dari request (JS mengirimkan month, year, type)
-        $bulan = $request->query('month', date('m'));
-        $tahun = $request->query('year', date('Y'));
+        // 1. Ambil Parameter dari request
+        $bulan = (int) $request->query('month', date('m'));
+        $tahun = (int) $request->query('year', date('Y'));
         $type = $request->query('type', 'bulanan');
 
         // 2. Data Statistik (Card Atas)
         $totalPasien = User::where('role', 'pasien')->count();
+        
+        // Pasien Baru terdaftar di bulan terpilih
         $pasienBaru = User::where('role', 'pasien')
             ->whereMonth('created_at', $bulan)
             ->whereYear('created_at', $tahun)
             ->count();
 
-        // Data Kehamilan & KB dari tabel rekam_medis (Kategori pasien aktif)
+        // Data Kehamilan & KB aktif dari rekam_medis
         $totalHamil = RekamMedis::where('kategori', 'Kehamilan')->count();
         $totalKB = RekamMedis::where('kategori', 'Keluarga Berencana')->count();
 
-        // Total Kunjungan (Berdasarkan reservasi yang selesai/datang di bulan terpilih)
-        $totalKunjungan = Reservasi::where('status', 'Datang')
+        // Total Kunjungan Selesai/Datang di bulan terpilih
+        $totalKunjungan = Reservasi::whereIn('status', ['Selesai', 'Datang', 'Hadir'])
             ->whereMonth('tanggal', $bulan)
             ->whereYear('tanggal', $tahun)
             ->count();
 
-        // 3. Data Tabel & Grafik (Grouping per bulan untuk tahun terpilih)
-        // Karena data mungkin sedikit, kita bisa ambil semua di tahun tersebut lalu group by di PHP menggunakan Collection.
-        $reservasiTahunan = Reservasi::where('status', 'Datang')
+        // 3. Ambil data Reservasi tahun berjalan
+        $reservasiTahunan = Reservasi::whereIn('status', ['Selesai', 'Datang', 'Hadir'])
             ->whereYear('tanggal', $tahun)
             ->get();
 
@@ -48,30 +51,47 @@ class ReportController extends Controller
         ];
 
         $tableData = [];
-        
-        // Asumsi pendapatan rata-rata per kunjungan untuk demonstrasi
-        $rataRataBiayaHamil = 150000;
-        $rataRataBiayaKB = 100000;
-        $rataRataBiayaUmum = 75000;
+        $chartLabels = [];
+        $chartData = [];
 
+        // Loop 12 bulan untuk menyusun tren tahunan & data tabel
         for ($i = 1; $i <= 12; $i++) {
             $dataBulanIni = $reservasiTahunan->filter(function ($item) use ($i) {
                 return Carbon::parse($item->tanggal)->month == $i;
             });
 
-            $hamilCount = $dataBulanIni->where('layanan', 'Kehamilan')->count();
-            $kbCount = $dataBulanIni->where('layanan', 'Keluarga Berencana')->count();
-            $umumCount = $dataBulanIni->whereNotIn('layanan', ['Kehamilan', 'Keluarga Berencana'])->count();
+            $hamilCount = $dataBulanIni->filter(function($item) {
+                return $item->layanan === 'Kehamilan';
+            })->count();
+
+            $kbCount = $dataBulanIni->filter(function($item) {
+                return in_array($item->layanan, ['Layanan KB', 'Keluarga Berencana']);
+            })->count();
 
             $total = $dataBulanIni->count();
-            
-            // Perhitungan estimasi income (karena belum ada tabel transaksi khusus)
-            $income = ($hamilCount * $rataRataBiayaHamil) + ($kbCount * $rataRataBiayaKB) + ($umumCount * $rataRataBiayaUmum);
 
-            // Hanya tambahkan bulan sampai bulan saat ini (jika tahun ini) atau semua (jika tahun lalu)
-            // Atau tampilkan semua bulan untuk laporan tahunan
+            // SINKRONISASI PENDAPATAN REAL dari Resep Medis & Obat
+            $realDokter = ResepMedis::whereMonth('tanggal_resep', $i)
+                ->whereYear('tanggal_resep', $tahun)
+                ->sum('biaya_dokter');
+
+            $realObat = ResepMedisItem::whereHas('resepMedis', function ($q) use ($i, $tahun) {
+                $q->whereMonth('tanggal_resep', $i)
+                  ->whereYear('tanggal_resep', $tahun);
+            })
+            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+            ->value('total') ?? 0;
+
+            $income = $realDokter + $realObat;
+
+            // Isi data chart bulanan secara terus menerus (tren 12 bulan)
+            $chartLabels[] = $bulanIndo[$i];
+            $chartData[] = $total;
+
+            // Kondisi tampilan baris tabel
             if ($type === 'tahunan' || ($type === 'bulanan' && $i == $bulan)) {
-                 $tableData[] = [
+                $tableData[] = [
                     'month_index' => $i,
                     'month' => $bulanIndo[$i],
                     'total' => $total,
@@ -82,8 +102,6 @@ class ReportController extends Controller
             }
         }
 
-        // Jika bulanan, hanya kembalikan 1 row di tabel. Jika tahunan, kembalikan 12 row.
-
         return response()->json([
             'totalPasien' => $totalPasien,
             'pasienBaru' => $pasienBaru,
@@ -91,8 +109,8 @@ class ReportController extends Controller
             'totalKB' => $totalKB,
             'totalKunjungan' => $totalKunjungan,
             'table' => $tableData,
-            'chartLabels' => collect($tableData)->pluck('month'),
-            'chartData' => collect($tableData)->pluck('total')
+            'chartLabels' => $chartLabels,
+            'chartData' => $chartData
         ]);
     }
 }

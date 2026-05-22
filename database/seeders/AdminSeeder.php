@@ -18,23 +18,21 @@ class AdminSeeder extends Seeder
         $adminEmail = 'admin@dalimacare.id';
         $adminPassword = 'password123';
 
-        if (!User::where('email', $adminEmail)->exists()) {
-            User::create([
+        $user = User::updateOrCreate(
+            ['email' => $adminEmail],
+            [
                 'username' => 'Administrator',
-                'email'    => $adminEmail,
                 'password' => Hash::make($adminPassword),
                 'role'     => 'admin',
-            ]);
+            ]
+        );
 
-            $this->command->info('---------------------------------------');
-            $this->command->info('   Admin Account Generated Successfully');
-            $this->command->info('---------------------------------------');
-            $this->command->info("   Email    : $adminEmail");
-            $this->command->info("   Password : $adminPassword");
-            $this->command->info("   Role     : admin");
-            $this->command->info('---------------------------------------');
-        } else {
-            $this->command->warn('Admin user already exists in the database.');
-        }
+        $this->command->info('---------------------------------------');
+        $this->command->info('   Admin Account Updated/Created Successfully');
+        $this->command->info('---------------------------------------');
+        $this->command->info("   Email    : $adminEmail");
+        $this->command->info("   Password : $adminPassword");
+        $this->command->info("   Role     : admin");
+        $this->command->info('---------------------------------------');
     }
 }

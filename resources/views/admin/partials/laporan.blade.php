@@ -153,8 +153,13 @@ function reportApp() {
             this.fetchData();
             // Watch tab changes to render chart correctly if hidden initially
             this.$watch('activeTab', value => {
-                if(value === 'grafik' && this.chartInstance) {
-                    this.chartInstance.update();
+                if(value === 'grafik') {
+                    this.$nextTick(() => {
+                        if (this.chartInstance) {
+                            this.chartInstance.resize();
+                            this.chartInstance.update();
+                        }
+                    });
                 }
             });
         },

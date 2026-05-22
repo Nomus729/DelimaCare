@@ -14,7 +14,7 @@ class ResepMedis extends Model
     protected $fillable = [
         'no_resep', 'rekam_medis_id', 'nama_pasien',
         'dokter_pemeriksa', 'tanggal_resep',
-        'catatan_apoteker', 'status',
+        'catatan_apoteker', 'status', 'biaya_dokter',
     ];
 
     protected $casts = [

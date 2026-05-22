@@ -17,14 +17,15 @@ class ResepMedisController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'rekam_medis_id'    => 'required|exists:rekam_medis,id',
-            'nama_pasien'       => 'required|string',
-            'dokter_pemeriksa'  => 'nullable|string',
-            'tanggal_resep'     => 'required|date',
-            'catatan_apoteker'  => 'nullable|string',
-            'items'             => 'required|array|min:1',
+            'rekam_medis_id'      => 'required|exists:rekam_medis,id',
+            'nama_pasien'         => 'required|string',
+            'dokter_pemeriksa'    => 'nullable|string',
+            'tanggal_resep'       => 'required|date',
+            'biaya_dokter'        => 'required|integer|min:0',
+            'catatan_apoteker'    => 'nullable|string',
+            'items'               => 'required|array|min:1',
             'items.*.medicine_id' => 'required|exists:medicines,id',
-            'items.*.jumlah'    => 'required|integer|min:1',
+            'items.*.jumlah'      => 'required|integer|min:1',
             'items.*.aturan_pakai' => 'nullable|string',
         ]);
 
@@ -35,6 +36,7 @@ class ResepMedisController extends Controller
                 'nama_pasien'       => $request->nama_pasien,
                 'dokter_pemeriksa'  => $request->dokter_pemeriksa,
                 'tanggal_resep'     => $request->tanggal_resep,
+                'biaya_dokter'      => $request->biaya_dokter,
                 'catatan_apoteker'  => $request->catatan_apoteker,
                 'status'            => 'Pending',
             ]);

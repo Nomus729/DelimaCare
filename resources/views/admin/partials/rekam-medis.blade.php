@@ -190,7 +190,8 @@
         nama_pasien: '',
         dokter_pemeriksa: '',
         tanggal_resep: '{{ date("Y-m-d") }}',
-        catatan_apoteker: ''
+        catatan_apoteker: '',
+        biaya_dokter: 50000
     },
     resepItems: [],
     medSearch: '',
@@ -201,10 +202,22 @@
         this.resep.rekam_medis_id = data.id;
         this.resep.nama_pasien = data.nama_pasien;
         this.resep.dokter_pemeriksa = data.dokter_pemeriksa || '';
+        this.resep.biaya_dokter = 50000;
+        this.resep.tanggal_resep = '{{ date("Y-m-d") }}';
         this.resepItems = [];
         this.medSearch = '';
         this.searchMed(); // Load default list
         this.showResepModal = true;
+    },
+
+    getFormattedBiayaDokter() {
+        if (!this.resep.biaya_dokter && this.resep.biaya_dokter !== 0) return '';
+        return new Intl.NumberFormat('id-ID').format(this.resep.biaya_dokter);
+    },
+
+    updateBiayaDokter(val) {
+        let clean = val.replace(/\D/g, '');
+        this.resep.biaya_dokter = clean ? parseInt(clean) : 0;
     },
 
     async searchMed() {
@@ -789,7 +802,6 @@
                             <input type="hidden" name="rekam_medis_id" x-model="resep.rekam_medis_id">
                             <input type="hidden" name="nama_pasien" x-model="resep.nama_pasien">
                             <input type="hidden" name="dokter_pemeriksa" x-model="resep.dokter_pemeriksa">
-                            <input type="hidden" name="tanggal_resep" x-model="resep.tanggal_resep">
 
                             <div class="p-6 flex-1 overflow-y-auto space-y-6">
                                 {{-- Patient Context --}}
@@ -806,6 +818,24 @@
                                     <div class="text-right">
                                         <p class="text-[9px] font-black uppercase tracking-widest text-teal-600">ID Rekam Medis</p>
                                         <p class="text-sm font-bold text-gray-700 dark:text-gray-300" x-text="'#' + resep.rekam_medis_id"></p>
+                                    </div>
+                                </div>
+
+                                {{-- Billing Context --}}
+                                <div class="bg-gray-50 dark:bg-[#0f172a]/50 p-5 rounded-2xl border border-gray-100 dark:border-gray-800 space-y-4">
+                                    <h5 class="text-[9px] font-black uppercase tracking-widest text-teal-600">Rincian Layanan & Tanggal</h5>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div>
+                                            <label class="block text-[8px] font-black uppercase text-gray-400 mb-1.5">Jasa Dokter / Konsultasi (Rp)</label>
+                                            <input type="text" :value="getFormattedBiayaDokter()" @input="updateBiayaDokter($event.target.value)" required placeholder="Contoh: 50.000"
+                                                   class="w-full px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-xs outline-none focus:border-teal-500 transition-all">
+                                            <input type="hidden" name="biaya_dokter" :value="resep.biaya_dokter">
+                                        </div>
+                                        <div>
+                                            <label class="block text-[8px] font-black uppercase text-gray-400 mb-1.5">Tanggal Resep / Transaksi</label>
+                                            <input type="date" name="tanggal_resep" x-model="resep.tanggal_resep" required
+                                                   class="w-full px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-xl font-bold text-xs outline-none focus:border-teal-500 transition-all">
+                                        </div>
                                     </div>
                                 </div>
 
@@ -997,6 +1027,24 @@
                             <template x-if="!detailData?.resep_medis">
                                 <div class="col-span-full py-8 bg-gray-50/50 dark:bg-gray-800/20 rounded-[2rem] border-2 border-dashed border-gray-100 dark:border-gray-800 text-center">
                                     <p class="text-[10px] font-bold text-gray-400 uppercase">Belum ada resep untuk kunjungan ini</p>
+                                </div>
+                            </template>
+
+                            <template x-if="detailData?.resep_medis">
+                                <div class="col-span-full p-4 bg-teal-50/50 dark:bg-teal-900/10 border border-teal-100/50 dark:border-teal-900/30 rounded-2xl flex items-center justify-between">
+                                    <div class="flex items-center gap-3">
+                                        <div class="w-10 h-10 rounded-xl bg-teal-600 flex items-center justify-center text-white font-black text-sm">
+                                            Rp
+                                        </div>
+                                        <div>
+                                            <p class="text-[9px] font-black uppercase tracking-widest text-teal-600">Jasa Dokter / Konsultasi</p>
+                                            <p class="text-xs font-black text-gray-950 dark:text-white" x-text="'Rp ' + new Intl.NumberFormat('id-ID').format(detailData?.resep_medis?.biaya_dokter || 0)"></p>
+                                        </div>
+                                    </div>
+                                    <div class="text-right">
+                                        <p class="text-[9px] font-black uppercase tracking-widest text-teal-600">No. Resep</p>
+                                        <p class="text-xs font-bold text-gray-700 dark:text-gray-300" x-text="detailData?.resep_medis?.no_resep"></p>
+                                    </div>
                                 </div>
                             </template>
 

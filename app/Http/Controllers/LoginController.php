@@ -69,6 +69,10 @@ class LoginController extends Controller
             } elseif ($user->role === 'dokter') {
                 return redirect()->intended('/admin/dashboard'); // Bisa diganti ke dashboard dokter nanti
             } else {
+                // Bersihkan URL intended jika mengarah ke admin panel agar pasien tidak terkena error izin
+                if (session()->has('url.intended') && str_contains(session()->get('url.intended'), '/admin')) {
+                    session()->forget('url.intended');
+                }
                 return redirect()->intended('/portal');
             }
         }
