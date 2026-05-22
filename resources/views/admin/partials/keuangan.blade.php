@@ -1,3 +1,6 @@
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
+
 <style>
     .kpi-card {
         transition: transform 0.22s ease, box-shadow 0.22s ease;
@@ -15,7 +18,7 @@
             <h2 class="text-3xl font-black text-gray-900 dark:text-white tracking-tight leading-none">Pusat Analisis Keuangan</h2>
             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 font-extrabold uppercase tracking-widest">Advanced Clinical Financial Metrics & Resource Analytics</p>
         </div>
-        <button onclick="window.print()" class="bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-teal-500/15 transition-all">
+        <button onclick="exportKeuanganPDF()" class="bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 text-white px-5 py-3 rounded-xl text-xs font-black uppercase tracking-wider flex items-center gap-2 shadow-lg shadow-teal-500/15 transition-all">
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path></svg> 
             Cetak Laporan Lengkap
         </button>
@@ -490,6 +493,229 @@
             chartDonut.render();
         }
     })();
+
+    // FITUR PREMIUM: Ekspor Laporan Keuangan Klinis PDF (Medical Standard)
+    function exportKeuanganPDF() {
+        if (!window.jspdf || !window.jspdf.jsPDF) {
+            alert("Library PDF belum siap. Silakan tunggu sebentar dan coba lagi.");
+            return;
+        }
+
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF('p', 'mm', 'a4');
+        
+        // --- PAGE 1: KOP SURAT & KPI SUMMARY ---
+        // Kop Surat Resmi Klinik Utama
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(18);
+        doc.setTextColor(13, 148, 136); // Teal 600
+        doc.text("KLINIK UTAMA DELIMACARE", 14, 20);
+        
+        doc.setFontSize(9);
+        doc.setTextColor(100, 100, 100);
+        doc.setFont("helvetica", "normal");
+        doc.text("Pusat Kesehatan Ibu, Anak & Layanan Keluarga Berencana", 14, 25);
+        doc.text("Jl. Melati Raya No. 45, Bandung | Telp: (022) 8765-4321 | finance@delimacare.id", 14, 29);
+        
+        // Garis Double Border Kop Surat
+        doc.setDrawColor(13, 148, 136);
+        doc.setLineWidth(1);
+        doc.line(14, 33, 196, 33);
+        doc.setDrawColor(150, 150, 150);
+        doc.setLineWidth(0.2);
+        doc.line(14, 34.5, 196, 34.5);
+
+        // Judul Laporan Keuangan
+        doc.setFontSize(13);
+        doc.setTextColor(30, 41, 59); // Slate 800
+        doc.setFont("helvetica", "bold");
+        doc.text("LAPORAN AUDIT KEUANGAN KLINIK (CLINICAL FINANCIAL AUDIT STATEMENT)", 14, 45);
+        
+        doc.setFontSize(9);
+        doc.setFont("helvetica", "normal");
+        doc.setTextColor(100, 100, 100);
+        doc.text("Tahun Buku: 2026 | Klasifikasi: Confidential (Dokumen Internal Klinik)", 14, 50);
+        doc.text("Tanggal Cetak: " + new Date().toLocaleString('id-ID'), 14, 54);
+
+        // --- SECTION 1: RINGKASAN AUDIT FINANSIAL (KPI) ---
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(13, 148, 136);
+        doc.text("I. RINGKASAN AUDIT KINERJA UTAMA (FINANCIAL KEY PERFORMANCE INDICATORS)", 14, 63);
+
+        const kpiHeaders = [["Indikator Kinerja Finansial", "Bulan Lalu", "Bulan Ini", "Pertumbuhan (MoM)"]];
+        
+        function formatRupiah(val) {
+            return "Rp " + new Intl.NumberFormat('id-ID').format(Math.round(val));
+        }
+
+        const kpiRows = [
+            ["Total Omzet Klinik (Gross Revenue)", formatRupiah({{ $kpiStats['revLalu'] }}), formatRupiah({{ $kpiStats['revIni'] }}), "{{ number_format($kpiStats['pctRev'], 1) }}%"],
+            ["Jasa Tindakan Medis / Dokter", formatRupiah({{ $kpiStats['expLalu'] }}), formatRupiah({{ $kpiStats['expIni'] }}), "{{ number_format($kpiStats['pctExp'], 1) }}%"],
+            ["Penjualan Item Obat Farmasi", formatRupiah({{ $kpiStats['labaLalu'] }}), formatRupiah({{ $kpiStats['labaIni'] }}), "{{ number_format($kpiStats['pctLaba'], 1) }}%"],
+            ["Rata-rata Tagihan per Resep", formatRupiah({{ $kpiStats['avgRevIni'] }}), formatRupiah({{ $kpiStats['avgRevIni'] }}), "{{ number_format($kpiStats['pctAvgRev'], 1) }}%"],
+            ["Rasio Kontribusi Jasa Dokter", "{{ number_format($kpiStats['marginIni'], 1) }}%", "{{ number_format($kpiStats['marginIni'], 1) }}%", "{{ number_format($kpiStats['diffMargin'], 1) }}%"]
+        ];
+
+        doc.autoTable({
+            startY: 67,
+            head: kpiHeaders,
+            body: kpiRows,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: {
+                0: { fontStyle: 'bold' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'center', fontStyle: 'bold' }
+            }
+        });
+
+        // --- SECTION 2: IKHTISAR KINERJA TABULAR 6 BULAN ---
+        const nextY = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(13, 148, 136);
+        doc.text("II. IKHTISAR KINERJA TABULAR HISTORIS (6 BULAN)", 14, nextY);
+
+        const summaryHeaders = [["Bulan", "Pendapatan Jasa Dokter", "Penjualan Obat Apotek", "Total Omzet Bulanan", "Kontribusi Jasa Dokter", "Status Audit"]];
+        
+        const summaryRows = @json($summaryTable).map(row => [
+            row.month,
+            formatRupiah(row.jasa_dokter),
+            formatRupiah(row.obat_sales),
+            formatRupiah(row.total),
+            row.margin.toFixed(1) + "%",
+            "STABIL"
+        ]);
+
+        doc.autoTable({
+            startY: nextY + 4,
+            head: summaryHeaders,
+            body: summaryRows,
+            theme: 'striped',
+            headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: {
+                0: { fontStyle: 'bold' },
+                1: { halign: 'right' },
+                2: { halign: 'right' },
+                3: { halign: 'right', fontStyle: 'bold' },
+                4: { halign: 'center' },
+                5: { halign: 'center' }
+            }
+        });
+
+        // --- PAGE 2: PHARMACY SALES & LOG INVOICES ---
+        doc.addPage();
+        
+        // Header Halaman Kedua
+        doc.setFont("helvetica", "bold");
+        doc.setFontSize(10);
+        doc.setTextColor(13, 148, 136);
+        doc.text("III. PROPORSI PENDAPATAN APOTEK (TOP 5 OBAT TERLARIS)", 14, 20);
+
+        const medHeaders = [["No", "Nama Item Obat Farmasi", "Jumlah Kuantitas Terjual", "Porsi Pendapatan Omzet"]];
+        const medRows = @json($topMedicines).map((med, idx) => [
+            String(idx + 1),
+            med.name,
+            med.total_qty + " tablet/pcs",
+            formatRupiah(med.total_revenue)
+        ]);
+
+        doc.autoTable({
+            startY: 24,
+            head: medHeaders,
+            body: medRows,
+            theme: 'grid',
+            headStyles: { fillColor: [30, 41, 59], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 8, cellPadding: 3 },
+            columnStyles: {
+                0: { halign: 'center', fontStyle: 'bold' },
+                1: { fontStyle: 'bold' },
+                2: { halign: 'center' },
+                3: { halign: 'right' }
+            }
+        });
+
+        // Registri Penerimaan Transaksi Resep Terbaru (Log Histori Detail)
+        const nextY2 = doc.lastAutoTable.finalY + 10;
+        doc.setFontSize(10);
+        doc.setFont("helvetica", "bold");
+        doc.setTextColor(13, 148, 136);
+        doc.text("IV. REGISTRI PENERIMAAN INVOICE RESEP TERBARU (RECENT TRANSACTION LOG)", 14, nextY2);
+
+        const recentHeaders = [["Tanggal", "No. Resep", "Nama Pasien", "Biaya Jasa Dokter", "Penjualan Obat Apotek", "Total Billing"]];
+        
+        const recentRows = [];
+        const tableRows = document.querySelectorAll('#pengeluaranTableBody tr');
+        tableRows.forEach(row => {
+            if (row.style.display === 'none') return;
+            const cells = row.cells;
+            if (cells.length >= 5) {
+                const date = cells[0].textContent.trim();
+                const nama = row.querySelector('.pengeluaran-desc')?.textContent.trim() || '';
+                const resep = row.querySelector('.pengeluaran-cat')?.textContent.trim() || '';
+                const jasa = cells[2].textContent.trim();
+                const obat = cells[3].textContent.trim();
+                const total = cells[4].textContent.trim();
+                recentRows.push([date, resep, nama, jasa, obat, total]);
+            }
+        });
+
+        doc.autoTable({
+            startY: nextY2 + 4,
+            head: recentHeaders,
+            body: recentRows,
+            theme: 'striped',
+            headStyles: { fillColor: [13, 148, 136], textColor: 255, fontStyle: 'bold', fontSize: 8 },
+            bodyStyles: { fontSize: 7.5, cellPadding: 2.5 },
+            columnStyles: {
+                0: { fontStyle: 'bold' },
+                1: { halign: 'center' },
+                2: { fontStyle: 'bold' },
+                3: { halign: 'right' },
+                4: { halign: 'right' },
+                5: { halign: 'right', fontStyle: 'bold' }
+            }
+        });
+
+        // Tanda Tangan Audit Resmi
+        const finalY = doc.lastAutoTable.finalY + 15;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        
+        const signY = (finalY + 40 > pageHeight) ? 35 : finalY;
+        if (finalY + 40 > pageHeight) {
+            doc.addPage();
+            doc.text("V. VALIDASI & PERSETUJUAN AUDIT", 14, 20);
+        }
+
+        doc.setFont("helvetica", "normal");
+        doc.setFontSize(9);
+        doc.setTextColor(30, 41, 59);
+        
+        doc.text("Bandung, " + new Date().toLocaleDateString('id-ID', { year: 'numeric', month: 'long', day: 'numeric' }), 145, signY);
+        
+        doc.text("Mengetahui,", 14, signY + 10);
+        doc.text("Direktur Klinik Utama DelimaCare,", 14, signY + 14);
+        
+        doc.text("Disiapkan & Diaudit Oleh,", 145, signY + 10);
+        doc.text("Kepala Departemen Keuangan,", 145, signY + 14);
+        
+        // Garis untuk tanda tangan
+        doc.setDrawColor(200, 200, 200);
+        doc.setLineWidth(0.5);
+        doc.line(14, signY + 35, 65, signY + 35);
+        doc.line(145, signY + 35, 196, signY + 35);
+        
+        doc.setFont("helvetica", "bold");
+        doc.text("dr. Siti Rahayu, SpOG", 14, signY + 39);
+        doc.text("Fauziah Rahmawati, S.E.", 145, signY + 39);
+
+        // Simpan PDF
+        doc.save("Laporan_Keuangan_Klinis_DelimaCare_" + new Date().toISOString().slice(0,10) + ".pdf");
+    }
 
     // Vanilla JS Helper Functions for Search & CSV Export
     function filterPengeluaranTable() {
