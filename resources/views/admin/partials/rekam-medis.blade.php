@@ -349,7 +349,7 @@
                     </select>
                     
                     <template x-if="dateType === 'preset'">
-                        <select name="rm_date" onchange="this.form.submit()"
+                        <select name="rm_date" onchange="this.form.requestSubmit()"
                                 class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all cursor-pointer hover:border-teal-400">
                             <option value="">Semua Waktu</option>
                             <option value="today" {{ ($rmDate ?? '') == 'today' ? 'selected' : '' }}>Hari Ini</option>
@@ -359,12 +359,12 @@
                     </template>
 
                     <template x-if="dateType === 'date'">
-                        <input type="date" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.submit()"
+                        <input type="date" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.requestSubmit()"
                                class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all hover:border-teal-400">
                     </template>
 
                     <template x-if="dateType === 'month'">
-                        <input type="month" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.submit()"
+                        <input type="month" name="rm_date" value="{{ preg_match('/^\d{4}-\d{2}$/', $rmDate ?? '') ? $rmDate : '' }}" onchange="this.form.requestSubmit()"
                                class="w-full md:w-40 px-4 py-3 bg-white dark:bg-[#0f172a] border border-gray-200 dark:border-gray-700 rounded-2xl focus:ring-4 focus:ring-teal-500/10 outline-none text-sm font-bold text-gray-700 dark:text-gray-200 transition-all hover:border-teal-400">
                     </template>
                 </div>

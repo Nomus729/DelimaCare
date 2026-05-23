@@ -1,21 +1,21 @@
-<div class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8"
+<article class="grid grid-cols-1 lg:grid-cols-12 gap-6 md:gap-8"
      x-data="reservasiApp(@js($doctors), '{{ date('Y-m-d') }}')"
      x-init="doctorMap = { @foreach($doctors as $doc) {{ $doc->id }}: '{{ addslashes($doc->nama) }}', @endforeach }">
     {{-- Left Column: Doctor Availability --}}
-    <div class="lg:col-span-5 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
-        <div class="flex items-center gap-3 mb-6">
+    <section aria-labelledby="doctor-list-heading" class="lg:col-span-5 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
+        <header class="flex items-center gap-3 mb-6">
             <div class="w-10 h-10 rounded-xl flex items-center justify-center bg-teal-50 text-teal-600 dark:bg-teal-900/30 dark:text-teal-400">
                 <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
             </div>
             <div>
-                <h3 class="font-bold text-gray-900 text-lg dark:text-white">Pilih Dokter</h3>
+                <h3 id="doctor-list-heading" class="font-bold text-gray-900 text-lg dark:text-white">Pilih Dokter</h3>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Klik pada nama dokter untuk memilih</p>
             </div>
-        </div>
+        </header>
 
-        <div class="space-y-4">
+        <ul class="space-y-4">
             @forelse($doctors->filter->is_available as $doc)
-            <div @click="selectedDoctor = '{{ $doc->id }}'; selectedDoctorName = '{{ addslashes($doc->nama) }}'; checkAvailability()"
+            <li @click="selectedDoctor = '{{ $doc->id }}'; selectedDoctorName = '{{ addslashes($doc->nama) }}'; checkAvailability()"
                  :class="selectedDoctor === '{{ $doc->id }}' ? 'border-teal-500 bg-teal-50/80 ring-2 ring-teal-500/20 dark:bg-teal-900/30' : 'border-gray-100 dark:border-gray-700'"
                  class="flex items-center justify-between p-4 border rounded-2xl hover:border-teal-200 hover:bg-teal-50/50 transition-all cursor-pointer group">
                 <div class="flex items-center gap-4">
@@ -39,24 +39,26 @@
                 <span class="px-3 py-1 bg-{{ $statusColor }}-100 text-{{ $statusColor }}-700 text-[10px] font-black uppercase rounded-full dark:bg-{{ $statusColor }}-900/50 dark:text-{{ $statusColor }}-400">
                     {{ $doc->current_status }}
                 </span>
-            </div>
+            </li>
             @empty
-            <div class="p-8 text-center bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
+            <li class="p-8 text-center bg-gray-50 dark:bg-gray-900/50 rounded-3xl border border-dashed border-gray-200 dark:border-gray-800">
                 <p class="text-sm text-gray-500 dark:text-gray-400 italic">Maaf, saat ini tidak ada dokter yang tersedia untuk dipilih.</p>
-            </div>
+            </li>
             @endforelse
-        </div>
-    </div>
+        </ul>
+    </section>
 
     {{-- Right Column: Reservation Form --}}
-    <div class="lg:col-span-7 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
-        <h3 class="font-bold text-gray-900 mb-2 text-xl dark:text-white">Form Reservasi</h3>
-        <p class="text-sm text-gray-500 mb-8 dark:text-gray-400">Isi formulir dengan lengkap untuk membuat janji temu baru. Data Anda dienkripsi.</p>
+    <section aria-labelledby="form-reservasi-heading" class="lg:col-span-7 bg-white border border-gray-100 rounded-3xl p-6 md:p-8 shadow-sm dark:bg-[#1E293B] dark:border-gray-800">
+        <header class="mb-8">
+            <h3 id="form-reservasi-heading" class="font-bold text-gray-900 mb-2 text-xl dark:text-white">Form Reservasi</h3>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Isi formulir dengan lengkap untuk membuat janji temu baru. Data Anda dienkripsi.</p>
+        </header>
 
         {{-- Error/Warning Alert --}}
-        <div x-show="warning" x-cloak x-transition
+        <div x-show="warning" x-cloak x-transition aria-live="polite"
              class="mb-6 p-4 bg-rose-50 border border-rose-100 rounded-2xl flex items-start gap-3 text-rose-700 dark:bg-rose-900/20 dark:border-rose-900/30 dark:text-rose-400">
-            <svg class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+            <svg aria-hidden="true" class="w-5 h-5 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
             <div>
                 <p class="text-xs font-black uppercase tracking-widest mb-1">Peringatan Jadwal</p>
                 <p class="text-sm font-bold" x-text="warning"></p>
@@ -84,9 +86,10 @@
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nama Lengkap Pasien</label>
+                    <label for="nama" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nama Lengkap Pasien</label>
                     <!-- KODE YANG DIUBAH: NGUNCI NAMA PASIEN -->
                     <input type="text"
+                           id="nama"
                            name="nama"
                            value="{{ Auth::user()->username }}"
                            readonly
@@ -94,16 +97,16 @@
                     <p class="text-[10px] text-gray-400 mt-1 italic">*Nama otomatis disesuaikan dengan akun Anda.</p>
                 </div>
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nomor Telepon / WA</label>
-                    <input type="tel" name="phone" value="{{ old('phone') }}" placeholder="08xx-xxxx-xxxx" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                    <label for="phone" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nomor Telepon / WA</label>
+                    <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" placeholder="08xx-xxxx-xxxx" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
                 </div>
             </div>
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Jenis Layanan</label>
+                    <label for="layanan" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Jenis Layanan</label>
                     <div class="relative">
-                        <select name="layanan" class="w-full px-4 py-3 appearance-none rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-white transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                        <select id="layanan" name="layanan" class="w-full px-4 py-3 appearance-none rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-white transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
                             <option value="" disabled {{ !old('layanan') ? 'selected' : '' }}>Pilih layanan</option>
                             <option {{ old('layanan') === 'Pemeriksaan Kehamilan' ? 'selected' : '' }}>Pemeriksaan Kehamilan</option>
                             <option {{ old('layanan') === 'Konsultasi KB' ? 'selected' : '' }}>Konsultasi KB</option>
@@ -130,8 +133,8 @@
 
             <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                 <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Tanggal Kunjungan</label>
-                    <input type="date" name="tanggal" required x-model="selectedDate" @change="checkAvailability()"
+                    <label for="tanggal" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Tanggal Kunjungan</label>
+                    <input type="date" id="tanggal" name="tanggal" required x-model="selectedDate" @change="checkAvailability()"
                            class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all text-gray-700 dark:bg-[#0F172A] dark:border-gray-700 dark:text-white dark:color-scheme-dark">
                 </div>
                 <div class="flex items-center">
@@ -145,8 +148,8 @@
             </div>
 
             <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Keluhan / Catatan (Opsional)</label>
-                <textarea name="keluhan" rows="3" placeholder="Jelaskan keluhan atau catatan khusus untuk dokter" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all resize-none dark:bg-[#0F172A] dark:border-gray-700 dark:text-white"></textarea>
+                <label for="keluhan" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Keluhan / Catatan (Opsional)</label>
+                <textarea id="keluhan" name="keluhan" rows="3" placeholder="Jelaskan keluhan atau catatan khusus untuk dokter" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all resize-none dark:bg-[#0F172A] dark:border-gray-700 dark:text-white"></textarea>
             </div>
 
             <button type="submit" :disabled="!!warning || isSubmitting"
@@ -166,5 +169,5 @@
                 Data medis Anda dilindungi oleh enkripsi end-to-end.
             </p>
         </form>
-    </div>
-</div>
+    </section>
+</article>

@@ -1,24 +1,25 @@
-<div class="p-6">
-    <div class="flex justify-between items-center mb-8">
+<section aria-labelledby="jadwal-heading" class="p-6">
+    <header class="flex justify-between items-center mb-8">
         <div>
-            <h2 class="text-3xl font-extrabold text-gray-900 mb-1">Jadwal Saya</h2>
+            <h2 id="jadwal-heading" class="text-3xl font-extrabold text-gray-900 mb-1">Jadwal Saya</h2>
             <p class="text-gray-500">Pantau status reservasi dan jadwal konsultasi Anda</p>
         </div>
         <div class="bg-teal-50 px-4 py-2 rounded-xl border border-teal-100">
             <span class="text-teal-700 font-bold text-sm">Total: {{ $jadwalPasien->count() }} Jadwal</span>
         </div>
-    </div>
+    </header>
 
     @if(session('success'))
         <div class="mb-6 p-4 bg-green-100 text-green-700 rounded-xl border border-green-200 flex items-center gap-3">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+            <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
             <span class="font-bold">{{ session('success') }}</span>
         </div>
     @endif
 
-    <div class="grid grid-cols-1 gap-6">
+    <ul class="grid grid-cols-1 gap-6 list-none m-0 p-0">
         @forelse($jadwalPasien as $jadwal)
-            <div class="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
+            <li>
+                <article class="bg-white border border-gray-100 rounded-3xl p-6 shadow-sm hover:shadow-md transition-all">
                 <div class="flex flex-col md:flex-row justify-between gap-6">
                     <div class="flex gap-5">
                         <div class="flex-shrink-0 w-20 h-20 bg-teal-50 rounded-2xl flex flex-col items-center justify-center border border-teal-100 shadow-sm">
@@ -30,7 +31,7 @@
                             <div class="flex items-center gap-3 mb-2">
                                 <span class="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider">{{ $jadwal->layanan }}</span>
                                 <span class="text-gray-400 font-medium text-xs flex items-center gap-1.5">
-                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                                    <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                                     {{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d F Y') }}
                                 </span>
                             </div>
@@ -46,7 +47,7 @@
                                 </h3>
                             </div>
                             <p class="text-sm text-gray-600 font-bold flex items-center gap-1.5 mt-1 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 inline-flex">
-                                <svg class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                <svg aria-hidden="true" class="w-4 h-4 text-teal-500" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                                 Mohon hadir 15 menit sebelum estimasi jam di atas.
                             </p>
                         </div>
@@ -70,25 +71,24 @@
                             <form action="{{ route('reservasi.destroy', $jadwal->id) }}" method="POST" class="inline-block" onsubmit="return confirm('Apakah Anda yakin ingin membatalkan jadwal ini?');">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Batalkan">
-                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                                <button aria-label="Batalkan jadwal ini" type="submit" class="p-2.5 text-gray-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-all" title="Batalkan">
+                                    <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
                             </form>
 
-                            <button onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.remove('hidden')" class="px-5 py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-all shadow-sm">
+                            <button aria-haspopup="dialog" aria-controls="modal-{{ $jadwal->id }}" onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.remove('hidden')" class="px-5 py-2.5 bg-black text-white text-xs font-bold rounded-xl hover:bg-gray-800 transition-all shadow-sm">
                                 Lihat Detail
                             </button>
                         </div>
                     </div>
-                </div>
-            </div>
+                </article>
 
-            <div id="modal-{{ $jadwal->id }}" class="fixed inset-0 z-50 hidden bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
+            <div id="modal-{{ $jadwal->id }}" role="dialog" aria-modal="true" aria-labelledby="modal-title-{{ $jadwal->id }}" class="fixed inset-0 z-50 hidden bg-gray-900 bg-opacity-50 flex items-center justify-center p-4">
                 <div class="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl relative">
-                    <button onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900">
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                    <button aria-label="Tutup detail reservasi" onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.add('hidden')" class="absolute top-4 right-4 text-gray-400 hover:text-gray-900">
+                        <svg aria-hidden="true" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
                     </button>
-                    <h3 class="text-2xl font-extrabold text-gray-900 mb-6">Detail Reservasi</h3>
+                    <h3 id="modal-title-{{ $jadwal->id }}" class="text-2xl font-extrabold text-gray-900 mb-6">Detail Reservasi</h3>
 
                     <div class="space-y-4">
                         <div>
@@ -124,17 +124,18 @@
                     </button>
                 </div>
             </div>
+            </li>
         @empty
-            <div class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-16 text-center">
+            <li class="bg-gray-50 border-2 border-dashed border-gray-200 rounded-[2rem] p-16 text-center">
                 <div class="w-20 h-20 bg-white shadow-sm rounded-3xl flex items-center justify-center mx-auto mb-6 text-gray-300">
-                    <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
+                    <svg aria-hidden="true" class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
                 </div>
                 <h3 class="text-xl font-bold text-gray-900 mb-2">Belum Ada Jadwal</h3>
                 <p class="text-gray-500 mb-8 max-w-xs mx-auto">Anda belum memiliki riwayat reservasi. Silakan buat janji temu melalui menu reservasi.</p>
                 <a href="{{ route('portal') }}" class="inline-flex items-center gap-2 px-6 py-3 bg-teal-600 text-white font-bold rounded-2xl hover:bg-teal-700 transition-all">
                     Buat Reservasi Sekarang
                 </a>
-            </div>
+            </li>
         @endforelse
-    </div>
-</div>
+    </ul>
+</section>

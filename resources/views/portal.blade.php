@@ -39,6 +39,7 @@
 </head>
 
 <body class="text-gray-900 antialiased overflow-hidden flex h-screen" x-data="portalApp()">
+    <a href="#main-content" class="sr-only focus:not-sr-only focus:absolute focus:z-50 focus:p-4 focus:bg-white focus:text-teal-600 focus:font-bold rounded-br-xl shadow-lg">Lanjut ke konten utama</a>
 
     {{-- Desktop Sidebar --}}
     <aside class="hidden md:flex flex-col w-72 bg-white/80 backdrop-blur-xl border-r border-gray-100 dark:bg-[#1E293B]/90 dark:border-gray-800 h-full flex-shrink-0 z-20 shadow-[4px_0_24px_rgba(0,0,0,0.02)]">
@@ -53,10 +54,11 @@
         </div>
 
         {{-- Nav Links --}}
-        <nav class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
+        <nav aria-label="Navigasi Utama" role="tablist" aria-orientation="vertical" class="flex-1 px-4 py-6 space-y-2 overflow-y-auto">
             <div class="text-[11px] font-extrabold text-gray-400 uppercase tracking-widest mb-4 px-4 dark:text-gray-500">Menu Pasien</div>
 
             <button @click="switchTab('reservasi')"
+                    role="tab" :aria-selected="activeTab === 'reservasi' ? 'true' : 'false'"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'reservasi' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'reservasi'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -65,6 +67,7 @@
             </button>
 
             <button @click="switchTab('jadwal')"
+                    role="tab" :aria-selected="activeTab === 'jadwal' ? 'true' : 'false'"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'jadwal' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'jadwal'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -73,6 +76,7 @@
             </button>
 
             <button @click="switchTab('rekam_medis')"
+                    role="tab" :aria-selected="activeTab === 'rekam_medis' ? 'true' : 'false'"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'rekam_medis' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'rekam_medis'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -81,6 +85,7 @@
             </button>
 
             <button @click="switchTab('konsultasi')"
+                    role="tab" :aria-selected="activeTab === 'konsultasi' ? 'true' : 'false'"
                     class="w-full flex items-center gap-3 px-4 py-3.5 rounded-xl text-sm font-semibold transition-all group relative overflow-hidden"
                     :class="activeTab === 'konsultasi' ? 'text-white shadow-lg shadow-teal-500/25' : 'text-gray-600 hover:bg-teal-50/50 hover:text-teal-700 dark:text-gray-400 dark:hover:bg-gray-800/50 dark:hover:text-white'">
                 <div x-show="activeTab === 'konsultasi'" class="absolute inset-0 z-0" style="background: var(--gradient-main);"></div>
@@ -157,7 +162,7 @@
         </header>
 
         {{-- Scrollable Content Area --}}
-        <main class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 relative z-10">
+        <main id="main-content" class="flex-1 overflow-y-auto p-4 md:p-8 pb-24 md:pb-8 relative z-10">
             <div class="max-w-6xl mx-auto">
                 <div x-show="activeTab === 'reservasi'" x-cloak x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 translate-y-4" x-transition:enter-end="opacity-100 translate-y-0">
                     @include('portal.tabs.reservasi')
@@ -176,24 +181,24 @@
     </div>
 
     {{-- Mobile Bottom Navigation --}}
-    <nav class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 dark:bg-[#1E293B]/90 dark:border-gray-800 pb-safe z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] dark:shadow-none">
+    <nav aria-label="Navigasi Bawah" role="tablist" class="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-xl border-t border-gray-100 dark:bg-[#1E293B]/90 dark:border-gray-800 pb-safe z-50 shadow-[0_-10px_30px_rgba(0,0,0,0.05)] dark:shadow-none">
         <div class="flex items-center justify-around px-2 h-16 relative">
-            <button @click="switchTab('reservasi')" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'reservasi' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
+            <button @click="switchTab('reservasi')" role="tab" :aria-selected="activeTab === 'reservasi' ? 'true' : 'false'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'reservasi' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
                 <div x-show="activeTab === 'reservasi'" class="absolute -top-3 w-10 h-1 rounded-full bg-teal-500" x-transition></div>
                 <svg class="w-6 h-6 transition-colors" :class="activeTab === 'reservasi' ? 'fill-teal-50 stroke-teal-600 dark:fill-teal-900/40 dark:stroke-teal-400' : 'fill-transparent'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
                 <span>Reservasi</span>
             </button>
-            <button @click="switchTab('jadwal')" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'jadwal' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
+            <button @click="switchTab('jadwal')" role="tab" :aria-selected="activeTab === 'jadwal' ? 'true' : 'false'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'jadwal' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
                 <div x-show="activeTab === 'jadwal'" class="absolute -top-3 w-10 h-1 rounded-full bg-teal-500" x-transition></div>
                 <svg class="w-6 h-6 transition-colors" :class="activeTab === 'jadwal' ? 'fill-teal-50 stroke-teal-600 dark:fill-teal-900/40 dark:stroke-teal-400' : 'fill-transparent'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
                 <span>Jadwal</span>
             </button>
-            <button @click="switchTab('rekam_medis')" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'rekam_medis' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
+            <button @click="switchTab('rekam_medis')" role="tab" :aria-selected="activeTab === 'rekam_medis' ? 'true' : 'false'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'rekam_medis' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
                 <div x-show="activeTab === 'rekam_medis'" class="absolute -top-3 w-10 h-1 rounded-full bg-teal-500" x-transition></div>
                 <svg class="w-6 h-6 transition-colors" :class="activeTab === 'rekam_medis' ? 'fill-teal-50 stroke-teal-600 dark:fill-teal-900/40 dark:stroke-teal-400' : 'fill-transparent'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
                 <span>Rekam Medis</span>
             </button>
-            <button @click="switchTab('konsultasi')" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'konsultasi' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
+            <button @click="switchTab('konsultasi')" role="tab" :aria-selected="activeTab === 'konsultasi' ? 'true' : 'false'" class="relative flex flex-col items-center justify-center w-full h-full space-y-1 text-[11px] font-bold transition-all" :class="activeTab === 'konsultasi' ? 'text-teal-600 dark:text-teal-400 -translate-y-1' : 'text-gray-400 dark:text-gray-500'">
                 <div x-show="activeTab === 'konsultasi'" class="absolute -top-3 w-10 h-1 rounded-full bg-teal-500" x-transition></div>
                 <svg class="w-6 h-6 transition-colors" :class="activeTab === 'konsultasi' ? 'fill-teal-50 stroke-teal-600 dark:fill-teal-900/40 dark:stroke-teal-400' : 'fill-transparent'" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/></svg>
                 <span>Konsultasi</span>

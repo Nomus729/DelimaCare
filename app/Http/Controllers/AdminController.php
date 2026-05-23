@@ -16,83 +16,18 @@ class AdminController extends Controller
 {
     public function index(Request $request)
     {
-        // ─── Konten ───────────────────────────────────────────────
-        $kontenData = $this->getKontenData($request);
-        $articles       = $kontenData['articles'];
-        $categoryCounts = $kontenData['categoryCounts'];
-        $activeCategory = $kontenData['activeCategory'];
-        $searchKonten   = $kontenData['searchKonten'];
-        $sortKonten     = $kontenData['sortKonten'];
-
-        // ─── Inventori ────────────────────────────────────────────
-        $invData = $this->getInventoriData($request);
-        $medicines        = $invData['medicines'];
-        $lowStockCount    = $invData['lowStockCount'];
-        $expiredCount     = $invData['expiredCount'];
-        $nearExpiryCount  = $invData['nearExpiryCount'];
-        $totalMedicines   = $invData['totalMedicines'];
-        $medSearch        = $invData['medSearch'];
-        $medSort          = $invData['medSort'];
-        $medFilter        = $invData['medFilter'];
-
-        // ─── Rekam Medis ──────────────────────────────────────────
-        $rmSearch    = $request->query('rm_search', '');
-        $rmKategori  = $request->query('rm_kategori', '');
-        $rmDate      = $request->has('rm_date') ? $request->query('rm_date') : 'today';
-
-        $rmQuery = RekamMedis::latest()
-            ->search($rmSearch)
-            ->byKategori($rmKategori)
-            ->byDate($rmDate);
-
-        $rekamMedis = $rmQuery->paginate(8)
-            ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori, 'rm_date' => $rmDate]);
-
-        // Base query for stats (applies search and date filters, but NOT category filter)
-        $statsBaseQuery = RekamMedis::search($rmSearch)->byDate($rmDate);
-
-        // Optimized Stats queries (dynamic based on current filter)
-        $rmStats = [
-            'total'         => (clone $statsBaseQuery)->count(),
-            'kehamilan'     => (clone $statsBaseQuery)->where('kategori', 'Kehamilan')->count(),
-            'kb'            => (clone $statsBaseQuery)->where('kategori', 'Keluarga Berencana')->count(),
-            'risiko_tinggi' => (clone $statsBaseQuery)->where('status_risiko', 'Tinggi')->count(),
-        ];
-
-        $rmKategoriCounts = [
-            ''                   => $rmStats['total'],
-            'Kehamilan'          => $rmStats['kehamilan'],
-            'Keluarga Berencana' => $rmStats['kb'],
-            'Kontrol Umum'       => (clone $statsBaseQuery)->where('kategori', 'Kontrol Umum')->count(),
-        ];
-
-        // ─── Reservasi ─────────────────────────────────────────────
-        $resData = $this->getReservasiData($request);
-        $semuaReservasi         = $resData['semuaReservasi'];
-        $pendingReservasiCount  = $resData['pendingReservasiCount'];
-        $reservasiHariIni       = $resData['reservasiHariIni'];
-        $reservasiMendatang     = $resData['reservasiMendatang'];
-        $reservasiDikonfirmasi  = $resData['reservasiDikonfirmasi'];
-        $resFilter              = $resData['resFilter'];
-        $resStatus              = $resData['resStatus'];
-        $resSearch              = $resData['resSearch'];
+        // ─── Initial Load: hanya query data yang diperlukan untuk Dashboard ───
+        // Tab lain di-load via AJAX (lazy) hanya saat diklik
+        $this->autoUpdateExpiredReservations();
 
         $totalPasien = RekamMedis::count();
-        $doctors = Doctor::all();
+        $lowStockCount = Medicine::whereRaw('stock <= min_stock')->count();
 
-        // ─── Keuangan ──────────────────────────────────────────────
-        $keuanganData = $this->getKeuanganData($request);
-        $chartKeuangan = $keuanganData['chartData'];
-        $pengeluaranList = $keuanganData['pengeluaranList'];
-        $kpiStats = $keuanganData['kpiStats'];
-        $donutChartData = $keuanganData['donutChartData'];
-        $topMedicines = $keuanganData['topMedicines'];
-        $topDoctors = $keuanganData['topDoctors'];
-        $topExpenses = $keuanganData['topExpenses'];
-        $summaryTable = $keuanganData['summaryTable'];
+        // Reservasi hari ini (untuk stats card)
+        $reservasiHariIni = Reservasi::whereDate('tanggal', today())->count();
+        $pendingReservasiCount = Reservasi::where('status', 'Menunggu')->count();
 
-        // ─── Dashboard Stats ──────────────────────────────────────
-        // Kalkulasi pendapatan dinamis dari resep medis (harga obat × jumlah + biaya dokter)
+        // Pendapatan bulan ini
         $resepObatBulanIni = ResepMedisItem::whereHas('resepMedis', function ($q) {
                 $q->whereMonth('tanggal_resep', now()->month)
                   ->whereYear('tanggal_resep', now()->year);
@@ -106,8 +41,6 @@ class AdminController extends Controller
             ->sum('biaya_dokter');
 
         $pendapatanBulanIni = $resepObatBulanIni + $resepDokterBulanIni;
-
-        // Format pendapatan (contoh: 1500000 → "1,5Jt", 45000000 → "45Jt")
         $pendapatanFormatted = $this->formatRupiah($pendapatanBulanIni);
 
         $stats = [
@@ -119,61 +52,217 @@ class AdminController extends Controller
 
         // --- 6-Month Kunjungan & Pasien Baru Chart ---
         $kunjunganCategories = [];
-        $kunjunganData = [];
-        $pasienBaruData = [];
+        $kunjunganData       = [];
+        $pasienBaruData      = [];
 
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $kunjunganCategories[] = $date->isoFormat('MMM');
 
-            $kunjunganCount = RekamMedis::whereMonth('created_at', $date->month)
-                ->whereYear('created_at', $date->year)
-                ->count();
+            $kunjunganData[] = RekamMedis::whereMonth('created_at', $date->month)
+                ->whereYear('created_at', $date->year)->count();
 
-            $pasienBaruCount = RekamMedis::whereMonth('created_at', $date->month)
+            $pasienBaruData[] = RekamMedis::whereMonth('created_at', $date->month)
                 ->whereYear('created_at', $date->year)
-                ->whereNotExists(function($query) use ($date) {
-                    $query->selectRaw(1)
-                          ->from('rekam_medis as rm2')
-                          ->whereColumn('rm2.no_telepon', 'rekam_medis.no_telepon')
-                          ->where('rm2.created_at', '<', $date->copy()->startOfMonth());
-                })
-                ->count();
-
-            $kunjunganData[] = $kunjunganCount;
-            $pasienBaruData[] = $pasienBaruCount;
+                ->whereNotExists(function ($q) use ($date) {
+                    $q->selectRaw(1)->from('rekam_medis as rm2')
+                      ->whereColumn('rm2.no_telepon', 'rekam_medis.no_telepon')
+                      ->where('rm2.created_at', '<', $date->copy()->startOfMonth());
+                })->count();
         }
 
         $chartKunjunganData = json_encode([
-            'categories' => $kunjunganCategories,
-            'kunjungan' => $kunjunganData,
-            'pasien_baru' => $pasienBaruData
+            'categories'  => $kunjunganCategories,
+            'kunjungan'   => $kunjunganData,
+            'pasien_baru' => $pasienBaruData,
         ]);
 
-        // --- Current Month Service Distribution Donut ---
+        // --- Distribusi Layanan Donut Chart ---
         $distribusiLayanan = [
-            'Kehamilan' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kehamilan')->count(),
+            'Kehamilan'          => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kehamilan')->count(),
             'Keluarga Berencana' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Keluarga Berencana')->count(),
-            'Kontrol Umum' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kontrol Umum')->count(),
-            'Lainnya' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->whereNotIn('kategori', ['Kehamilan', 'Keluarga Berencana', 'Kontrol Umum'])->count(),
+            'Kontrol Umum'       => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kontrol Umum')->count(),
+            'Lainnya'            => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->whereNotIn('kategori', ['Kehamilan', 'Keluarga Berencana', 'Kontrol Umum'])->count(),
         ];
-        
         $chartDistribusiData = json_encode(array_values($distribusiLayanan));
 
         $activeTab = $request->query('tab', 'dashboard');
 
         return view('admin.index', compact(
-            'articles', 'categoryCounts', 'activeCategory', 'searchKonten', 'sortKonten',
-            'medicines', 'lowStockCount', 'expiredCount', 'nearExpiryCount', 'totalMedicines', 'medSearch', 'medSort', 'medFilter',
-            'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori', 'rmDate',
-            'semuaReservasi', 'pendingReservasiCount', 'doctors',
-            'reservasiHariIni', 'reservasiMendatang', 'reservasiDikonfirmasi',
-            'resFilter', 'resStatus', 'resSearch',
-            'stats', 'activeTab', 'chartKeuangan', 'pengeluaranList',
-            'kpiStats', 'donutChartData', 'topMedicines',
-            'topDoctors', 'topExpenses', 'summaryTable',
+            'stats', 'activeTab',
+            'lowStockCount', 'pendingReservasiCount',
             'chartKunjunganData', 'chartDistribusiData'
         ));
+    }
+
+    // =========================================================================
+    //  PARTIAL ENDPOINTS — digunakan oleh AJAX Lazy Loader & HTMX
+    //  Setiap method hanya query data yang dibutuhkan modul-nya saja.
+    //  Guard: jika diakses langsung (bukan HTMX/AJAX), redirect ke dashboard.
+    // =========================================================================
+
+    /**
+     * Cek apakah request berasal dari HTMX atau AJAX (Fetch API).
+     */
+    private function isHtmxRequest(Request $request): bool
+    {
+        return $request->header('HX-Request') === 'true'
+            || $request->ajax()
+            || $request->header('X-Requested-With') === 'XMLHttpRequest';
+    }
+
+    /**
+     * Guard: redirect ke dashboard jika bukan HTMX/AJAX request.
+     */
+    private function guardPartial(Request $request, string $tab): ?\Illuminate\Http\RedirectResponse
+    {
+        if (!$this->isHtmxRequest($request)) {
+            return redirect()->route('admin.dashboard', ['tab' => $tab]);
+        }
+        return null;
+    }
+
+    /**
+     * Render Dashboard partial untuk AJAX/HTMX lazy load.
+     */
+    public function getDashboardPartial(Request $request)
+    {
+        if ($guard = $this->guardPartial($request, 'dashboard')) return $guard;
+
+        $this->autoUpdateExpiredReservations();
+        $totalPasien       = RekamMedis::count();
+        $lowStockCount     = Medicine::whereRaw('stock <= min_stock')->count();
+        $reservasiHariIni  = Reservasi::whereDate('tanggal', today())->count();
+        $pendingReservasiCount = Reservasi::where('status', 'Menunggu')->count();
+
+        $resepObatBulanIni = ResepMedisItem::whereHas('resepMedis', function ($q) {
+                $q->whereMonth('tanggal_resep', now()->month)->whereYear('tanggal_resep', now()->year);
+            })
+            ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
+            ->value('total') ?? 0;
+        $resepDokterBulanIni = \App\Models\ResepMedis::whereMonth('tanggal_resep', now()->month)
+            ->whereYear('tanggal_resep', now()->year)->sum('biaya_dokter');
+        $pendapatanFormatted = $this->formatRupiah($resepObatBulanIni + $resepDokterBulanIni);
+
+        $stats = [
+            'total_pasien'         => $totalPasien,
+            'reservasi_hari_ini'   => $reservasiHariIni,
+            'stok_menipis'         => $lowStockCount,
+            'pendapatan_bulan_ini' => $pendapatanFormatted,
+        ];
+
+        $kunjunganCategories = []; $kunjunganData = []; $pasienBaruData = [];
+        for ($i = 5; $i >= 0; $i--) {
+            $date = now()->subMonths($i);
+            $kunjunganCategories[] = $date->isoFormat('MMM');
+            $kunjunganData[] = RekamMedis::whereMonth('created_at', $date->month)->whereYear('created_at', $date->year)->count();
+            $pasienBaruData[] = RekamMedis::whereMonth('created_at', $date->month)->whereYear('created_at', $date->year)
+                ->whereNotExists(fn($q) => $q->selectRaw(1)->from('rekam_medis as rm2')
+                    ->whereColumn('rm2.no_telepon', 'rekam_medis.no_telepon')
+                    ->where('rm2.created_at', '<', $date->copy()->startOfMonth()))->count();
+        }
+        $chartKunjunganData = json_encode(['categories' => $kunjunganCategories, 'kunjungan' => $kunjunganData, 'pasien_baru' => $pasienBaruData]);
+
+        $distribusiLayanan = [
+            'Kehamilan'          => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kehamilan')->count(),
+            'Keluarga Berencana' => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Keluarga Berencana')->count(),
+            'Kontrol Umum'       => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->where('kategori', 'Kontrol Umum')->count(),
+            'Lainnya'            => RekamMedis::whereMonth('created_at', now()->month)->whereYear('created_at', now()->year)->whereNotIn('kategori', ['Kehamilan', 'Keluarga Berencana', 'Kontrol Umum'])->count(),
+        ];
+        $chartDistribusiData = json_encode(array_values($distribusiLayanan));
+
+        return view('admin.partials.dashboard', compact(
+            'stats', 'lowStockCount', 'pendingReservasiCount',
+            'chartKunjunganData', 'chartDistribusiData'
+        ));
+    }
+
+    /**
+     * Render Laporan partial untuk AJAX/HTMX lazy load.
+     */
+    public function getLaporanPartial(Request $request)
+    {
+        if ($guard = $this->guardPartial($request, 'laporan')) return $guard;
+        return view('admin.partials.laporan');
+    }
+
+    /**
+     * Render Doctors partial untuk AJAX/HTMX lazy load.
+     */
+    public function getDoctorsPartial(Request $request)
+    {
+        if ($guard = $this->guardPartial($request, 'doctors')) return $guard;
+
+        $doctors = Doctor::all();
+        return view('admin.partials.doctors', compact('doctors'));
+    }
+
+    /**
+     * Render Keuangan partial untuk AJAX/HTMX lazy load.
+     */
+    public function getKeuanganPartial(Request $request)
+    {
+        if ($guard = $this->guardPartial($request, 'keuangan')) return $guard;
+
+        $keuanganData    = $this->getKeuanganData($request);
+        $chartKeuangan   = $keuanganData['chartData'];
+        $pengeluaranList = $keuanganData['pengeluaranList'];
+        $kpiStats        = $keuanganData['kpiStats'];
+        $donutChartData  = $keuanganData['donutChartData'];
+        $topMedicines    = $keuanganData['topMedicines'];
+        $topDoctors      = $keuanganData['topDoctors'];
+        $topExpenses     = $keuanganData['topExpenses'];
+        $summaryTable    = $keuanganData['summaryTable'];
+
+        return view('admin.partials.keuangan', compact(
+            'chartKeuangan', 'pengeluaranList', 'kpiStats', 'donutChartData',
+            'topMedicines', 'topDoctors', 'topExpenses', 'summaryTable'
+        ));
+    }
+
+    /**
+     * Render Rekam Medis partial untuk AJAX/HTMX lazy load.
+     */
+    public function getRekamMedisPartial(Request $request)
+    {
+        if ($guard = $this->guardPartial($request, 'rekam_medis')) return $guard;
+
+        $rmSearch   = $request->query('rm_search') ?? '';
+        $rmKategori = $request->query('rm_kategori') ?? '';
+        $rmDate     = $request->has('rm_date') ? ($request->query('rm_date') ?? '') : 'today';
+
+        $rmQuery  = RekamMedis::latest()->search($rmSearch)->byKategori($rmKategori)->byDate($rmDate);
+        $rekamMedis = $rmQuery->paginate(8)
+            ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori, 'rm_date' => $rmDate]);
+
+        $statsBaseQuery = RekamMedis::search($rmSearch)->byDate($rmDate);
+        $rmStats = [
+            'total'         => (clone $statsBaseQuery)->count(),
+            'kehamilan'     => (clone $statsBaseQuery)->where('kategori', 'Kehamilan')->count(),
+            'kb'            => (clone $statsBaseQuery)->where('kategori', 'Keluarga Berencana')->count(),
+            'risiko_tinggi' => (clone $statsBaseQuery)->where('status_risiko', 'Tinggi')->count(),
+        ];
+        $rmKategoriCounts = [
+            ''                   => $rmStats['total'],
+            'Kehamilan'          => $rmStats['kehamilan'],
+            'Keluarga Berencana' => $rmStats['kb'],
+            'Kontrol Umum'       => (clone $statsBaseQuery)->where('kategori', 'Kontrol Umum')->count(),
+        ];
+
+        $doctors = Doctor::all();
+
+        return view('admin.partials.rekam-medis', compact(
+            'rekamMedis', 'rmStats', 'rmKategoriCounts', 'rmSearch', 'rmKategori', 'rmDate', 'doctors'
+        ));
+    }
+
+    /**
+     * Render Konsultasi partial untuk AJAX lazy load.
+     */
+    public function getKonsultasiPartial(Request $request)
+    {
+        return view('admin.partials.konsultasi');
     }
 
     /**
@@ -184,9 +273,9 @@ class AdminController extends Controller
         // 🔥 Auto-update reservations that haven't been confirmed in 24h
         $this->autoUpdateExpiredReservations();
 
-        $resFilter = $request->query('res_filter', 'today');
-        $resStatus = $request->query('res_status', '');
-        $resSearch = $request->query('res_search', '');
+        $resFilter = $request->query('res_filter') ?? 'today';
+        $resStatus = $request->query('res_status') ?? '';
+        $resSearch = $request->query('res_search') ?? '';
 
         $resQuery = Reservasi::with('doctor');
 
@@ -204,7 +293,14 @@ class AdminController extends Controller
             $resQuery->where('nama', 'like', "%{$resSearch}%");
         }
 
-        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')->get();
+        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')
+            ->paginate(20)
+            ->appends([
+                'tab' => 'reservasi',
+                'res_filter' => $resFilter,
+                'res_status' => $resStatus,
+                'res_search' => $resSearch
+            ]);
 
         return [
             'semuaReservasi'        => $semuaReservasi,
@@ -278,9 +374,9 @@ class AdminController extends Controller
      */
     private function getKontenData(Request $request)
     {
-        $activeCategory = $request->query('category', '');
-        $searchKonten   = $request->query('search_konten', '');
-        $sortKonten     = $request->query('sort_konten', 'latest');
+        $activeCategory = $request->query('category') ?? '';
+        $searchKonten   = $request->query('search_konten') ?? '';
+        $sortKonten     = $request->query('sort_konten') ?? 'latest';
 
         $query = Article::query();
 

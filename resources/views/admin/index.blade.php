@@ -18,291 +18,40 @@
     </script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
 
-    <style>
-        [x-cloak] { display: none !important; }
-        * { font-family: 'Inter', sans-serif; }
-        body { background-color: #F0FDFB; }
-        html.dark body { background-color: #080F1E; }
+    {{--
+        CSS Admin Panel (diekstrak dari inline style, di-bundle via Vite)
+        Berisi: custom vars, animasi, sidebar layout, HTMX loading bar, page loader.
+        Di-serve dengan content hash di production → browser cache optimal.
+    --}}
+    @vite('resources/css/admin.css')
 
-        /* ── Per-tab accent CSS variables ── */
-        :root {
-            --acc1: #0D9488; --acc2: #06B6D4;
-            --blob1: rgba(13,148,136,0.18); --blob2: rgba(6,182,212,0.12);
-            --grad: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
-        }
-
-        /* Tab themes applied via JS to :root */
-        .shimmer-bar {
-            background: linear-gradient(90deg, var(--acc1) 0%, var(--acc2) 40%, var(--acc1) 100%);
-            background-size: 200% auto; animation: shimmer 2s linear infinite;
-            transition: background 0.5s ease;
-        }
-        .blob-1 { background: var(--blob1); transition: background 0.6s ease; }
-        .blob-2 { background: var(--blob2); transition: background 0.6s ease; }
-        .header-date { color: var(--acc1); transition: color 0.5s ease; }
-
-        .nav-active {
-            background: linear-gradient(135deg, color-mix(in srgb, var(--acc1) 12%, transparent), color-mix(in srgb, var(--acc2) 8%, transparent));
-            color: var(--acc1); box-shadow: inset 3px 0 0 var(--acc1); font-weight: 800;
-        }
-        html.dark .nav-active { color: var(--acc2); box-shadow: inset 3px 0 0 var(--acc2); }
-        .nav-icon-active { color: var(--acc1); }
-        html.dark .nav-icon-active { color: var(--acc2); }
-        .dot-active { background: var(--acc1); }
-        html.dark .dot-active { background: var(--acc2); }
-
-        :root {
-            --teal-main: #0D9488;
-            --cyan-main: #06B6D4;
-            --grad: linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
-        }
-
-        /* Scrollbar */
-        ::-webkit-scrollbar { width: 5px; height: 5px; }
-        ::-webkit-scrollbar-track { background: transparent; }
-        ::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
-        html.dark ::-webkit-scrollbar-thumb { background: #2D3F55; }
-
-        /* Sidebar nav active */
-        .nav-active {
-            background: linear-gradient(135deg, rgba(13,148,136,0.12) 0%, rgba(6,182,212,0.08) 100%);
-            color: #0D9488;
-            box-shadow: inset 3px 0 0 #0D9488;
-            font-weight: 800;
-        }
-        html.dark .nav-active {
-            background: linear-gradient(135deg, rgba(20,184,166,0.18) 0%, rgba(34,211,238,0.10) 100%);
-            color: #2DD4BF;
-            box-shadow: inset 3px 0 0 #2DD4BF;
-        }
-
-        /* Animations */
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(18px); }
-            to   { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes fadeInLeft {
-            from { opacity: 0; transform: translateX(-18px); }
-            to   { opacity: 1; transform: translateX(0); }
-        }
-        @keyframes floatBlob {
-            0%, 100% { transform: translateY(0) scale(1); }
-            50%       { transform: translateY(-20px) scale(1.05); }
-        }
-        @keyframes pulseDot {
-            0%   { box-shadow: 0 0 0 0 rgba(20,184,166,0.5); }
-            70%  { box-shadow: 0 0 0 8px rgba(20,184,166,0); }
-            100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); }
-        }
-        @keyframes pulseRed {
-            0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
-            70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
-            100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
-        }
-        @keyframes shimmer {
-            0%   { background-position: -200% center; }
-            100% { background-position: 200% center; }
-        }
-        @keyframes popOut {
-            0% { opacity: 0; transform: scale(0.3) translateY(-20px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
-        }
-        .notif-popout {
-            animation: popOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-        }
-
-        .anim-up  { animation: fadeInUp  0.55s cubic-bezier(0.16,1,0.3,1) both; }
-        .anim-left{ animation: fadeInLeft 0.5s cubic-bezier(0.16,1,0.3,1) both; }
-        .d-100 { animation-delay: 100ms; }
-        .d-150 { animation-delay: 150ms; }
-        .d-200 { animation-delay: 200ms; }
-        .d-300 { animation-delay: 300ms; }
-
-        .blob-float { animation: floatBlob 8s ease-in-out infinite; }
-        .blob-float-2 { animation: floatBlob 10s ease-in-out infinite 2s; }
-        .dot-pulse { animation: pulseDot 2s infinite; }
-        .bell-pulse { animation: pulseRed 2s infinite; }
-
-        /* Sidebar gradient logo */
-        .logo-icon { background: var(--grad); }
-
-        /* Shimmer loading bar */
-        .shimmer-bar {
-            background: linear-gradient(90deg, #0D9488 0%, #06B6D4 40%, #0D9488 100%);
-            background-size: 200% auto;
-            animation: shimmer 2s linear infinite;
-        }
-
-        /* ── Sidebar ──────────────────────────────────── */
-        #main-sidebar {
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            will-change: width;
-            overflow: visible;
-        }
-        #main-sidebar.sidebar-wide { width: 18rem !important; }
-        #main-sidebar:not(.sidebar-wide) { width: 4.5rem !important; }
-
-        /* Inner scroll container clips content */
-        #sb-inner {
-            overflow: hidden;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            backface-visibility: hidden;
-        }
-        .sidebar-link {
-            position: relative;
-            transition: background 0.22s ease, transform 0.22s cubic-bezier(0.34,1.56,0.64,1), color 0.18s ease;
-            border-radius: 14px;
-            overflow: hidden;
-        }
-        .sidebar-link::before {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: linear-gradient(135deg, rgba(13,148,136,0.08), rgba(6,182,212,0.06));
-            opacity: 0;
-            transition: opacity 0.2s ease;
-            border-radius: 14px;
-        }
-        .sidebar-link:hover::before { opacity: 1; }
-        .sidebar-link:hover { transform: translateX(4px); }
-        .sidebar-link:hover svg { transform: scale(1.12) rotate(4deg); }
-        .sidebar-link:active { transform: scale(0.97) translateX(2px); }
-        .sidebar-link svg { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
-        #main-sidebar:not(.sidebar-wide) .sidebar-link:hover {
-            transform: scale(1.1) translateX(0);
-        }
-        .nav-active {
-            background: linear-gradient(135deg, rgba(13,148,136,0.12) 0%, rgba(6,182,212,0.08) 100%) !important;
-            border: 1px solid rgba(13,148,136,0.18);
-            color: #0d9488 !important;
-            box-shadow: 0 2px 12px rgba(13,148,136,0.1);
-        }
-        .dark .nav-active {
-            background: linear-gradient(135deg, rgba(13,148,136,0.18) 0%, rgba(6,182,212,0.12) 100%) !important;
-            color: #2dd4bf !important;
-        }
-        .nav-active svg { color: #0d9488 !important; }
-        .dark .nav-active svg { color: #2dd4bf !important; }
-        /* Sidebar text & extras fade */
-        .sb-label, .sb-dot, .sb-user-info, .sb-logout-text, .sb-live, .sb-section-title {
-            transition: opacity 0.25s ease, max-width 0.4s cubic-bezier(0.65,0,0.35,1);
-            white-space: nowrap;
-            overflow: hidden;
-            flex-shrink: 0;
-        }
-        #main-sidebar:not(.sidebar-wide) .sb-label,
-        #main-sidebar:not(.sidebar-wide) .sb-dot,
-        #main-sidebar:not(.sidebar-wide) .sb-user-info,
-        #main-sidebar:not(.sidebar-wide) .sb-logout-text,
-        #main-sidebar:not(.sidebar-wide) .sb-live,
-        #main-sidebar:not(.sidebar-wide) .sb-section-title {
-            opacity: 0;
-            max-width: 0;
-            pointer-events: none;
-        }
-        #main-sidebar.sidebar-wide .sb-label,
-        #main-sidebar.sidebar-wide .sb-dot,
-        #main-sidebar.sidebar-wide .sb-user-info,
-        #main-sidebar.sidebar-wide .sb-logout-text,
-        #main-sidebar.sidebar-wide .sb-live,
-        #main-sidebar.sidebar-wide .sb-section-title {
-            opacity: 1;
-            max-width: 220px;
-        }
-        /* Badge — always visible, style changes per mode */
-        .sb-badge {
-            transition: all 0.3s ease;
-            white-space: nowrap;
-            flex-shrink: 0;
-        }
-        /* Wide badge: full pill */
-        #main-sidebar.sidebar-wide .sb-badge {
-            font-size: 10px; padding: 1px 6px; border-radius: 9999px;
-        }
-        /* Mini badge: compact square next to icon */
-        #main-sidebar:not(.sidebar-wide) .sb-badge {
-            font-size: 9px; padding: 1px 4px; border-radius: 5px;
-            min-width: 16px; text-align: center;
-        }
-        /* Mini active bar */
-        .mini-active-bar {
-            transition: opacity 0.25s ease;
-        }
-        /* Scrollbar for sidebar */
-        #sb-inner nav::-webkit-scrollbar { width: 3px; }
-        #sb-inner nav::-webkit-scrollbar-track { background: transparent; }
-        #sb-inner nav::-webkit-scrollbar-thumb { background: rgba(13,148,136,0.2); border-radius: 10px; }
-        /* Prevent main content from janking during sidebar transition */
-        #main-content {
-            contain: layout;
-            flex: 1;
-            min-width: 0;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-        /* Toggle button always transitions with sidebar width */
-        #sidebar-toggle {
-            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
-                        background-color 0.2s ease,
-                        border-color 0.2s ease !important;
-            will-change: left;
-        }
-        #sidebar-toggle.sidebar-wide { left: calc(18rem - 12px) !important; }
-        #sidebar-toggle:not(.sidebar-wide) { left: calc(4.5rem - 12px) !important; }
-        /* Page Loader */
-        #page-loader {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 3px;
-            z-index: 9999;
-            background: linear-gradient(90deg, transparent, var(--teal-main), var(--cyan-main), transparent);
-            background-size: 200% 100%;
-            animation: loaderProgress 2s linear infinite;
-            transition: opacity 0.5s ease-in-out;
-        }
-        @keyframes loaderProgress {
-            0% { background-position: 200% 0; }
-            100% { background-position: -200% 0; }
-        }
-        .page-ready #page-loader {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        /* Smooth Entrance */
-        .page-content-wrapper {
-            opacity: 0;
-            transform: translateY(10px);
-            transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
-                        transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-        }
-        .page-ready .page-content-wrapper {
-            opacity: 1;
-            transform: translateY(0);
-        }
-    </style>
-
+    {{--
+        Dark Mode Initialization — HARUS tetap inline di <head>.
+        Alasan: harus jalan SYNCHRONOUS sebelum browser me-render body,
+        agar tidak ada Flash of Unstyled Content (FOUC) di dark mode.
+    --}}
     <script>
-        // Dark Mode Initialization
         if (localStorage.getItem('delimacare-dark') === 'true' ||
-            (localStorage.getItem('delimacare-dark') === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+            (localStorage.getItem('delimacare-dark') === null &&
+             window.matchMedia('(prefers-color-scheme: dark)').matches)) {
             document.documentElement.classList.add('dark');
         }
-
-        // Page Loader Control
         window.addEventListener('load', () => {
-            setTimeout(() => {
-                document.documentElement.classList.add('page-ready');
-            }, 300);
+            setTimeout(() => { document.documentElement.classList.add('page-ready'); }, 300);
         });
     </script>
 </head>
 
-<body class="text-gray-900 antialiased flex h-screen overflow-hidden dark:text-gray-100" x-data="adminPanel()">
+{{--
+    Data attributes pada <body>:
+    - Pusher config via config() helper (aman saat config:cache aktif di production)
+    - Admin username via data-attribute (TIDAK di-expose ke window global)
+    --}}
+<body class="text-gray-900 antialiased flex h-screen overflow-hidden dark:text-gray-100"
+      x-data="adminPanel()"
+      data-pusher-key="{{ config('broadcasting.connections.pusher.key') }}"
+      data-pusher-cluster="{{ config('broadcasting.connections.pusher.options.cluster', 'ap1') }}"
+      @auth data-admin-user="{{ Auth::user()->username }}" @endauth>
     <div id="page-loader"></div>
 
     <div class="page-content-wrapper flex w-full h-screen overflow-hidden">
@@ -607,70 +356,43 @@
             </header>
 
             {{-- ===== PAGE CONTENT ===== --}}
+            {{--
+                LAZY LOADING ARCHITECTURE:
+                - tab-dashboard : Pre-rendered server-side (always the first tab seen).
+                - tab-*         : Empty on initial load. Populated via AJAX on first click.
+                                  Content is cached in the DOM — no re-fetch on revisit.
+            --}}
             <main class="flex-1 relative z-10" :class="activeMenu === 'konsultasi' ? 'overflow-hidden p-0' : 'overflow-y-auto p-6 md:p-8'">
 
-                <div x-show="activeMenu === 'dashboard'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
+                {{-- ── Dashboard (PRE-RENDERED — tidak lazy) ───────────────── --}}
+                <div id="tab-dashboard"
+                     x-show="activeMenu === 'dashboard'"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4"
                      x-transition:enter-end="opacity-100 translate-y-0">
                     @include('admin.partials.dashboard')
                 </div>
 
-                <div x-show="activeMenu === 'konten'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.konten')
+                {{-- ── Tab Lain (LAZY — container kosong, diisi AJAX) ─────── --}}
+                @foreach([
+                    'konten'      => 'overflow-y-auto',
+                    'inventori'   => 'overflow-y-auto',
+                    'keuangan'    => 'overflow-y-auto',
+                    'laporan'     => 'overflow-y-auto',
+                    'doctors'     => 'overflow-y-auto',
+                    'reservasi'   => 'overflow-y-auto',
+                    'rekam_medis' => 'overflow-y-auto',
+                    'konsultasi'  => 'overflow-hidden h-full p-0',
+                ] as $tabId => $tabClass)
+                <div id="tab-{{ $tabId }}"
+                     x-show="activeMenu === '{{ $tabId }}'"
+                     x-transition:enter="transition ease-out duration-300"
+                     x-transition:enter-start="opacity-0 translate-y-4"
+                     x-transition:enter-end="opacity-100 translate-y-0"
+                     class="min-h-0">
+                    {{-- Diisi via JavaScript oleh adminPanel._fetchTab() --}}
                 </div>
-
-                <div x-show="activeMenu === 'inventori'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.inventori')
-                </div>
-
-                <div x-show="activeMenu === 'keuangan'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.keuangan')
-                </div>
-
-                <div x-show="activeMenu === 'laporan'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.laporan')
-                </div>
-
-                <div x-show="activeMenu === 'doctors'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.doctors')
-                </div>
-
-                <div x-show="activeMenu === 'reservasi'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.reservasi')
-                </div>
-
-                <div x-show="activeMenu === 'rekam_medis'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.rekam-medis')
-                </div>
-
-                <div x-show="activeMenu === 'konsultasi'" x-cloak
-                     x-transition:enter="transition ease-out duration-350"
-                     x-transition:enter-start="opacity-0 translate-y-5"
-                     x-transition:enter-end="opacity-100 translate-y-0">
-                    @include('admin.partials.konsultasi')
-                </div>
+                @endforeach
 
             </main>
         </div>
@@ -708,179 +430,44 @@
         <input type="hidden" id="initial-success-message" value="{{ session('success') }}">
     @endif
 
-    <!-- Pusher & Echo -->
+    {{--
+        Pusher & Echo — inisialisasi via resources/js/admin-init.js
+        Config dibaca dari data-attributes <body> (aman untuk production / config:cache)
+        Lihat: resources/js/admin-init.js
+    --}}
     <script src="https://js.pusher.com/8.2.0/pusher.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/laravel-echo@1.15.3/dist/echo.iife.js"></script>
+    @vite('resources/js/admin-init.js')
+
+    {{-- HTMX — dimuat sebelum Alpine agar event htmx:afterSwap bisa memanggil Alpine.initTree() --}}
+    <script src="https://unpkg.com/htmx.org@2.0.3" crossorigin="anonymous"></script>
     <script>
-        window.Pusher = Pusher;
-        window.Echo = new Echo({
-            broadcaster: 'pusher',
-            key: '{{ env("PUSHER_APP_KEY") }}',
-            cluster: '{{ env("PUSHER_APP_CLUSTER") }}',
-            forceTLS: true
+        // Konfigurasi HTMX agar kompatibel dengan Alpine.js
+        htmx.config.allowScriptTags  = true;  // izinkan re-exec <script> (ApexCharts)
+        htmx.config.scrollBehavior   = 'smooth';
+        htmx.config.defaultSwapDelay = 0;
+
+        // Tambahkan CSRF token ke semua request HTMX secara otomatis
+        document.addEventListener('htmx:configRequest', function(e) {
+            e.detail.headers['X-CSRF-TOKEN'] = document.querySelector('meta[name="csrf-token"]')?.content || '';
+            e.detail.headers['X-Requested-With'] = 'XMLHttpRequest';
         });
-        @auth
-        window.currentAdmin = '{{ Auth::user()->username }}';
-        @endauth
     </script>
+
+    {{-- PDF Export Libraries --}}
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <script src="{{ asset('js/admin.js') }}"></script>
 
-    <!-- Universal AJAX Router for Admin Dashboard -->
-    <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            // Prevent duplicate initialization when DOMContentLoaded is re-fired programmatically
-            if (window.__ajaxRouterInitialized) return;
-            window.__ajaxRouterInitialized = true;
 
-            const mainEl = document.querySelector('main');
-            if (!mainEl) return;
 
-            // Helper to robustly get tab name from URL
-            function getTabFromUrl(urlStr) {
-                try {
-                    const url = new URL(urlStr, window.location.origin);
-                    return url.searchParams.get('tab');
-                } catch (e) {
-                    return null;
-                }
-            }
-
-            // Monkeypatch HTMLFormElement.submit to dispatch standard submit events on programmatic calls
-            const originalSubmit = HTMLFormElement.prototype.submit;
-            HTMLFormElement.prototype.submit = function() {
-                const event = new Event('submit', { cancelable: true, bubbles: true });
-                this.dispatchEvent(event);
-                if (!event.defaultPrevented) {
-                    originalSubmit.call(this);
-                }
-            };
-
-            // Partial content loader via Fetch API
-            async function loadPartial(url, activeMenu) {
-                const currentTab = mainEl.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`) || 
-                                   mainEl.querySelector(`div[x-show*='activeMenu === "${activeMenu}"']`);
-
-                if (currentTab) {
-                    currentTab.style.opacity = '0.5';
-                    currentTab.style.transition = 'opacity 0.15s ease';
-                }
-
-                try {
-                    const response = await fetch(url);
-                    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                    const html = await response.text();
-                    
-                    const parser = new DOMParser();
-                    const doc = parser.parseFromString(html, 'text/html');
-                    
-                    const newTab = doc.querySelector(`div[x-show*="activeMenu === '${activeMenu}'"]`) || 
-                                   doc.querySelector(`div[x-show*='activeMenu === "${activeMenu}"']`);
-                    
-                    if (newTab && currentTab) {
-                        // Inject new HTML
-                        currentTab.innerHTML = newTab.innerHTML;
-
-                        // Extract and re-run all newly injected script tags
-                        const scripts = currentTab.querySelectorAll('script');
-                        scripts.forEach(script => {
-                            const newScript = document.createElement('script');
-                            Array.from(script.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value));
-                            newScript.appendChild(document.createTextNode(script.innerHTML));
-                            script.parentNode.replaceChild(newScript, script);
-                        });
-
-                        // Re-trigger DOMContentLoaded listeners (like ApexCharts)
-                        document.dispatchEvent(new Event('DOMContentLoaded'));
-
-                        // Let Alpine process the newly inserted components
-                        if (window.Alpine) {
-                            window.Alpine.nextTick(() => {});
-                        }
-                    } else {
-                        console.warn(`Tab container for '${activeMenu}' not found in AJAX response.`);
-                    }
-
-                    // Update address bar and session history
-                    window.history.pushState({ path: url }, '', url);
-
-                } catch (error) {
-                    console.error('AJAX Load Error:', error);
-                } finally {
-                    if (currentTab) {
-                        currentTab.style.opacity = '1';
-                    }
-                }
-            }
-
-            // Intercept pagination clicks and other same-domain admin links
-            mainEl.addEventListener('click', (e) => {
-                const link = e.target.closest('a');
-                if (!link) return;
-
-                const href = link.getAttribute('href');
-                if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
-
-                try {
-                    const url = new URL(href, window.location.origin);
-                    
-                    // ONLY intercept if the link targets the admin dashboard base path AND contains query parameters (pagination, filter, tab)
-                    const isDashboardPath = url.pathname === '/admin' || url.pathname === '/admin/dashboard';
-                    const hasQueryParams = url.search.length > 0;
-
-                    if (url.origin === window.location.origin && isDashboardPath && hasQueryParams) {
-                        let activeMenu = getTabFromUrl(href);
-                        if (!activeMenu) {
-                            try {
-                                if (window.Alpine && document.body) {
-                                    activeMenu = window.Alpine.$data(document.body).activeMenu;
-                                }
-                            } catch (err) {
-                                activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
-                            }
-                        }
-
-                        // Prevent default browser full page load
-                        e.preventDefault();
-                        loadPartial(href, activeMenu);
-                    }
-                } catch (err) {
-                    // Ignore invalid URLs
-                }
-            });
-
-            // Intercept form GET submissions (Search, Filter, Sort)
-            mainEl.addEventListener('submit', (e) => {
-                const form = e.target;
-                if (form.method.toLowerCase() !== 'get') return;
-
-                e.preventDefault();
-
-                const formData = new FormData(form);
-                const params = new URLSearchParams(formData);
-
-                let activeMenu = getTabFromUrl(form.getAttribute('action') || window.location.href);
-                if (!activeMenu) {
-                    try {
-                        if (window.Alpine && document.body) {
-                            activeMenu = window.Alpine.$data(document.body).activeMenu;
-                        }
-                    } catch (err) {
-                        activeMenu = new URLSearchParams(window.location.search).get('tab') || 'dashboard';
-                    }
-                }
-
-                if (!params.has('tab')) {
-                    params.set('tab', activeMenu);
-                }
-
-                const action = form.getAttribute('action') || window.location.pathname;
-                const targetUrl = action + '?' + params.toString();
-
-                loadPartial(targetUrl, activeMenu);
-            });
-        });
-    </script>
+    {{--
+        Pagination & form filter kini ditangani oleh HTMX.
+        Lihat fungsi enhanceTabContent() di public/js/admin.js yang dipanggil
+        setelah setiap tab selesai dimuat (htmx:afterSwap + _fetchTab).
+    --}}
+    <div id="htmx-loading-bar"></div>
 </body>
 </html>

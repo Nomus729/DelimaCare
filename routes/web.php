@@ -111,16 +111,30 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
 
     Route::get('/dashboard', [AdminController::class, 'index'])->name('dashboard');
 
+    // ── Partial Endpoints (AJAX Lazy Loading) ──────────────────────────────
+    // PENTING: Harus di atas Route::resource agar tidak di-capture sebagai {id}
+    Route::get('/dashboard/partial',   [AdminController::class, 'getDashboardPartial'])->name('dashboard.partial');
+    Route::get('/konten/partial',      [AdminController::class, 'getKontenPartial'])->name('konten.partial');
+    Route::get('/inventori/partial',   [AdminController::class, 'getInventoriPartial'])->name('inventori.partial');
+    Route::get('/keuangan/partial',    [AdminController::class, 'getKeuanganPartial'])->name('keuangan.partial');
+    Route::get('/laporan/partial',     [AdminController::class, 'getLaporanPartial'])->name('laporan.partial');
+    Route::get('/doctors/partial',     [AdminController::class, 'getDoctorsPartial'])->name('doctors.partial');
+    Route::get('/reservasi/partial',   [AdminController::class, 'getReservasiPartial'])->name('reservasi.partial');
+    Route::get('/rekam-medis/partial', [AdminController::class, 'getRekamMedisPartial'])->name('rekam-medis.partial');
+    Route::get('/konsultasi/partial',  [AdminController::class, 'getKonsultasiPartial'])->name('konsultasi.partial');
+    Route::get('/stats/polling',       [AdminController::class, 'getPollingStats'])->name('stats.polling');
+
     // Kelola Konten
     Route::resource('konten', \App\Http\Controllers\ArticleController::class)->except(['index', 'show']);
 
     // Inventori Obat & Dokter
     Route::resource('medicines', \App\Http\Controllers\Admin\MedicineController::class);
-    Route::resource('doctors', \App\Http\Controllers\Admin\DoctorController::class);
+    Route::resource('doctors', \App\Http\Controllers\Admin\DoctorController::class)->except(['show']);
 
     // Rekam Medis
     Route::resource('rekam-medis', \App\Http\Controllers\Admin\RekamMedisController::class)
-        ->parameters(['rekam-medis' => 'rekamMedis']);
+        ->parameters(['rekam-medis' => 'rekamMedis'])
+        ->except(['show']);
 
     // Resep Medis
     Route::post('/resep-medis', [\App\Http\Controllers\Admin\ResepMedisController::class, 'store'])->name('resep-medis.store');
@@ -139,15 +153,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->name('admin.')->group(fun
     Route::get('/chat/{userId}', [ConsultationController::class, 'getAdminMessages']);
     Route::post('/chat/send', [ConsultationController::class, 'sendAdminMessage']);
 
-    // Polling Partial
-    Route::get('/reservasi/partial', [\App\Http\Controllers\AdminController::class, 'getReservasiPartial'])->name('reservasi.partial');
-    Route::get('/inventori/partial', [\App\Http\Controllers\AdminController::class, 'getInventoriPartial'])->name('inventori.partial');
-    Route::get('/konten/partial', [\App\Http\Controllers\AdminController::class, 'getKontenPartial'])->name('konten.partial');
-    Route::get('/stats/polling', [\App\Http\Controllers\AdminController::class, 'getPollingStats'])->name('stats.polling');
-
     // Keuangan (Pengeluaran)
     Route::post('/pengeluaran', [\App\Http\Controllers\Admin\PengeluaranController::class, 'store'])->name('pengeluaran.store');
     Route::delete('/pengeluaran/{id}', [\App\Http\Controllers\Admin\PengeluaranController::class, 'destroy'])->name('pengeluaran.destroy');
+
     // 🔥 FITUR BARU: Laporan & Analitik 🔥
     Route::get('/report/stats', [ReportController::class, 'getStats'])->name('report.stats');
 });

@@ -1,8 +1,6 @@
 <div x-data="reportApp()" x-init="init()" class="relative">
     {{-- Include Libraries --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.28/jspdf.plugin.autotable.min.js"></script>
 
     {{-- Header & Export Actions --}}
     <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">

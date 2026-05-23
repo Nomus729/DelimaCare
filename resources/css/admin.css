@@ -1,0 +1,415 @@
+/*
+ * resources/css/admin.css
+ * Custom CSS untuk Admin Panel DelimaCare
+ * Diekstrak dari inline <style> di index.blade.php untuk production caching.
+ * Tailwind utilities tetap dari CDN; file ini hanya custom/override styles.
+ */
+
+/* ── Alpine.js: sembunyikan elemen x-cloak sebelum Alpine init ── */
+[x-cloak] { display: none !important; }
+
+/* ── Base Font ── */
+* { font-family: 'Inter', sans-serif; }
+
+/* ── Background ── */
+body { background-color: #F0FDFB; }
+html.dark body { background-color: #080F1E; }
+
+/* ──────────────────────────────────────────────────────────────────
+   Per-tab Accent CSS Variables
+   Nilainya diupdate oleh applyTabTheme() di admin.js saat tab berganti.
+   ────────────────────────────────────────────────────────────────── */
+:root {
+    --acc1:      #0D9488;
+    --acc2:      #06B6D4;
+    --blob1:     rgba(13,148,136,0.18);
+    --blob2:     rgba(6,182,212,0.12);
+    --grad:      linear-gradient(135deg, #0D9488 0%, #06B6D4 100%);
+    --teal-main: #0D9488;
+    --cyan-main: #06B6D4;
+}
+
+/* ── Themed utility classes (nilai ikut CSS var, berubah per-tab) ── */
+.shimmer-bar {
+    background: linear-gradient(90deg, var(--acc1) 0%, var(--acc2) 40%, var(--acc1) 100%);
+    background-size: 200% auto;
+    animation: shimmer 2s linear infinite;
+    transition: background 0.5s ease;
+}
+.blob-1      { background: var(--blob1); transition: background 0.6s ease; }
+.blob-2      { background: var(--blob2); transition: background 0.6s ease; }
+.header-date { color: var(--acc1);       transition: color 0.5s ease; }
+
+.dot-active       { background: var(--acc1); }
+html.dark .dot-active { background: var(--acc2); }
+
+/* ── Sidebar Nav Active State ── */
+.nav-active {
+    background: linear-gradient(135deg, rgba(13,148,136,0.12) 0%, rgba(6,182,212,0.08) 100%) !important;
+    border: 1px solid rgba(13,148,136,0.18);
+    color: #0d9488 !important;
+    box-shadow: 0 2px 12px rgba(13,148,136,0.1);
+}
+.dark .nav-active {
+    background: linear-gradient(135deg, rgba(13,148,136,0.18) 0%, rgba(6,182,212,0.12) 100%) !important;
+    color: #2dd4bf !important;
+}
+.nav-active svg       { color: #0d9488 !important; }
+.dark .nav-active svg { color: #2dd4bf !important; }
+
+/* ── Global Scrollbar ── */
+::-webkit-scrollbar       { width: 5px; height: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #CBD5E1; border-radius: 10px; }
+html.dark ::-webkit-scrollbar-thumb { background: #2D3F55; }
+
+/* ── Sidebar: Scrollbar (thinner) ── */
+#sb-inner nav::-webkit-scrollbar       { width: 3px; }
+#sb-inner nav::-webkit-scrollbar-track { background: transparent; }
+#sb-inner nav::-webkit-scrollbar-thumb { background: rgba(13,148,136,0.2); border-radius: 10px; }
+
+/* ──────────────────────────────────────────────────────────────────
+   Keyframe Animations
+   ────────────────────────────────────────────────────────────────── */
+@keyframes fadeInUp {
+    from { opacity: 0; transform: translateY(18px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes fadeInLeft {
+    from { opacity: 0; transform: translateX(-18px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes floatBlob {
+    0%, 100% { transform: translateY(0) scale(1); }
+    50%       { transform: translateY(-20px) scale(1.05); }
+}
+@keyframes pulseDot {
+    0%   { box-shadow: 0 0 0 0 rgba(20,184,166,0.5); }
+    70%  { box-shadow: 0 0 0 8px rgba(20,184,166,0); }
+    100% { box-shadow: 0 0 0 0 rgba(20,184,166,0); }
+}
+@keyframes pulseRed {
+    0%   { box-shadow: 0 0 0 0 rgba(239,68,68,0.4); }
+    70%  { box-shadow: 0 0 0 6px rgba(239,68,68,0); }
+    100% { box-shadow: 0 0 0 0 rgba(239,68,68,0); }
+}
+@keyframes shimmer {
+    0%   { background-position: -200% center; }
+    100% { background-position: 200% center; }
+}
+@keyframes popOut {
+    0%   { opacity: 0; transform: scale(0.3) translateY(-20px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes loaderProgress {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+@keyframes htmxShimmer {
+    0%   { background-position: 200% center; }
+    100% { background-position: -200% center; }
+}
+
+/* ── Animation Utility Classes ── */
+.notif-popout { animation: popOut 0.5s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+.anim-up      { animation: fadeInUp   0.55s cubic-bezier(0.16,1,0.3,1) both; }
+.anim-left    { animation: fadeInLeft 0.5s  cubic-bezier(0.16,1,0.3,1) both; }
+.d-100        { animation-delay: 100ms; }
+.d-150        { animation-delay: 150ms; }
+.d-200        { animation-delay: 200ms; }
+.d-300        { animation-delay: 300ms; }
+.blob-float   { animation: floatBlob 8s ease-in-out infinite; }
+.blob-float-2 { animation: floatBlob 10s ease-in-out infinite 2s; }
+.dot-pulse    { animation: pulseDot 2s infinite; }
+.bell-pulse   { animation: pulseRed 2s infinite; }
+
+/* ── Logo gradient ── */
+.logo-icon { background: var(--grad); }
+
+/* ──────────────────────────────────────────────────────────────────
+   Sidebar Layout & Transitions
+   ────────────────────────────────────────────────────────────────── */
+#main-sidebar {
+    transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    will-change: width;
+    overflow: visible;
+}
+#main-sidebar.sidebar-wide      { width: 18rem !important; }
+#main-sidebar:not(.sidebar-wide){ width: 4.5rem !important; }
+
+#sb-inner {
+    overflow: hidden;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    backface-visibility: hidden;
+}
+
+/* ── Sidebar nav link micro-animations ── */
+.sidebar-link {
+    position: relative;
+    transition: background 0.22s ease,
+                transform 0.22s cubic-bezier(0.34,1.56,0.64,1),
+                color 0.18s ease;
+    border-radius: 14px;
+    overflow: hidden;
+}
+.sidebar-link::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(135deg, rgba(13,148,136,0.08), rgba(6,182,212,0.06));
+    opacity: 0;
+    transition: opacity 0.2s ease;
+    border-radius: 14px;
+}
+.sidebar-link:hover::before      { opacity: 1; }
+.sidebar-link:hover              { transform: translateX(4px); }
+.sidebar-link:hover svg          { transform: scale(1.12) rotate(4deg); }
+.sidebar-link:active             { transform: scale(0.97) translateX(2px); }
+.sidebar-link svg                { transition: transform 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+#main-sidebar:not(.sidebar-wide) .sidebar-link:hover { transform: scale(1.1) translateX(0); }
+
+/* ── Sidebar text elements (label, dot, user info) fade on collapse ── */
+.sb-label, .sb-dot, .sb-user-info, .sb-logout-text, .sb-live, .sb-section-title {
+    transition: opacity 0.25s ease, max-width 0.4s cubic-bezier(0.65,0,0.35,1);
+    white-space: nowrap;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+#main-sidebar:not(.sidebar-wide) .sb-label,
+#main-sidebar:not(.sidebar-wide) .sb-dot,
+#main-sidebar:not(.sidebar-wide) .sb-user-info,
+#main-sidebar:not(.sidebar-wide) .sb-logout-text,
+#main-sidebar:not(.sidebar-wide) .sb-live,
+#main-sidebar:not(.sidebar-wide) .sb-section-title {
+    opacity: 0;
+    max-width: 0;
+    pointer-events: none;
+}
+#main-sidebar.sidebar-wide .sb-label,
+#main-sidebar.sidebar-wide .sb-dot,
+#main-sidebar.sidebar-wide .sb-user-info,
+#main-sidebar.sidebar-wide .sb-logout-text,
+#main-sidebar.sidebar-wide .sb-live,
+#main-sidebar.sidebar-wide .sb-section-title {
+    opacity: 1;
+    max-width: 220px;
+}
+
+/* ── Badge ── */
+.sb-badge { transition: all 0.3s ease; white-space: nowrap; flex-shrink: 0; }
+#main-sidebar.sidebar-wide .sb-badge     { font-size: 10px; padding: 1px 6px; border-radius: 9999px; }
+#main-sidebar:not(.sidebar-wide) .sb-badge {
+    font-size: 9px; padding: 1px 4px; border-radius: 5px;
+    min-width: 16px; text-align: center;
+}
+
+/* ── Mini active left bar ── */
+.mini-active-bar { transition: opacity 0.25s ease; }
+
+/* ── Main content area ── */
+#main-content {
+    contain: layout;
+    flex: 1;
+    min-width: 0;
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ── Sidebar toggle button ── */
+#sidebar-toggle {
+    transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1),
+                background-color 0.2s ease,
+                border-color 0.2s ease !important;
+    will-change: left;
+}
+#sidebar-toggle.sidebar-wide      { left: calc(18rem - 12px) !important; }
+#sidebar-toggle:not(.sidebar-wide){ left: calc(4.5rem - 12px) !important; }
+
+/* ──────────────────────────────────────────────────────────────────
+   Page Loader & Entrance Animation
+   ────────────────────────────────────────────────────────────────── */
+#page-loader {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 3px;
+    z-index: 9999;
+    background: linear-gradient(90deg, transparent, var(--teal-main), var(--cyan-main), transparent);
+    background-size: 200% 100%;
+    animation: loaderProgress 2s linear infinite;
+    transition: opacity 0.5s ease-in-out;
+}
+.page-ready #page-loader       { opacity: 0; pointer-events: none; }
+
+.page-content-wrapper {
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity 0.6s cubic-bezier(0.16, 1, 0.3, 1),
+                transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.page-ready .page-content-wrapper { opacity: 1; transform: translateY(0); }
+
+/* ──────────────────────────────────────────────────────────────────
+   HTMX Loading Bar
+   Muncul otomatis saat ada request HTMX aktif (class .htmx-request di body)
+   ────────────────────────────────────────────────────────────────── */
+#htmx-loading-bar {
+    display: none;
+    position: fixed;
+    top: 0; left: 0;
+    width: 0%; height: 3px;
+    z-index: 9999;
+    background: linear-gradient(90deg, #0D9488, #06B6D4, #0D9488);
+    background-size: 200% auto;
+    animation: htmxShimmer 1.2s linear infinite;
+    transition: width 0.3s ease;
+}
+.htmx-request #htmx-loading-bar,
+.htmx-request#htmx-loading-bar { display: block !important; width: 80%; }
+
+/* ──────────────────────────────────────────────────────────────────
+   HTMX Local Container Loading Indicator
+   Dim and blur any container that is currently being fetched/swapped by HTMX
+   ────────────────────────────────────────────────────────────────── */
+[id^="tab-"].htmx-request {
+    position: relative;
+    pointer-events: none;
+}
+[id^="tab-"].htmx-request::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.45);
+    backdrop-filter: blur(2px);
+    z-index: 40;
+    border-radius: 1.5rem;
+    animation: fadeInUp 0.2s ease-out;
+}
+html.dark [id^="tab-"].htmx-request::after {
+    background: rgba(15, 23, 42, 0.45);
+}
+[id^="tab-"].htmx-request::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 2.5rem;
+    height: 2.5rem;
+    border: 4px solid transparent;
+    border-top-color: #0d9488;
+    border-radius: 50%;
+    z-index: 50;
+    animation: htmxLocalSpin 0.8s linear infinite;
+}
+@keyframes htmxLocalSpin {
+    from { transform: translate(-50%, -50%) rotate(0deg); }
+    to   { transform: translate(-50%, -50%) rotate(360deg); }
+}
+
+/* ──────────────────────────────────────────────────────────────────
+   PREMIUM PAGINATION OVERRIDES (Universal modern layout)
+   ────────────────────────────────────────────────────────────────── */
+nav[role="navigation"] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0 !important;
+    margin-top: 1.25rem;
+}
+
+/* Memecah grouping kotak menjadi pill/kapsul individu modern */
+nav[role="navigation"] [class*="shadow-sm"][class*="rounded-md"] {
+    box-shadow: none !important;
+    display: inline-flex;
+    gap: 0.45rem; /* Jarak antar nomor halaman */
+}
+
+/* Base style untuk tombol angka dan panah navigasi */
+nav[role="navigation"] a,
+nav[role="navigation"] span[aria-disabled="true"] > span,
+nav[role="navigation"] span[aria-current="page"] > span {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 0.75rem !important; /* rounded-xl modern */
+    font-size: 0.85rem !important;
+    font-weight: 700 !important;
+    min-width: 2.25rem;
+    height: 2.25rem;
+    padding: 0.5rem 0.85rem !important;
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1) !important;
+    border: 1px solid #e2e8f0 !important;
+    background-color: #ffffff !important;
+    color: #475569 !important; /* Gray 600 */
+}
+
+/* Dark mode untuk tombol */
+html.dark nav[role="navigation"] a,
+html.dark nav[role="navigation"] span[aria-disabled="true"] > span {
+    background-color: #1e293b !important; /* Slate 800 */
+    border-color: #334155 !important;
+    color: #94a3b8 !important;
+}
+
+/* Efek Hover untuk tombol aktif/link */
+nav[role="navigation"] a:hover {
+    background-color: #f0fdfa !important; /* bg teal muda */
+    color: #0d9488 !important; /* teks teal */
+    border-color: #0d9488 !important;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(13, 148, 136, 0.15) !important;
+}
+html.dark nav[role="navigation"] a:hover {
+    background-color: rgba(13, 148, 136, 0.15) !important;
+    color: #2dd4bf !important;
+    border-color: #2dd4bf !important;
+    box-shadow: 0 6px 15px rgba(45, 212, 191, 0.15) !important;
+}
+
+/* 🌟 HALAMAN AKTIF (CURRENT PAGE INDICATOR) — SANGAT JELAS & GLOWING */
+nav[role="navigation"] span[aria-current="page"] > span {
+    background-color: #0d9488 !important; /* Teal 600 */
+    color: #ffffff !important;
+    border-color: #0d9488 !important;
+    box-shadow: 0 4px 14px rgba(13, 148, 136, 0.35) !important; /* Glow shadow */
+    transform: scale(1.08) translateY(-1px);
+    z-index: 10;
+}
+html.dark nav[role="navigation"] span[aria-current="page"] > span {
+    background-color: #14b8a6 !important; /* Teal 500 */
+    border-color: #14b8a6 !important;
+    box-shadow: 0 4px 14px rgba(20, 184, 166, 0.45) !important;
+}
+
+/* Tombol Nonaktif (Disabled / batas navigasi) */
+nav[role="navigation"] span[aria-disabled="true"] > span {
+    background-color: #f8fafc !important;
+    color: #cbd5e1 !important;
+    border-color: #e2e8f0 !important;
+    cursor: not-allowed;
+    opacity: 0.55;
+}
+html.dark nav[role="navigation"] span[aria-disabled="true"] > span {
+    background-color: #0f172a !important;
+    border-color: #1e293b !important;
+    color: #475569 !important;
+}
+
+/* Merapikan teks "Showing X to Y of Z results" di kiri */
+nav[role="navigation"] p {
+    font-weight: 600 !important;
+    color: #64748b !important;
+}
+html.dark nav[role="navigation"] p {
+    color: #94a3b8 !important;
+}
+nav[role="navigation"] p span {
+    color: #0d9488 !important;
+    font-weight: 800 !important;
+}
+html.dark nav[role="navigation"] p span {
+    color: #2dd4bf !important;
+}
+

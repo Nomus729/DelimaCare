@@ -19,8 +19,13 @@
     openDetail(item) { this.detailItem = item; this.showDetailModal = true; },
 
     init() {
-        // Initial poll
-        this.pollData();
+        // Initialize lastHash signature from the existing DOM to prevent any redundant update on the first poll
+        const currentList = document.getElementById('reservasi-list-container');
+        if (currentList) {
+            this.lastHash = Array.from(currentList.querySelectorAll('[data-res-id]'))
+                .map(el => el.getAttribute('data-res-id') + ':' + el.getAttribute('data-res-status'))
+                .join(',');
+        }
 
         // Poll every 10 seconds
         setInterval(() => {
@@ -57,14 +62,22 @@
             const oldStats = document.getElementById('reservasi-stats-container');
             if (newStats && oldStats) oldStats.innerHTML = newStats.innerHTML;
 
-            // Update list with a simple hash check to avoid flicker
+            // Update list with a smart signature check (IDs & statuses) to avoid scroll flicker
             const newList = doc.getElementById('reservasi-list-container');
             const oldList = document.getElementById('reservasi-list-container');
             if (newList && oldList) {
-                const newContent = newList.innerHTML;
-                if (newContent !== this.lastHash) {
-                    oldList.innerHTML = newContent;
-                    this.lastHash = newContent;
+                const getItemsSignature = (container) => {
+                    return Array.from(container.querySelectorAll('[data-res-id]'))
+                        .map(el => el.getAttribute('data-res-id') + ':' + el.getAttribute('data-res-status'))
+                        .join(',');
+                };
+
+                const newSignature = getItemsSignature(newList);
+                const oldSignature = getItemsSignature(oldList);
+
+                if (newSignature !== oldSignature) {
+                    oldList.innerHTML = newList.innerHTML;
+                    this.lastHash = newSignature;
                 }
             }
         } catch (e) { console.error('Polling error:', e); }
@@ -150,7 +163,7 @@
 
         {{-- Status Filter & Button --}}
         <div class="flex flex-col sm:flex-row items-center gap-3 w-full xl:w-auto shrink-0">
-            <select name="res_status" onchange="this.form.submit()" class="q-input q-select w-full sm:w-[160px] h-[46px]">
+            <select name="res_status" onchange="this.form.requestSubmit()" class="q-input q-select w-full sm:w-[160px] h-[46px]">
                 <option value="" {{ $resStatus==='' ? 'selected':'' }}>Semua Status</option>
                 @foreach(['Menunggu','Dikonfirmasi','Datang','Tidak Datang'] as $st)
                 <option value="{{ $st }}" {{ $resStatus===$st ? 'selected':'' }}>{{ $st }}</option>
@@ -199,7 +212,7 @@
         $numGrad  = $numGrads[$idx % count($numGrads)];
     @endphp
     
-    <div class="group relative bg-white dark:bg-[#1E293B] rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-{{ $statusTheme['color'] }}-500/10 transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-start md:items-center gap-5"
+    <div data-res-id="{{ $item->id }}" data-res-status="{{ $status }}" class="group relative bg-white dark:bg-[#1E293B] rounded-3xl p-5 shadow-sm border border-gray-100 dark:border-gray-800 hover:shadow-2xl hover:shadow-{{ $statusTheme['color'] }}-500/10 transition-all duration-300 overflow-hidden flex flex-col md:flex-row items-start md:items-center gap-5"
          style="animation: slideUp .35s ease both; animation-delay:{{ $idx*40 }}ms">
         
         {{-- Decorative Glow --}}
@@ -349,6 +362,12 @@
     </div>
 @endif
 </div>
+
+@if(isset($semuaReservasi) && $semuaReservasi->hasPages())
+    <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+        {{ $semuaReservasi->links() }}
+    </div>
+@endif
 
 {{-- ─── MODAL TAMBAH ANTREAN ─── --}}
 <template x-teleport="body">
