@@ -247,9 +247,10 @@ document.addEventListener('htmx:responseError', (e) => {
 //  Alpine Component — adminPanel()
 // ─────────────────────────────────────────────────────────────────────────────
 document.addEventListener('alpine:init', () => {
-    Alpine.data('adminPanel', () => ({
+    Alpine.data('adminPanel', (config = {}) => ({
 
         // ── State ─────────────────────────────────────────────────────────
+        username:   config.username || 'Guest',
         activeMenu: new URLSearchParams(window.location.search).get('tab') || 'dashboard',
         darkMode:   document.documentElement.classList.contains('dark'),
         isLoading:  false,

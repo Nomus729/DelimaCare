@@ -48,10 +48,9 @@
     - Admin username via data-attribute (TIDAK di-expose ke window global)
     --}}
 <body class="text-gray-900 antialiased flex h-screen overflow-hidden dark:text-gray-100"
-      x-data="adminPanel()"
+      x-data="adminPanel({ username: '{{ Auth::user()->username ?? null }}' })"
       data-pusher-key="{{ config('broadcasting.connections.pusher.key') }}"
-      data-pusher-cluster="{{ config('broadcasting.connections.pusher.options.cluster', 'ap1') }}"
-      @auth data-admin-user="{{ Auth::user()->username }}" @endauth>
+      data-pusher-cluster="{{ config('broadcasting.connections.pusher.options.cluster', 'ap1') }}">
     <div id="page-loader"></div>
 
     <div class="page-content-wrapper flex w-full h-screen overflow-hidden">
@@ -142,11 +141,10 @@
             <div class="p-3 border-t border-gray-100/70 dark:border-gray-800/50 space-y-1.5 flex-shrink-0">
                 @auth
                 <div class="flex items-center gap-2.5 px-2.5 py-2 rounded-xl bg-teal-50/60 dark:bg-teal-900/15 border border-teal-100/50 dark:border-teal-800/30 overflow-hidden">
-                    <div class="w-8 h-8 logo-icon rounded-full flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0 hover:rotate-12 transition-transform duration-300">
-                        {{ strtoupper(substr(Auth::user()->username, 0, 1)) }}
+                    <div class="w-8 h-8 logo-icon rounded-full flex items-center justify-center text-white text-xs font-black shadow-md flex-shrink-0 hover:rotate-12 transition-transform duration-300" x-text="username ? username.charAt(0).toUpperCase() : 'G'">
                     </div>
                     <div class="sb-user-info min-w-0 flex-1">
-                        <p class="text-xs font-black text-gray-900 dark:text-white truncate">{{ Auth::user()->username }}</p>
+                        <p class="text-xs font-black text-gray-900 dark:text-white truncate" x-text="username"></p>
                         <p class="text-[9px] font-bold bg-gradient-to-r from-teal-600 to-cyan-500 bg-clip-text text-transparent">Administrator</p>
                     </div>
                     <span class="sb-live w-1.5 h-1.5 rounded-full bg-emerald-400 flex-shrink-0 dot-pulse"></span>
