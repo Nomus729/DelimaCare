@@ -37,8 +37,12 @@
                             <div class="flex items-baseline gap-2">
                                 <span class="text-xs font-bold text-teal-600 uppercase">Perkiraan Waktu</span>
                                 <h3 class="text-2xl font-black text-gray-900 tracking-tight">
-                                    {{ $jadwal->estimated_time ? \Carbon\Carbon::parse($jadwal->estimated_time)->format('H:i') : $jadwal->waktu }}
-                                    <span class="text-gray-400 text-sm font-medium"> - {{ \Carbon\Carbon::parse($jadwal->estimated_time ?? $jadwal->waktu)->addMinutes(30)->format('H:i') }}</span>
+                                    @if($jadwal->estimated_time)
+                                        {{ \Carbon\Carbon::parse($jadwal->estimated_time)->format('H:i') }}
+                                        <span class="text-gray-400 text-sm font-medium"> - {{ \Carbon\Carbon::parse($jadwal->estimated_time)->addMinutes(30)->format('H:i') }}</span>
+                                    @else
+                                        {{ $jadwal->waktu }}
+                                    @endif
                                 </h3>
                             </div>
                             <p class="text-sm text-gray-600 font-bold flex items-center gap-1.5 mt-1 bg-teal-50 px-3 py-1 rounded-lg border border-teal-100 inline-flex">
