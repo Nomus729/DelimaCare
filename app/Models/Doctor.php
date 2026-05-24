@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\HybridSync;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Doctor extends Model
 {
@@ -14,51 +15,51 @@ class Doctor extends Model
 
     protected $appends = ['is_available', 'current_status'];
 
-    public function getIsAvailableAttribute()
+    public function getIsAvailableAttribute(): bool
     {
-        // Jika status manual sudah Libur atau Istirahat, jangan ganti otomatis jadi tersedia
-        if ($this->status === 'Libur' || $this->status === 'Istirahat') return false;
-        
-        if (!$this->jadwal_praktek) return false;
-
-        $dayNames = [
-            'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu'
-        ];
-        
-        // Gunakan timezone Asia/Jakarta (WIB) untuk akurasi
-        $now = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
-        $currentDay = $dayNames[$now->format('l')];
-        $currentTime = $now->format('H:i');
-
-        $regex = '/^(.+) - (.+) \((..):(..) - (..):(..)\)$/';
-        if (preg_match($regex, $this->jadwal_praktek, $matches)) {
-            $dayStart = $matches[1];
-            $dayEnd = $matches[2];
-            $timeStart = $matches[3] . ':' . $matches[4];
-            $timeEnd = $matches[5] . ':' . $matches[6];
-
-            $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-            $startIndex = array_search($dayStart, $days);
-            $endIndex = array_search($dayEnd, $days);
-            $currentIndex = array_search($currentDay, $days);
-
-            // Cek Hari (Rentang)
-            if ($currentIndex < $startIndex || $currentIndex > $endIndex) return false;
-
-            // Cek Jam
-            if ($currentTime < $timeStart || $currentTime > $timeEnd) return false;
-
-            return true;
+        // Jika status manual Libur atau Istirahat, tidak perlu cek jadwal
+        if ($this->status === 'Libur' || $this->status === 'Istirahat') {
+            return false;
         }
 
-        return false;
+        // Gunakan timezone Asia/Jakarta (WIB) untuk akurasi
+        $now        = new \DateTime('now', new \DateTimeZone('Asia/Jakarta'));
+        $dayNames   = [
+            'Sunday'    => 'Minggu', 'Monday' => 'Senin',   'Tuesday'  => 'Selasa',
+            'Wednesday' => 'Rabu',   'Thursday' => 'Kamis', 'Friday'   => 'Jumat',
+            'Saturday'  => 'Sabtu',
+        ];
+        $currentDay  = $dayNames[$now->format('l')];
+        $currentTime = $now->format('H:i:s'); // Format time agar kompatibel dengan kolom TIME di DB
+
+        // Cari jadwal hari ini dari relasi (satu query, tanpa Regex)
+        // Jika relasi sudah di-eager-load (with('schedules')), tidak ada query tambahan.
+        $todaySchedule = $this->schedules
+            ->firstWhere('day_of_week', $currentDay);
+
+        // Jika tidak ada jadwal untuk hari ini, dokter tidak praktek
+        if (! $todaySchedule) {
+            return false;
+        }
+
+        // Bandingkan string waktu langsung — aman karena format HH:MM konsisten
+        return $currentTime >= $todaySchedule->start_time
+            && $currentTime <= $todaySchedule->end_time;
+    }
+
+    /**
+     * Relasi ke jadwal praktek dokter (one-to-many).
+     * Setiap row di doctor_schedules merepresentasikan satu hari praktek.
+     */
+    public function schedules(): HasMany
+    {
+        return $this->hasMany(DoctorSchedule::class);
     }
 
     /**
      * Relasi ke reservasi yang menggunakan dokter ini.
      */
-    public function reservasis()
+    public function reservasis(): HasMany
     {
         return $this->hasMany(Reservasi::class, 'doctor_id');
     }

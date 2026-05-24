@@ -194,7 +194,11 @@ class AdminController extends Controller
     {
         if ($guard = $this->guardPartial($request, 'doctors')) return $guard;
 
-        $doctors = Doctor::all();
+        // Eager-load 'schedules' untuk menghindari N+1 pada accessor is_available.
+        // Tanpa with(), setiap $doctor->is_available akan menjalankan 1 query
+        // tambahan → jika ada 20 dokter = 20 query ekstra.
+        $doctors = Doctor::with('schedules')->get();
+
         return view('admin.partials.doctors', compact('doctors'));
     }
 
@@ -232,7 +236,27 @@ class AdminController extends Controller
         $rmKategori = $request->query('rm_kategori') ?? '';
         $rmDate     = $request->has('rm_date') ? ($request->query('rm_date') ?? '') : 'today';
 
-        $rmQuery  = RekamMedis::latest()->search($rmSearch)->byKategori($rmKategori)->byDate($rmDate);
+        // ─── EAGER LOADING untuk menghindari N+1 Query Problem ───
+        //
+        // Tanpa with(), skenario terburuk saat menampilkan 8 rekam medis:
+        //   1 query  → SELECT rekam_medis (paginate)
+        //   8 query  → SELECT resep_medis WHERE rekam_medis_id = ?  (per baris)
+        //   8 query  → SELECT resep_medis_items WHERE resep_medis_id = ?  (per resep)
+        //   8 query  → SELECT medicines WHERE id = ?  (per item)
+        //   8 query  → SELECT users WHERE id = ?  (per baris)
+        // = 33 query untuk 8 baris!
+        //
+        // Dengan with(), semua relasi diambil dalam 5 query total (flat & JOIN-less)
+        // tanpa mempedulikan jumlah baris yang ditampilkan.
+        $rmQuery    = RekamMedis::with([
+                'user',                        // Data pasien (nama, email)
+                'resepMedis.items.medicine',   // Nested: resep → item → obat
+            ])
+            ->latest()
+            ->search($rmSearch)
+            ->byKategori($rmKategori)
+            ->byDate($rmDate);
+
         $rekamMedis = $rmQuery->paginate(8)
             ->appends(['tab' => 'rekam_medis', 'rm_search' => $rmSearch, 'rm_kategori' => $rmKategori, 'rm_date' => $rmDate]);
 
@@ -277,7 +301,10 @@ class AdminController extends Controller
         $resStatus = $request->query('res_status') ?? '';
         $resSearch = $request->query('res_search') ?? '';
 
-        $resQuery = Reservasi::with('doctor');
+        $resQuery = Reservasi::with([
+            'doctor',   // Data dokter (nama, spesialisasi)
+            'user',     // Data pasien yang login (jika ada)
+        ]);
 
         if ($resFilter === 'today') {
             $resQuery->whereDate('tanggal', today());

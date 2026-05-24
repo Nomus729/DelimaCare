@@ -28,10 +28,10 @@ class ReservasiController extends Controller
     {
         $doctor = \App\Models\Doctor::findOrFail($request->dokter_id);
 
-        // Hitung antrean via service
+        // Hitung antrean sementara untuk cek ketersediaan (di luar transaksi)
         $queue = $this->reservasiService->calculateQueue($request->tanggal, $doctor);
 
-        // Cek ketersediaan dokter
+        // Cek ketersediaan dokter sebelum masuk transaksi
         $availability = $this->reservasiService->checkDoctorAvailability(
             $doctor, $request->tanggal, $queue['estimated_time']
         );
@@ -39,15 +39,23 @@ class ReservasiController extends Controller
             return redirect()->back()->with('error', $availability['message']);
         }
 
-        // Buat reservasi via service
-        $reservasi = $this->reservasiService->createReservasi([
-            'user_id'  => Auth::id(),
-            'nama'     => Auth::user()->username,
-            'phone'    => $request->phone,
-            'layanan'  => $request->layanan,
-            'tanggal'  => $request->tanggal,
-            'keluhan'  => $request->keluhan,
-        ], $doctor, 'Menunggu');
+        try {
+            // createReservasi() sudah terlindungi DB::transaction + lockForUpdate
+            $reservasi = $this->reservasiService->createReservasi([
+                'user_id'  => Auth::id(),
+                'nama'     => Auth::user()->username,
+                'phone'    => $request->phone,
+                'layanan'  => $request->layanan,
+                'tanggal'  => $request->tanggal,
+                'keluhan'  => $request->keluhan,
+            ], $doctor, 'Menunggu');
+
+        } catch (\RuntimeException $e) {
+            // Pesan dari deadlock — sudah diformat ramah di service layer
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi.');
+        }
 
         return redirect()->route('portal')->with(
             'success',
@@ -63,13 +71,20 @@ class ReservasiController extends Controller
     {
         $doctor = \App\Models\Doctor::findOrFail($request->dokter_id);
 
-        $reservasi = $this->reservasiService->createReservasi([
-            'nama'    => $request->nama,
-            'phone'   => $request->phone,
-            'layanan' => $request->layanan,
-            'tanggal' => $request->tanggal,
-            'keluhan' => $request->keluhan,
-        ], $doctor, 'Dikonfirmasi');
+        try {
+            $reservasi = $this->reservasiService->createReservasi([
+                'nama'    => $request->nama,
+                'phone'   => $request->phone,
+                'layanan' => $request->layanan,
+                'tanggal' => $request->tanggal,
+                'keluhan' => $request->keluhan,
+            ], $doctor, 'Dikonfirmasi');
+
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->with('error', $e->getMessage());
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Gagal membuat reservasi. Silakan coba lagi.');
+        }
 
         return redirect()->back()->with(
             'success',

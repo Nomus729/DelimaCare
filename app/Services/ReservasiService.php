@@ -4,34 +4,70 @@ namespace App\Services;
 
 use App\Models\Doctor;
 use App\Models\Reservasi;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class ReservasiService
 {
     /**
      * Hitung nomor antrean dan estimasi waktu berdasarkan tanggal dan jadwal dokter.
      *
+     * CATATAN PENTING: Method ini TIDAK boleh dipanggil dari luar transaksi
+     * aktif jika digunakan bersama lockForUpdate(), karena lock hanya berlaku
+     * selama transaksi berjalan. Pemanggilan dari createReservasi() sudah aman.
+     *
      * @return array{queue_number: int, estimated_time: string}
      */
     public function calculateQueue(string $tanggal, Doctor $doctor): array
     {
-        // Parse jam mulai dari jadwal praktek dokter
-        $startTime = '08:00';
-        if (preg_match('/\((\d{2}):(\d{2}) - (\d{2}):(\d{2})\)/', $doctor->jadwal_praktek, $matches)) {
-            $startTime = $matches[1] . ':' . $matches[2];
-        }
+        // Konversi tanggal ke nama hari Bahasa Indonesia untuk query ke doctor_schedules
+        $dayNames = [
+            'Sunday'    => 'Minggu', 'Monday' => 'Senin',   'Tuesday'  => 'Selasa',
+            'Wednesday' => 'Rabu',   'Thursday' => 'Kamis', 'Friday'   => 'Jumat',
+            'Saturday'  => 'Sabtu',
+        ];
+        $dayOfWeek = $dayNames[date('l', strtotime($tanggal))];
 
-        // Cari reservasi terakhir untuk tanggal tersebut (global clinic queue)
+        // Ambil start_time dari jadwal dokter hari tersebut.
+        // Null coalescing memberikan fallback '08:00' jika tidak ada jadwal terdaftar.
+        $startTime = $doctor->schedules()
+            ->where('day_of_week', $dayOfWeek)
+            ->value('start_time') ?? '08:00';
+
+        // Normalkan: kolom TIME bisa mengembalikan 'HH:MM:SS', ambil 'HH:MM' saja
+        $startTime = substr($startTime, 0, 5);
+
+        // ─── PESSIMISTIC LOCK — Inti dari penyelesaian Race Condition ───
+        //
+        // lockForUpdate() menginstruksikan database untuk mengunci baris yang
+        // dikembalikan oleh query ini hingga transaksi selesai (commit/rollback).
+        //
+        // Skenario tanpa lock (race condition):
+        //   Waktu T1: Request A membaca lastReservasi → queue_number = 5
+        //   Waktu T1: Request B membaca lastReservasi → queue_number = 5  (belum di-insert A)
+        //   Waktu T2: Request A insert → queue_number = 6
+        //   Waktu T2: Request B insert → queue_number = 6  ← DUPLIKAT!
+        //
+        // Skenario dengan lockForUpdate():
+        //   Waktu T1: Request A membaca & mengunci baris → queue_number = 5
+        //   Waktu T1: Request B mencoba membaca → TERBLOKIR oleh lock milik A
+        //   Waktu T2: Request A insert queue_number = 6, commit, lock dilepas
+        //   Waktu T2: Request B lanjut membaca → queue_number = 6 (sudah terupdate)
+        //   Waktu T3: Request B insert queue_number = 7  ← AMAN
+        //
+        // SYARAT: Method ini WAJIB dipanggil di dalam DB::transaction().
         $lastReservasi = Reservasi::whereDate('tanggal', $tanggal)
             ->orderBy('queue_number', 'desc')
+            ->lockForUpdate()   // ← kunci baris teratas hingga transaksi commit
             ->first();
 
-        $queueNumber = 1;
+        $queueNumber   = 1;
         $estimatedTime = $startTime;
 
         if ($lastReservasi) {
             $queueNumber = $lastReservasi->queue_number + 1;
 
-            $lastTime = $lastReservasi->estimated_time ?? $lastReservasi->waktu;
+            $lastTime   = $lastReservasi->estimated_time ?? $lastReservasi->waktu;
             $newTimeObj = new \DateTime($lastTime);
             $newTimeObj->modify('+30 minutes');
             $estimatedTime = $newTimeObj->format('H:i');
@@ -50,7 +86,7 @@ class ReservasiService
      */
     public function checkDoctorAvailability(Doctor $doctor, string $tanggal, string $jam): array
     {
-        // Cek status dokter
+        // Cek status manual dokter terlebih dahulu
         if ($doctor->status !== 'Tersedia') {
             return [
                 'status'  => false,
@@ -59,64 +95,105 @@ class ReservasiService
         }
 
         $dayNames = [
-            'Sunday' => 'Minggu', 'Monday' => 'Senin', 'Tuesday' => 'Selasa',
-            'Wednesday' => 'Rabu', 'Thursday' => 'Kamis', 'Friday' => 'Jumat', 'Saturday' => 'Sabtu',
+            'Sunday'    => 'Minggu', 'Monday' => 'Senin',   'Tuesday'  => 'Selasa',
+            'Wednesday' => 'Rabu',   'Thursday' => 'Kamis', 'Friday'   => 'Jumat',
+            'Saturday'  => 'Sabtu',
         ];
         $selectedDay = $dayNames[date('l', strtotime($tanggal))];
 
-        // Parse format: 'Senin - Jumat (08:00 - 16:00)'
-        $regex = '/^(.+) - (.+) \((\d{2}):(\d{2}) - (\d{2}):(\d{2})\)$/';
-        if (preg_match($regex, $doctor->jadwal_praktek, $matches)) {
-            $dayStart  = $matches[1];
-            $dayEnd    = $matches[2];
-            $timeStart = $matches[3] . ':' . $matches[4];
-            $timeEnd   = $matches[5] . ':' . $matches[6];
+        // Cari jadwal untuk hari yang dipilih — null jika tidak ada
+        $schedule = $doctor->schedules()
+            ->where('day_of_week', $selectedDay)
+            ->first();
 
-            $days = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
-            $startIndex   = array_search($dayStart, $days);
-            $endIndex     = array_search($dayEnd, $days);
-            $currentIndex = array_search($selectedDay, $days);
+        if (! $schedule) {
+            return [
+                'status'  => false,
+                'message' => "Maaf, {$doctor->nama} tidak praktek di hari {$selectedDay}.",
+            ];
+        }
 
-            // Cek hari
-            if ($currentIndex < $startIndex || $currentIndex > $endIndex) {
-                return [
-                    'status'  => false,
-                    'message' => "Maaf, {$doctor->nama} tidak praktek di hari {$selectedDay}. Jadwal: {$dayStart} - {$dayEnd}",
-                ];
-            }
+        // Normalisasi ke format 'HH:MM' untuk perbandingan leksikografis yang konsisten
+        $jamNormalized   = substr($jam, 0, 5);
+        $startNormalized = substr($schedule->start_time, 0, 5);
+        $endNormalized   = substr($schedule->end_time, 0, 5);
 
-            // Cek jam
-            if ($jam < $timeStart || $jam > $timeEnd) {
-                return [
-                    'status'  => false,
-                    'message' => "Maaf, antrean untuk {$doctor->nama} sudah penuh atau di luar jam praktek ({$timeStart} - {$timeEnd}).",
-                ];
-            }
+        if ($jamNormalized < $startNormalized || $jamNormalized > $endNormalized) {
+            return [
+                'status'  => false,
+                'message' => "Maaf, antrean untuk {$doctor->nama} di luar jam praktek ({$startNormalized} - {$endNormalized}).",
+            ];
         }
 
         return ['status' => true];
     }
 
     /**
-     * Buat reservasi baru dengan data standar.
+     * Buat reservasi baru, terlindungi dari race condition via DB::transaction + lockForUpdate.
+     *
+     * Alur di dalam transaksi:
+     *   1. calculateQueue() dipanggil → di dalamnya, lockForUpdate() mengunci baris reservasi
+     *      terakhir pada tanggal tersebut hingga transaksi ini selesai.
+     *   2. Reservasi baru di-insert dengan nomor antrean yang sudah aman dan unik.
+     *   3. Transaksi di-commit → lock dilepas → request lain baru bisa baca.
+     *
+     * @throws \Throwable jika terjadi deadlock atau error database yang tidak bisa di-recover
      */
     public function createReservasi(array $data, Doctor $doctor, string $status = 'Menunggu'): Reservasi
     {
-        $queue = $this->calculateQueue($data['tanggal'], $doctor);
+        try {
+            // DB::transaction() akan otomatis:
+            //   - Melakukan COMMIT jika closure selesai tanpa exception
+            //   - Melakukan ROLLBACK jika ada exception yang ter-throw
+            return DB::transaction(function () use ($data, $doctor, $status) {
 
-        return Reservasi::create([
-            'user_id'        => $data['user_id'] ?? null,
-            'nama'           => $data['nama'],
-            'phone'          => $data['phone'],
-            'layanan'        => $data['layanan'],
-            'dokter_id'      => $doctor->nama,  // Backward compat: kolom string lama
-            'doctor_id'      => $doctor->id,    // FK integer baru
-            'tanggal'        => $data['tanggal'],
-            'waktu'          => $queue['estimated_time'],
-            'queue_number'   => $queue['queue_number'],
-            'estimated_time' => $queue['estimated_time'],
-            'keluhan'        => $data['keluhan'] ?? null,
-            'status'         => $status,
-        ]);
+                // calculateQueue() dipanggil DI DALAM transaksi agar lockForUpdate()
+                // yang ada di dalamnya benar-benar aktif menjaga konsistensi data.
+                $queue = $this->calculateQueue($data['tanggal'], $doctor);
+
+                return Reservasi::create([
+                    'user_id'        => $data['user_id'] ?? null,
+                    'nama'           => $data['nama'],
+                    'phone'          => $data['phone'],
+                    'layanan'        => $data['layanan'],
+                    'dokter_id'      => $doctor->nama,  // Backward compat: kolom string lama
+                    'doctor_id'      => $doctor->id,    // FK integer baru
+                    'tanggal'        => $data['tanggal'],
+                    'waktu'          => $queue['estimated_time'],
+                    'queue_number'   => $queue['queue_number'],
+                    'estimated_time' => $queue['estimated_time'],
+                    'keluhan'        => $data['keluhan'] ?? null,
+                    'status'         => $status,
+                ]);
+            });
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            // Error 40001 = deadlock terdeteksi oleh MySQL/PostgreSQL.
+            // Deadlock bisa terjadi jika dua transaksi saling menunggu lock satu sama lain.
+            // Dalam kasus klinik kecil ini sangat jarang, tapi tetap harus di-handle.
+            if ($e->getCode() === '40001') {
+                Log::warning('Deadlock terdeteksi saat membuat reservasi. Silakan coba kembali.', [
+                    'doctor_id' => $doctor->id,
+                    'tanggal'   => $data['tanggal'],
+                    'error'     => $e->getMessage(),
+                ]);
+
+                // Re-throw agar controller bisa menampilkan pesan yang ramah ke user
+                throw new \RuntimeException(
+                    'Sistem sedang sibuk memproses reservasi lain. Silakan coba beberapa saat lagi.',
+                    0,
+                    $e
+                );
+            }
+
+            // Error database lain (koneksi putus, constraint violation, dll.)
+            Log::error('Gagal membuat reservasi karena error database.', [
+                'doctor_id' => $doctor->id,
+                'tanggal'   => $data['tanggal'],
+                'error'     => $e->getMessage(),
+            ]);
+
+            throw $e; // Re-throw error asli untuk debugging
+        }
     }
 }
