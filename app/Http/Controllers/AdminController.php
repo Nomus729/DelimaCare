@@ -302,8 +302,7 @@ class AdminController extends Controller
         $resSearch = $request->query('res_search') ?? '';
 
         $resQuery = Reservasi::with([
-            'doctor',   // Data dokter (nama, spesialisasi)
-            'user',     // Data pasien yang login (jika ada)
+            'doctor',   // Data dokter — dipakai oleh accessor $item->dokter_nama
         ]);
 
         if ($resFilter === 'today') {
