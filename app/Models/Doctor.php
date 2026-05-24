@@ -64,15 +64,19 @@ class Doctor extends Model
         return $this->hasMany(Reservasi::class, 'doctor_id');
     }
 
-    public function getCurrentStatusAttribute()
+    public function getCurrentStatusAttribute(): string
     {
-        // Prioritas status manual jika Libur
-        if ($this->status === 'Libur') return 'Libur';
-        
-        if ($this->getIsAvailableAttribute()) {
-            return 'Tersedia';
-        }
-
-        return 'Istirahat';
+        // Status manual admin selalu ditampilkan apa adanya.
+        //
+        // Penjelasan desain:
+        //   - Kolom `status` adalah OVERRIDE MANUAL oleh admin (Tersedia / Libur / Istirahat).
+        //   - Accessor `is_available` digunakan khusus oleh ReservasiService untuk memvalidasi
+        //     apakah dokter bisa menerima booking baru (cek hari + jam praktek).
+        //   - Keduanya memiliki tanggung jawab berbeda dan tidak boleh saling menimpa.
+        //
+        // Bug sebelumnya: hanya 'Libur' yang dihormati, 'Tersedia' selalu ditimpa oleh
+        // hasil is_available → jika dokter belum ada jadwal di doctor_schedules,
+        // is_available = false → status tampil 'Istirahat' meskipun admin menyimpan 'Tersedia'.
+        return $this->status ?? 'Istirahat';
     }
 }

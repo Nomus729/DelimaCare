@@ -14,7 +14,7 @@
         </header>
 
         <ul class="space-y-4">
-            @forelse($doctors->filter->is_available as $doc)
+            @forelse($doctors as $doc)
             <li @click="selectedDoctor = '{{ $doc->id }}'; selectedDoctorName = '{{ addslashes($doc->nama) }}'; checkAvailability()"
                  :class="selectedDoctor === '{{ $doc->id }}' ? 'border-teal-500 bg-teal-50/80 ring-2 ring-teal-500/20 dark:bg-teal-900/30' : 'border-gray-100 dark:border-gray-700'"
                  class="flex items-center justify-between p-4 border rounded-2xl hover:border-teal-200 hover:bg-teal-50/50 transition-all cursor-pointer group">

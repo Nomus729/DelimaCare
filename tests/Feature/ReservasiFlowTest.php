@@ -40,6 +40,15 @@ class ReservasiFlowTest extends TestCase
             'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
             'status'         => 'Tersedia',
         ]);
+
+        $dayNames = ['Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu', 'Minggu'];
+        foreach ($dayNames as $day) {
+            $this->doctor->schedules()->create([
+                'day_of_week' => $day,
+                'start_time'  => '08:00:00',
+                'end_time'    => '20:00:00',
+            ]);
+        }
     }
 
     /** @test */
