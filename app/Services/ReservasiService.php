@@ -6,6 +6,7 @@ use App\Models\Doctor;
 use App\Models\Reservasi;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class ReservasiService
 {
@@ -38,25 +39,8 @@ class ReservasiService
         $startTime = substr($startTime, 0, 5);
 
         // ─── PESSIMISTIC LOCK — Inti dari penyelesaian Race Condition ───
-        //
-        // lockForUpdate() menginstruksikan database untuk mengunci baris yang
-        // dikembalikan oleh query ini hingga transaksi selesai (commit/rollback).
-        //
-        // Skenario tanpa lock (race condition):
-        //   Waktu T1: Request A membaca lastReservasi → queue_number = 5
-        //   Waktu T1: Request B membaca lastReservasi → queue_number = 5  (belum di-insert A)
-        //   Waktu T2: Request A insert → queue_number = 6
-        //   Waktu T2: Request B insert → queue_number = 6  ← DUPLIKAT!
-        //
-        // Skenario dengan lockForUpdate():
-        //   Waktu T1: Request A membaca & mengunci baris → queue_number = 5
-        //   Waktu T1: Request B mencoba membaca → TERBLOKIR oleh lock milik A
-        //   Waktu T2: Request A insert queue_number = 6, commit, lock dilepas
-        //   Waktu T2: Request B lanjut membaca → queue_number = 6 (sudah terupdate)
-        //   Waktu T3: Request B insert queue_number = 7  ← AMAN
-        //
-        // SYARAT: Method ini WAJIB dipanggil di dalam DB::transaction().
         $lastReservasi = Reservasi::whereDate('tanggal', $tanggal)
+            ->where('doctor_id', $doctor->id) // Pastikan hitung antrean per dokter
             ->orderBy('queue_number', 'desc')
             ->lockForUpdate()   // ← kunci baris teratas hingga transaksi commit
             ->first();
@@ -69,7 +53,10 @@ class ReservasiService
 
             $lastTime   = $lastReservasi->estimated_time ?? $lastReservasi->waktu;
             $newTimeObj = new \DateTime($lastTime);
-            $newTimeObj->modify('+30 minutes');
+
+            // 🔥 UBAH KE 20 MENIT 🔥
+            $newTimeObj->modify('+20 minutes');
+
             $estimatedTime = $newTimeObj->format('H:i');
         }
 
@@ -132,10 +119,10 @@ class ReservasiService
      * Buat reservasi baru, terlindungi dari race condition via DB::transaction + lockForUpdate.
      *
      * Alur di dalam transaksi:
-     *   1. calculateQueue() dipanggil → di dalamnya, lockForUpdate() mengunci baris reservasi
-     *      terakhir pada tanggal tersebut hingga transaksi ini selesai.
-     *   2. Reservasi baru di-insert dengan nomor antrean yang sudah aman dan unik.
-     *   3. Transaksi di-commit → lock dilepas → request lain baru bisa baca.
+     * 1. calculateQueue() dipanggil → di dalamnya, lockForUpdate() mengunci baris reservasi
+     * terakhir pada tanggal tersebut hingga transaksi ini selesai.
+     * 2. Reservasi baru di-insert dengan nomor antrean yang sudah aman dan unik.
+     * 3. Transaksi di-commit → lock dilepas → request lain baru bisa baca.
      *
      * @throws \Throwable jika terjadi deadlock atau error database yang tidak bisa di-recover
      */
@@ -169,8 +156,6 @@ class ReservasiService
 
         } catch (\Illuminate\Database\QueryException $e) {
             // Error 40001 = deadlock terdeteksi oleh MySQL/PostgreSQL.
-            // Deadlock bisa terjadi jika dua transaksi saling menunggu lock satu sama lain.
-            // Dalam kasus klinik kecil ini sangat jarang, tapi tetap harus di-handle.
             if ($e->getCode() === '40001') {
                 Log::warning('Deadlock terdeteksi saat membuat reservasi. Silakan coba kembali.', [
                     'doctor_id' => $doctor->id,
