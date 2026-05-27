@@ -112,6 +112,14 @@
             </div>
             @endif
 
+            {{-- Sukses Reset Password Alert --}}
+            @if (session('success'))
+            <div class="mb-6 p-4 rounded-xl bg-teal-50 dark:bg-teal-500/10 border border-teal-200 dark:border-teal-500/20 flex items-start gap-3">
+                <svg class="w-5 h-5 text-teal-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                <p class="text-sm text-teal-700 dark:text-teal-400 font-medium">{{ session('success') }}</p>
+            </div>
+            @endif
+
             {{-- Login Form --}}
             <form action="{{ route('login') }}" method="POST" class="space-y-5" autocomplete="on">
                 @csrf
@@ -159,11 +167,16 @@
                 </div>
 
                 {{-- Remember + Forgot --}}
-                <div class="flex items-center justify-between">
+                <div class="flex items-center justify-between mb-2">
                     <label class="flex items-center gap-2 cursor-pointer group">
                         <input type="checkbox" name="remember" class="w-4 h-4 rounded border-gray-300 dark:border-gray-600 dark:bg-gray-700 text-teal-600 focus:ring-teal-500 cursor-pointer">
                         <span class="text-sm text-gray-600 dark:text-gray-400 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">Ingat saya</span>
                     </label>
+
+                    {{-- 🔥 Ini Link Lupa Password-nya 🔥 --}}
+                    <a href="{{ route('password.request') }}" class="text-sm font-semibold transition-colors hover:opacity-80" style="color: var(--primary);">
+                        Lupa Sandi?
+                    </a>
                 </div>
 
                 {{-- Submit --}}

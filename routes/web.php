@@ -7,6 +7,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\ReservasiController;
 use App\Http\Controllers\ConsultationController; // Tambahan buat Live Chat
 use App\Http\Controllers\ReportController;
+use App\Http\Controllers\ForgotPasswordController; // 🔥 Tambahan buat Lupa Password
 use Illuminate\Support\Facades\Auth;
 
 // ==========================================
@@ -58,6 +59,14 @@ Route::middleware('guest')->group(function () {
     Route::post('/login',   [LoginController::class, 'authenticate']);
     Route::get('/register', [RegisterController::class, 'index'])->name('register');
     Route::post('/register', [RegisterController::class, 'store']);
+
+   // 🔥 FITUR BARU: Lupa Password & Reset Password (Sistem OTP) 🔥
+    Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('password.request');
+    Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetLink'])->name('password.email');
+
+    // Hapus /{token} dari sini, jadi tinggal /reset-password
+    Route::get('/reset-password', [ForgotPasswordController::class, 'showResetForm'])->name('password.reset');
+    Route::post('/reset-password', [ForgotPasswordController::class, 'resetPassword'])->name('password.update');
 });
 
 // Logout (hanya user yang sudah login)
