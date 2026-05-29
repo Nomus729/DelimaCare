@@ -40,8 +40,13 @@ class ForgotPasswordController extends Controller
         });
 
         // Lempar user ke halaman masukin kode OTP, sambil bawa data emailnya
+        $pesan = 'Kode OTP 6-digit telah dikirim ke email Anda!';
+        if (app()->environment('local')) {
+            $pesan .= ' (MODE LOKAL OTP: ' . $code . ')';
+        }
+
         return redirect()->route('password.reset', ['email' => $request->email])
-                         ->with('success', 'Kode OTP 6-digit telah dikirim ke email Anda!');
+                         ->with('success', $pesan);
     }
 
     // 3. Nampilin form reset password (masukin OTP & Password Baru)

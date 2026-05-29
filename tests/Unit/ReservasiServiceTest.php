@@ -157,12 +157,12 @@ class ReservasiServiceTest extends TestCase
     }
 
     /** @test */
-    public function it_calculates_estimated_time_with_30_minute_gap(): void
+    public function it_calculates_estimated_time_with_20_minute_gap(): void
     {
         $doctor = $this->createDoctor();
         $today  = date('Y-m-d');
 
-        // Reservasi terakhir jam 09:30 → antrean baru harus 10:00
+        // Reservasi terakhir jam 09:30 → antrean baru harus 09:50
         Reservasi::create([
             'nama'           => 'Pasien 1',
             'phone'          => '08123456789',
@@ -178,7 +178,7 @@ class ReservasiServiceTest extends TestCase
 
         $result = $this->service->calculateQueue($today, $doctor);
 
-        $this->assertEquals('10:00', $result['estimated_time']);
+        $this->assertEquals('09:50', $result['estimated_time']);
     }
 
     // =========================================================================
@@ -343,13 +343,13 @@ class ReservasiServiceTest extends TestCase
         $this->assertEquals(1, $reservasi1->queue_number);
         $this->assertEquals(2, $reservasi2->queue_number);
 
-        // Pastikan estimasi waktu reservasi kedua 30 menit setelah yang pertama
+        // Pastikan estimasi waktu reservasi kedua 20 menit setelah yang pertama
         $time1 = new \DateTime($reservasi1->estimated_time);
-        $time1->modify('+30 minutes');
+        $time1->modify('+20 minutes');
         $this->assertEquals(
             $time1->format('H:i'),
             $reservasi2->estimated_time,
-            'Estimasi waktu antrean kedua harus 30 menit setelah antrean pertama.'
+            'Estimasi waktu antrean kedua harus 20 menit setelah antrean pertama.'
         );
     }
 

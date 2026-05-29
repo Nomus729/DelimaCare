@@ -332,7 +332,7 @@
                     </button>
                 </form>
                 @elseif($status === 'Dikonfirmasi')
-                <button @click="$dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}', dokter_id: '{{ addslashes($item->dokter_nama) }}' })"
+                <button @click="switchMenu('rekam_medis').then(() => { setTimeout(() => { $dispatch('open-rm-modal', { reservasi_id: {{ $item->id }}, nama_pasien: '{{ addslashes($item->nama) }}', phone: '{{ $item->phone }}', layanan: '{{ $item->layanan }}', dokter_id: '{{ addslashes($item->dokter_nama) }}' }) }, 100) })"
                     title="Buat Rekam Medis & Selesaikan"
                     class="w-10 h-10 rounded-2xl flex items-center justify-center text-teal-600 bg-teal-50 dark:bg-teal-900/20 hover:bg-teal-600 hover:text-white hover:scale-110 transition-all shadow-sm">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
