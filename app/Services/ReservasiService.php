@@ -33,7 +33,13 @@ class ReservasiService
         // Null coalescing memberikan fallback '08:00' jika tidak ada jadwal terdaftar.
         $startTime = $doctor->schedules()
             ->where('day_of_week', $dayOfWeek)
-            ->value('start_time') ?? '08:00';
+            ->value('start_time');
+            
+        // Fallback ke method getParsedSchedule jika jadwal database kosong
+        if (!$startTime) {
+            $parsedSchedule = $doctor->getParsedSchedule($dayOfWeek);
+            $startTime = $parsedSchedule ? $parsedSchedule->start_time : '08:00';
+        }
 
         // Normalkan: kolom TIME bisa mengembalikan 'HH:MM:SS', ambil 'HH:MM' saja
         $startTime = substr($startTime, 0, 5);
@@ -92,6 +98,11 @@ class ReservasiService
         $schedule = $doctor->schedules()
             ->where('day_of_week', $selectedDay)
             ->first();
+            
+        // Fallback ke method getParsedSchedule jika jadwal database kosong
+        if (!$schedule) {
+            $schedule = $doctor->getParsedSchedule($selectedDay);
+        }
 
         if (! $schedule) {
             return [

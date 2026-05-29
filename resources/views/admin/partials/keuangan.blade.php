@@ -399,7 +399,7 @@
                     </tbody>
                 </table>
             </div>
-            <div class="mt-4">
+            <div class="mt-4 overflow-x-auto pb-2">
                 {{ $pengeluaranList->links() }}
             </div>
         </div>

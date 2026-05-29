@@ -37,6 +37,10 @@ class Doctor extends Model
         $todaySchedule = $this->schedules
             ->firstWhere('day_of_week', $currentDay);
 
+        if (! $todaySchedule) {
+            $todaySchedule = $this->getParsedSchedule($currentDay);
+        }
+
         // Jika tidak ada jadwal untuk hari ini, dokter tidak praktek
         if (! $todaySchedule) {
             return false;
@@ -78,5 +82,55 @@ class Doctor extends Model
         // hasil is_available → jika dokter belum ada jadwal di doctor_schedules,
         // is_available = false → status tampil 'Istirahat' meskipun admin menyimpan 'Tersedia'.
         return $this->status ?? 'Istirahat';
+    }
+
+    /**
+     * Fallback method untuk memparsing string jadwal_praktek
+     * apabila tabel doctor_schedules kosong atau belum diset.
+     * Mengembalikan object dengan start_time dan end_time atau null.
+     */
+    public function getParsedSchedule(string $dayName): ?object
+    {
+        $days = [
+            'Senin' => 1, 'Selasa' => 2, 'Rabu' => 3, 'Kamis' => 4,
+            'Jumat' => 5, 'Sabtu' => 6, 'Minggu' => 7
+        ];
+        
+        $jadwal = $this->jadwal_praktek ?? '';
+        if (empty($jadwal)) {
+            return null;
+        }
+
+        if (str_contains(strtolower($jadwal), 'setiap hari') || str_contains(strtolower($jadwal), '24 jam')) {
+            return (object)[
+                'start_time' => '00:00:00',
+                'end_time' => '23:59:59'
+            ];
+        }
+
+        // Contoh: Senin - Jumat (08:00 - 14:00)
+        if (preg_match('/([A-Za-z]+)\s*-\s*([A-Za-z]+)\s*\(([\d:]+)\s*-\s*([\d:]+)\)/i', $jadwal, $matches)) {
+            $startDayStr = ucfirst(strtolower($matches[1]));
+            $endDayStr = ucfirst(strtolower($matches[2]));
+            $startTime = $matches[3];
+            $endTime = $matches[4];
+
+            $startDayIdx = $days[$startDayStr] ?? 1;
+            $endDayIdx = $days[$endDayStr] ?? 7;
+            $currentDayIdx = $days[$dayName] ?? 0;
+
+            if ($currentDayIdx >= $startDayIdx && $currentDayIdx <= $endDayIdx) {
+                // Pastikan format waktu HH:MM:SS
+                if (strlen($startTime) == 5) $startTime .= ':00';
+                if (strlen($endTime) == 5) $endTime .= ':00';
+
+                return (object)[
+                    'start_time' => $startTime,
+                    'end_time' => $endTime
+                ];
+            }
+        }
+
+        return null;
     }
 }
