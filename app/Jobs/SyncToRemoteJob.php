@@ -9,6 +9,7 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 
 class SyncToRemoteJob implements ShouldQueue
 {
@@ -33,7 +34,7 @@ class SyncToRemoteJob implements ShouldQueue
      */
     public function handle()
     {
-        if (app()->environment('testing')) {
+        if (app()->environment('testing') && !config('queue.sync_test_mode')) {
             return;
         }
 
@@ -43,13 +44,20 @@ class SyncToRemoteJob implements ShouldQueue
             $primaryKey = (new $this->modelClass)->getKeyName();
             $id = $this->attributes[$primaryKey];
 
+            // Filter attributes to only include columns that actually exist in the remote database table
+            $remoteColumns = Schema::connection('mysql_remote')->getColumnListing($tableName);
+            $filteredAttributes = array_intersect_key(
+                $this->attributes,
+                array_flip($remoteColumns)
+            );
+
             switch ($this->action) {
                 case 'create':
                 case 'update':
                     // We use updateOrInsert to ensure idempotency
                     $remoteConn->table($tableName)->updateOrInsert(
                         [$primaryKey => $id],
-                        $this->attributes
+                        $filteredAttributes
                     );
                     break;
 

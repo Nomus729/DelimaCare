@@ -202,9 +202,6 @@ class AdminController extends Controller
         return view('admin.partials.doctors', compact('doctors'));
     }
 
-    /**
-     * Render Keuangan partial untuk AJAX/HTMX lazy load.
-     */
     public function getKeuanganPartial(Request $request)
     {
         if ($guard = $this->guardPartial($request, 'keuangan')) return $guard;
@@ -218,10 +215,14 @@ class AdminController extends Controller
         $topDoctors      = $keuanganData['topDoctors'];
         $topExpenses     = $keuanganData['topExpenses'];
         $summaryTable    = $keuanganData['summaryTable'];
+        $selectedMonth   = $keuanganData['selectedMonth'];
+        $selectedYear    = $keuanganData['selectedYear'];
+        $availableYears  = $keuanganData['availableYears'];
 
         return view('admin.partials.keuangan', compact(
             'chartKeuangan', 'pengeluaranList', 'kpiStats', 'donutChartData',
-            'topMedicines', 'topDoctors', 'topExpenses', 'summaryTable'
+            'topMedicines', 'topDoctors', 'topExpenses', 'summaryTable',
+            'selectedMonth', 'selectedYear', 'availableYears'
         ));
     }
 
@@ -360,29 +361,51 @@ class AdminController extends Controller
             ->update(['status' => 'Tidak Datang']);
     }
 
-    /**
-     * Get inventory data.
-     */
     private function getInventoriData(Request $request)
     {
         $medSearch = $request->query('med_search', '');
         $medSort   = $request->query('med_sort', 'name_asc');
         $medFilter = $request->query('med_filter', '');
 
-        $medicines = Medicine::search($medSearch)
-            ->filter($medFilter)
-            ->sort($medSort)
-            ->get();
+        // Create base query for search/filter to compute statistics accurately
+        $baseQuery = Medicine::search($medSearch)->filter($medFilter);
+
+        // Pre-compute stats card values for the filtered result set
+        $totalCount   = (clone $baseQuery)->count();
+        $menipisCount = (clone $baseQuery)->whereRaw('stock > 0 and stock <= min_stock')->count();
+        $habisCount   = (clone $baseQuery)->where('stock', '<=', 0)->count();
+
+        // Paginate the medicines
+        $medicines = $baseQuery->sort($medSort)->paginate(20)->withQueryString();
+
+        $suggestedBrands = Medicine::whereNotNull('brand')
+            ->where('brand', '!=', '')
+            ->distinct()
+            ->orderBy('brand')
+            ->pluck('brand')
+            ->toArray();
+
+        $suggestedCategories = Medicine::whereNotNull('category')
+            ->where('category', '!=', '')
+            ->distinct()
+            ->orderBy('category')
+            ->pluck('category')
+            ->toArray();
 
         return [
-            'medicines'       => $medicines,
-            'lowStockCount'   => Medicine::whereRaw('stock <= min_stock')->count(),
-            'expiredCount'    => Medicine::where('expired_at', '<', now())->count(),
-            'nearExpiryCount' => Medicine::whereBetween('expired_at', [now(), now()->addDays(30)])->count(),
-            'totalMedicines'  => Medicine::count(),
-            'medSearch'       => $medSearch,
-            'medSort'         => $medSort,
-            'medFilter'       => $medFilter,
+            'medicines'           => $medicines,
+            'lowStockCount'       => Medicine::whereRaw('stock <= min_stock')->count(),
+            'expiredCount'        => Medicine::where('expired_at', '<', now())->count(),
+            'nearExpiryCount'     => Medicine::whereBetween('expired_at', [now(), now()->addDays(30)])->count(),
+            'totalMedicines'      => Medicine::count(),
+            'medSearch'           => $medSearch,
+            'medSort'             => $medSort,
+            'medFilter'           => $medFilter,
+            'totalCount'          => $totalCount,
+            'menipisCount'        => $menipisCount,
+            'habisCount'          => $habisCount,
+            'suggestedBrands'     => $suggestedBrands,
+            'suggestedCategories' => $suggestedCategories,
         ];
     }
 
@@ -487,14 +510,24 @@ class AdminController extends Controller
      */
     private function getKeuanganData(Request $request)
     {
+        $selectedMonth = $request->query('fin_month', now()->month);
+        $selectedYear  = $request->query('fin_year', now()->year);
+
+        // Parse to integers for safety
+        $selectedMonth = (int) $selectedMonth;
+        $selectedYear  = (int) $selectedYear;
+
+        // Base date for selected month/year
+        $baseDate = now()->setDate($selectedYear, $selectedMonth, 1);
+
         $months = [];
         $pendapatanObatData = [];
         $pendapatanDokterData = [];
         $totalPendapatanData = [];
 
-        // Last 6 months
+        // Last 6 months ending at $baseDate
         for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $date = (clone $baseDate)->subMonths($i);
             $months[] = $date->isoFormat('MMM');
 
             // 1. Pendapatan Obat
@@ -523,9 +556,9 @@ class AdminController extends Controller
             'total' => $totalPendapatanData,
         ];
 
-        // --- KPI STATS (Bulan Ini vs Bulan Lalu) ---
-        $dateIni = now();
-        $dateLalu = now()->subMonth();
+        // --- KPI STATS (Selected Month vs Previous Month) ---
+        $dateIni = (clone $baseDate);
+        $dateLalu = (clone $baseDate)->subMonth();
 
         $obatIni = ResepMedisItem::whereHas('resepMedis', function ($q) use ($dateIni) {
             $q->whereMonth('tanggal_resep', $dateIni->month)->whereYear('tanggal_resep', $dateIni->year);
@@ -583,6 +616,9 @@ class AdminController extends Controller
 
         // --- TOP 5 OBAT PENYUMBANG PENDAPATAN ---
         $topMedicines = ResepMedisItem::join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
+            ->join('resep_medis', 'resep_medis_items.resep_medis_id', '=', 'resep_medis.id')
+            ->whereMonth('resep_medis.tanggal_resep', $selectedMonth)
+            ->whereYear('resep_medis.tanggal_resep', $selectedYear)
             ->selectRaw('medicines.name as name, SUM(resep_medis_items.jumlah) as total_qty, SUM(resep_medis_items.jumlah * medicines.price) as total_revenue')
             ->groupBy('medicines.name')
             ->orderBy('total_revenue', 'desc')
@@ -590,12 +626,16 @@ class AdminController extends Controller
             ->get();
 
         // --- Top 3 Dokter Kontributor Omzet ---
-        $topDoctors = \App\Models\ResepMedis::selectRaw('dokter_pemeriksa as name, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_prescriptions')
+        $topDoctors = \App\Models\ResepMedis::whereMonth('tanggal_resep', $selectedMonth)
+            ->whereYear('tanggal_resep', $selectedYear)
+            ->selectRaw('dokter_pemeriksa as name, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_prescriptions')
             ->groupBy('dokter_pemeriksa')
             ->get()
-            ->map(function ($doc) {
-                $medicineRevenue = ResepMedisItem::whereHas('resepMedis', function ($q) use ($doc) {
-                        $q->where('dokter_pemeriksa', $doc->name);
+            ->map(function ($doc) use ($selectedMonth, $selectedYear) {
+                $medicineRevenue = ResepMedisItem::whereHas('resepMedis', function ($q) use ($doc, $selectedMonth, $selectedYear) {
+                        $q->where('dokter_pemeriksa', $doc->name)
+                          ->whereMonth('tanggal_resep', $selectedMonth)
+                          ->whereYear('tanggal_resep', $selectedYear);
                     })
                     ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
                     ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
@@ -608,12 +648,16 @@ class AdminController extends Controller
             ->values();
 
         // --- Top 3 Pasien Kontributor Omzet ---
-        $topExpenses = \App\Models\ResepMedis::selectRaw('nama_pasien as title, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_visits')
+        $topExpenses = \App\Models\ResepMedis::whereMonth('tanggal_resep', $selectedMonth)
+            ->whereYear('tanggal_resep', $selectedYear)
+            ->selectRaw('nama_pasien as title, SUM(biaya_dokter) as total_biaya_dokter, COUNT(id) as total_visits')
             ->groupBy('nama_pasien')
             ->get()
-            ->map(function ($p) {
-                $medRev = ResepMedisItem::whereHas('resepMedis', function ($q) use ($p) {
-                        $q->where('nama_pasien', $p->title);
+            ->map(function ($p) use ($selectedMonth, $selectedYear) {
+                $medRev = ResepMedisItem::whereHas('resepMedis', function ($q) use ($p, $selectedMonth, $selectedYear) {
+                        $q->where('nama_pasien', $p->title)
+                          ->whereMonth('tanggal_resep', $selectedMonth)
+                          ->whereYear('tanggal_resep', $selectedYear);
                     })
                     ->join('medicines', 'resep_medis_items.medicine_id', '=', 'medicines.id')
                     ->selectRaw('SUM(resep_medis_items.jumlah * medicines.price) as total')
@@ -629,7 +673,7 @@ class AdminController extends Controller
         // --- Tabel Ikhtisar Tabular 6 Bulan ---
         $summaryTable = [];
         for ($i = 5; $i >= 0; $i--) {
-            $date = now()->subMonths($i);
+            $date = (clone $baseDate)->subMonths($i);
             $p_obat = $pendapatanObatData[5 - $i] ?? 0;
             $p_dokter = $pendapatanDokterData[5 - $i] ?? 0;
             $total = $totalPendapatanData[5 - $i] ?? 0;
@@ -646,9 +690,28 @@ class AdminController extends Controller
 
         // Fetch recent billing invoices
         $pengeluaranList = \App\Models\ResepMedis::with('items.medicine')
+            ->whereMonth('tanggal_resep', $selectedMonth)
+            ->whereYear('tanggal_resep', $selectedYear)
             ->orderBy('tanggal_resep', 'desc')
             ->paginate(10, ['*'], 'page_keuangan')
-            ->appends(['tab' => 'keuangan']);
+            ->appends(['tab' => 'keuangan', 'fin_month' => $selectedMonth, 'fin_year' => $selectedYear]);
+
+        // Get list of years available in ResepMedis to populate year filter (database agnostic)
+        $availableYears = \App\Models\ResepMedis::pluck('tanggal_resep')
+            ->map(function ($date) {
+                return $date ? $date->year : now()->year;
+            })
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->toArray();
+
+        if (empty($availableYears)) {
+            $availableYears = [now()->year];
+        } else if (!in_array(now()->year, $availableYears)) {
+            $availableYears[] = now()->year;
+            rsort($availableYears);
+        }
 
         return [
             'chartData' => json_encode($chartData),
@@ -658,7 +721,10 @@ class AdminController extends Controller
             'topMedicines' => $topMedicines,
             'topDoctors' => $topDoctors,
             'topExpenses' => $topExpenses,
-            'summaryTable' => $summaryTable
+            'summaryTable' => $summaryTable,
+            'selectedMonth' => $selectedMonth,
+            'selectedYear' => $selectedYear,
+            'availableYears' => $availableYears,
         ];
     }
 }

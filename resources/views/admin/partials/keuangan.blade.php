@@ -24,6 +24,36 @@
         </button>
     </div>
 
+    {{-- Filter Form --}}
+    <form method="GET" action="{{ route('admin.keuangan.partial') }}" class="flex flex-wrap items-center gap-4 bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 p-5 rounded-2xl shadow-sm">
+        <div class="flex items-center gap-2">
+            <span class="p-1.5 rounded-lg bg-teal-500/10 text-teal-600 dark:text-teal-400">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 3c2.755 0 5.455.477 8 1.4M12 3v18M12 3c-2.755 0-5.455.477-8 1.4m0 0l1.1 5.5a2 2 0 001.96 1.6h9.88a2 2 0 001.96-1.6l1.1-5.5M4 4.4v1.6M20 4.4v1.6"/>
+                </svg>
+            </span>
+            <label for="fin_month" class="text-xs font-bold text-gray-700 dark:text-gray-300">Pilih Bulan & Tahun Analisis:</label>
+        </div>
+        
+        <div class="flex flex-wrap items-center gap-2">
+            <select name="fin_month" id="fin_month" onchange="this.form.requestSubmit()" class="bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white">
+                @foreach([
+                    1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April',
+                    5 => 'Mei', 6 => 'Juni', 7 => 'Juli', 8 => 'Agustus',
+                    9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+                ] as $val => $label)
+                    <option value="{{ $val }}" {{ $selectedMonth == $val ? 'selected' : '' }}>{{ $label }}</option>
+                @endforeach
+            </select>
+
+            <select name="fin_year" id="fin_year" onchange="this.form.requestSubmit()" class="bg-gray-50 dark:bg-[#0F172A] border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2.5 text-xs font-bold focus:ring-2 focus:ring-teal-500 focus:border-teal-500 outline-none transition-all dark:text-white">
+                @foreach($availableYears as $year)
+                    <option value="{{ $year }}" {{ $selectedYear == $year ? 'selected' : '' }}>{{ $year }}</option>
+                @endforeach
+            </select>
+        </div>
+    </form>
+
     {{-- 5 KPI Widgets Row --}}
     <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
         <!-- KPI 1: Pendapatan -->
@@ -434,7 +464,7 @@
     </div>
 </div>
 
-<script>
+<script data-reinit>
     (function () {
         var chartContainer = document.querySelector("#chartKeuangan");
         var donutContainer = document.querySelector("#chartDonutPengeluaran");

@@ -17,32 +17,38 @@ return new class extends Migration
      */
     public function up(): void
     {
+        $conn = \DB::connection($this->getConnection());
+
         // Fix #1: Tambah proper foreign key doctor_id ke reservasi
-        Schema::table('reservasi', function (Blueprint $table) {
-            $table->unsignedBigInteger('doctor_id')->nullable()->after('dokter_id');
-        });
+        if (!Schema::connection($this->getConnection())->hasColumn('reservasi', 'doctor_id')) {
+            Schema::table('reservasi', function (Blueprint $table) {
+                $table->unsignedBigInteger('doctor_id')->nullable()->after('dokter_id');
+            });
+        }
 
         // Migrasi data existing: lookup doctor by nama dari kolom dokter_id lama
         // Menggunakan DB::table (bukan Eloquent) agar tidak terkena SoftDeletes scope
-        $reservasis = \DB::table('reservasi')->whereNotNull('dokter_id')->whereNull('doctor_id')->get();
+        $reservasis = $conn->table('reservasi')->whereNotNull('dokter_id')->whereNull('doctor_id')->get();
         foreach ($reservasis as $reservasi) {
-            $doctor = \DB::table('doctors')->where('nama', $reservasi->dokter_id)->first();
+            $doctor = $conn->table('doctors')->where('nama', $reservasi->dokter_id)->first();
             if ($doctor) {
-                \DB::table('reservasi')->where('id', $reservasi->id)->update(['doctor_id' => $doctor->id]);
+                $conn->table('reservasi')->where('id', $reservasi->id)->update(['doctor_id' => $doctor->id]);
             }
         }
 
         // Fix #2: Tambah user_id ke rekam_medis
-        Schema::table('rekam_medis', function (Blueprint $table) {
-            $table->unsignedBigInteger('user_id')->nullable()->after('reservasi_id');
-        });
+        if (!Schema::connection($this->getConnection())->hasColumn('rekam_medis', 'user_id')) {
+            Schema::table('rekam_medis', function (Blueprint $table) {
+                $table->unsignedBigInteger('user_id')->nullable()->after('reservasi_id');
+            });
+        }
 
         // Migrasi data existing: lookup user by username dari kolom nama_pasien
-        $rekamMedisList = \DB::table('rekam_medis')->whereNull('user_id')->get();
+        $rekamMedisList = $conn->table('rekam_medis')->whereNull('user_id')->get();
         foreach ($rekamMedisList as $rm) {
-            $user = \DB::table('users')->where('username', $rm->nama_pasien)->first();
+            $user = $conn->table('users')->where('username', $rm->nama_pasien)->first();
             if ($user) {
-                \DB::table('rekam_medis')->where('id', $rm->id)->update(['user_id' => $user->id]);
+                $conn->table('rekam_medis')->where('id', $rm->id)->update(['user_id' => $user->id]);
             }
         }
     }

@@ -143,6 +143,11 @@
             const newContent = doc.querySelector('[data-inv-container]').innerHTML;
             document.querySelector('[data-inv-container]').innerHTML = newContent;
             
+            // Re-intercept pagination links and sorting headers with HTMX
+            if (typeof enhanceTabContent === 'function') {
+                enhanceTabContent(document.getElementById('tab-inventori'), 'inventori');
+            }
+            
             // Update URL in browser without reload
             window.history.pushState({}, '', url.replace('{{ route('admin.inventori.partial') }}', '{{ route('admin.dashboard') }}'));
         } catch (e) {
@@ -171,7 +176,7 @@
         <div>
             <h2 class="text-2xl font-extrabold text-gray-900 dark:text-white mb-0.5">Inventori Obat</h2>
             <p class="text-sm text-gray-500 dark:text-gray-400">Kelola stok obat dan logistik medis &nbsp;·&nbsp;
-                <span class="font-semibold text-teal-600 dark:text-teal-400">{{ $medicines->count() }} item</span>
+                <span class="font-semibold text-teal-600 dark:text-teal-400">{{ $medicines->total() }} item</span>
             </p>
         </div>
         <button @click="openAdd()"
@@ -187,10 +192,9 @@
 
     {{-- Stat cards --}}
     @php
-        $total      = $medicines->count();
-        $cukup      = $medicines->filter(fn($m) => $m->stock > $m->min_stock)->count();
-        $menipis    = $medicines->filter(fn($m) => $m->stock > 0 && $m->stock <= $m->min_stock)->count();
-        $habis      = $medicines->filter(fn($m) => $m->stock <= 0)->count();
+        $total      = $totalCount;
+        $menipis    = $menipisCount;
+        $habis      = $habisCount;
     @endphp
     <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-6">
         @foreach([
@@ -458,6 +462,12 @@
         </div>
     </div>
 
+    @if(isset($medicines) && $medicines->hasPages())
+        <div class="mt-6 pt-6 border-t border-gray-100 dark:border-gray-800">
+            {{ $medicines->links() }}
+        </div>
+    @endif
+
     {{-- ===== FORM MODAL — teleport ke body agar tidak terhalang navbar ===== --}}
     <template x-teleport="body">
         <div x-show="showModal" x-cloak
@@ -509,13 +519,25 @@
                         </div>
                         <div class="inv-field">
                             <label>Brand / Pabrik</label>
-                            <input type="text" name="brand" x-model="medicine.brand"
+                            <input type="text" name="brand" x-model="medicine.brand" list="brand-suggestions"
                                    placeholder="Contoh: Kimia Farma">
+                            <datalist id="brand-suggestions">
+                                @if(isset($suggestedBrands))
+                                    @foreach($suggestedBrands as $brand)
+                                        <option value="{{ $brand }}"></option>
+                                    @endforeach
+                                @endif
+                            </datalist>
                         </div>
                         <div class="inv-field">
-                            <label>Kategori</label>
-                            <input type="text" name="category" x-model="medicine.category"
-                                   placeholder="Contoh: Analgesik">
+                            <label>Kategori <span class="text-rose-500">*</span></label>
+                            <select name="category" x-model="medicine.category" required>
+                                <option value="" disabled selected>Pilih Kategori</option>
+                                <option value="Vitamin">Vitamin</option>
+                                <option value="Alat KB">Alat KB</option>
+                                <option value="Antibiotik">Antibiotik</option>
+                                <option value="Analgesik">Analgesik</option>
+                            </select>
                         </div>
                         <div class="inv-field">
                             <label>Stok <span class="text-rose-500">*</span></label>
@@ -523,8 +545,12 @@
                         </div>
                         <div class="inv-field">
                             <label>Satuan <span class="text-rose-500">*</span></label>
-                            <input type="text" name="unit" x-model="medicine.unit" required
-                                   placeholder="pcs, tablet, botol">
+                            <select name="unit" x-model="medicine.unit" required>
+                                <option value="" disabled selected>Pilih Satuan</option>
+                                <option value="pcs">pcs</option>
+                                <option value="tablet">tablet</option>
+                                <option value="botol">botol</option>
+                            </select>
                         </div>
                         <div class="inv-field">
                             <label>Harga Satuan <span class="text-rose-500">*</span></label>
