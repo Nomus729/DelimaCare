@@ -384,7 +384,7 @@
 
                 {{-- Preview Container --}}
                 <div id="preview-container" class="mb-3 w-64 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 {{ (isset($article) && $article->image_path) ? '' : 'hidden' }}">
-                    <img id="image-preview" src="{{ (isset($article) && $article->image_path) ? $article->image_url : '' }}" alt="Preview Banner" class="w-full object-cover h-auto">
+                    <img id="image-preview" src="{{ (isset($article) && $article->image_path) ? $article->image_url : '' }}" alt="Pratinjau Banner" class="w-full object-cover h-auto">
                 </div>
                 
                 <div id="banner-file-wrapper" class="{{ (isset($article) && filter_var($article->image_path, FILTER_VALIDATE_URL)) ? 'hidden' : '' }}">

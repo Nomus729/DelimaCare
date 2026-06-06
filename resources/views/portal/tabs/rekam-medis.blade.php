@@ -30,7 +30,7 @@
                 </div>
                 <div class="flex flex-col items-end gap-1">
                     <span class="inline-flex px-3 py-1.5 border border-gray-100 bg-gray-50 text-gray-700 text-xs font-semibold rounded-lg dark:border-gray-700 dark:bg-gray-800 dark:text-gray-300">
-                        {{ $rm->created_at->format('d M Y') }}
+                        {{ $rm->created_at->locale('id')->translatedFormat('d M Y') }}
                     </span>
                     @if($rm->status_risiko === 'Tinggi')
                         <span class="text-[10px] font-black text-rose-500 uppercase tracking-widest">Risiko Tinggi</span>
@@ -56,7 +56,7 @@
             @if($rm->jadwal_kontrol_berikutnya)
             <div class="mt-4 ml-3 flex items-center gap-2 px-3 py-2 bg-amber-50 text-amber-700 text-[10px] font-bold rounded-lg border border-amber-100 dark:bg-amber-900/20 dark:border-amber-900/30 dark:text-amber-400">
                 <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                Jadwal Kontrol Berikutnya: {{ $rm->jadwal_kontrol_berikutnya->format('d M Y') }}
+                Jadwal Kontrol Berikutnya: {{ $rm->jadwal_kontrol_berikutnya->locale('id')->translatedFormat('d M Y') }}
             </div>
             @endif
         </div>

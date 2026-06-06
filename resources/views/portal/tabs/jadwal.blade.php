@@ -32,7 +32,7 @@
                                 <span class="px-2.5 py-1 bg-blue-50 text-blue-600 text-[10px] font-black rounded-lg uppercase tracking-wider">{{ $jadwal->layanan }}</span>
                                 <span class="text-gray-400 font-medium text-xs flex items-center gap-1.5">
                                     <svg aria-hidden="true" class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>
-                                    {{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d F Y') }}
+                                    {{ \Carbon\Carbon::parse($jadwal->tanggal)->locale('id')->translatedFormat('d F Y') }}
                                 </span>
                             </div>
                             <div class="flex items-baseline gap-2">
@@ -102,7 +102,7 @@
                         <div class="grid grid-cols-2 gap-4">
                             <div>
                                 <p class="text-xs text-gray-500 font-bold uppercase">Tanggal</p>
-                                <p class="text-gray-900 font-semibold">{{ \Carbon\Carbon::parse($jadwal->tanggal)->format('d M Y') }}</p>
+                                <p class="text-gray-900 font-semibold">{{ \Carbon\Carbon::parse($jadwal->tanggal)->locale('id')->translatedFormat('d M Y') }}</p>
                             </div>
                             <div>
                                 <p class="text-xs text-gray-500 font-bold uppercase">No. Antrean</p>

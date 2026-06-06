@@ -96,7 +96,7 @@
                             </div>
                             <span>{{ $article->author->username ?? 'Admin' }}</span>
                         </div>
-                        <span>{{ $article->created_at->format('d M Y') }}</span>
+                        <span>{{ $article->created_at->locale('id')->translatedFormat('d M Y') }}</span>
                     </div>
                 </div>
             </a>

@@ -14,7 +14,7 @@
             <h3 class="text-2xl font-black tracking-tight mb-1">
                 @auth {{ Auth::user()->username }} @else Administrator @endauth
             </h3>
-            <p class="text-teal-100 text-sm">{{ now()->isoFormat('dddd, D MMMM YYYY') }} — Semoga harimu menyenangkan!</p>
+            <p class="text-teal-100 text-sm">{{ now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }} — Semoga harimu menyenangkan!</p>
         </div>
         <div class="relative z-10 mt-5 flex flex-wrap gap-3">
             <span class="inline-flex items-center gap-2 bg-white/15 backdrop-blur-sm border border-white/20 px-4 py-2 rounded-xl text-xs font-bold">

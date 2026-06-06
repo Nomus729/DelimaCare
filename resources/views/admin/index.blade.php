@@ -248,7 +248,7 @@
                 <div class="anim-up">
                     <h2 class="text-xl font-black text-gray-900 dark:text-white tracking-tight leading-none" x-text="menuLabel"></h2>
                     <p class="header-date text-[11px] font-bold uppercase tracking-widest mt-1">
-                        {{ now()->isoFormat('dddd, D MMMM YYYY') }}
+                        {{ now()->locale('id')->isoFormat('dddd, D MMMM YYYY') }}
                     </p>
                 </div>
 

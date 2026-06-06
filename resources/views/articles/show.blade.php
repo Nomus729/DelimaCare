@@ -159,7 +159,7 @@
                         <span>Oleh <strong class="text-gray-900 dark:text-white">{{ $article->author->username ?? 'Admin' }}</strong></span>
                     </div>
                     <span class="w-1.5 h-1.5 rounded-full bg-gray-300 dark:bg-gray-700"></span>
-                    <span>{{ $article->created_at->isoFormat('D MMMM YYYY') }}</span>
+                    <span>{{ $article->created_at->locale('id')->isoFormat('D MMMM YYYY') }}</span>
                 </div>
             </header>
 
@@ -204,7 +204,7 @@
                         <div class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mt-4">
                             <span class="font-semibold">{{ $rel->author->username ?? 'Admin' }}</span>
                             <span>•</span>
-                            <span>{{ $rel->created_at->format('d M Y') }}</span>
+                            <span>{{ $rel->created_at->locale('id')->translatedFormat('d M Y') }}</span>
                         </div>
                     </div>
                 </a>
