@@ -45,8 +45,8 @@ class ReservasiService
         $startTime = substr($startTime, 0, 5);
 
         // ─── PESSIMISTIC LOCK — Inti dari penyelesaian Race Condition ───
+        // Antrean dihitung secara global per tanggal kunjungan untuk menghindari nomor antrean ganda
         $lastReservasi = Reservasi::whereDate('tanggal', $tanggal)
-            ->where('doctor_id', $doctor->id) // Pastikan hitung antrean per dokter
             ->orderBy('queue_number', 'desc')
             ->lockForUpdate()   // ← kunci baris teratas hingga transaksi commit
             ->first();
@@ -111,18 +111,9 @@ class ReservasiService
             ];
         }
 
-        // Normalisasi ke format 'HH:MM' untuk perbandingan leksikografis yang konsisten
-        $jamNormalized   = substr($jam, 0, 5);
-        $startNormalized = substr($schedule->start_time, 0, 5);
-        $endNormalized   = substr($schedule->end_time, 0, 5);
-
-        if ($jamNormalized < $startNormalized || $jamNormalized > $endNormalized) {
-            return [
-                'status'  => false,
-                'message' => "Maaf, antrean untuk {$doctor->nama} di luar jam praktek ({$startNormalized} - {$endNormalized}).",
-            ];
-        }
-
+        // PENTING: Jika antrean bersifat global, kita tidak membatasi jam pendaftaran secara ketat
+        // berdasarkan rentang waktu praktek dokter karena estimasi jam antrean global akan terus bertambah.
+        // Cukup pastikan dokter praktek pada hari tersebut (status & schedule check di atas).
         return ['status' => true];
     }
 

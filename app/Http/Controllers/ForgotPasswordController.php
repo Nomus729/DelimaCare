@@ -22,7 +22,6 @@ class ForgotPasswordController extends Controller
     {
         $request->validate(['email' => 'required|email|exists:users,email']);
 
-        // 🔥 BIKIN KODE OTP 6 DIGIT ACAK 🔥
         $code = rand(100000, 999999);
 
         // Simpan kode ke database
@@ -41,9 +40,6 @@ class ForgotPasswordController extends Controller
 
         // Lempar user ke halaman masukin kode OTP, sambil bawa data emailnya
         $pesan = 'Kode OTP 6-digit telah dikirim ke email Anda!';
-        if (app()->environment('local')) {
-            $pesan .= ' (MODE LOKAL OTP: ' . $code . ')';
-        }
 
         return redirect()->route('password.reset', ['email' => $request->email])
                          ->with('success', $pesan);

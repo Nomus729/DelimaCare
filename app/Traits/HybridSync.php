@@ -11,6 +11,10 @@ trait HybridSync
      */
     public static function bootHybridSync()
     {
+        if (env('DISABLE_HYBRID_SYNC', false)) {
+            return;
+        }
+
         static::created(function ($model) {
             SyncToRemoteJob::dispatch(get_class($model), $model->getAttributes(), 'create');
         });

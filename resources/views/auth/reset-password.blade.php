@@ -37,7 +37,7 @@
             </div>
             @endif
 
-            <form action="{{ route('password.update') }}" method="POST" class="space-y-5">
+            <form action="{{ route('password.update') }}" method="POST" class="space-y-5" x-data="{ showPassword: false, showConfirmPassword: false }">
                 @csrf
                 {{-- Email dibawa secara otomatis/hidden --}}
                 <input type="hidden" name="email" value="{{ request('email') }}">
@@ -55,8 +55,14 @@
                 {{-- Password Baru --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Kata Sandi Baru</label>
-                    <input type="password" name="password" required placeholder="Minimal 8 karakter"
-                           class="w-full px-4 py-3.5 rounded-xl border transition-all text-sm outline-none dark:bg-[#1E293B] dark:text-white border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-teal-500/20">
+                    <div class="relative">
+                        <input :type="showPassword ? 'text' : 'password'" name="password" required placeholder="Minimal 8 karakter"
+                               class="w-full pl-4 pr-12 py-3.5 rounded-xl border transition-all text-sm outline-none dark:bg-[#1E293B] dark:text-white border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-teal-500/20">
+                        <button type="button" @click="showPassword = !showPassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors p-1" tabindex="-1">
+                            <svg x-show="!showPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                            <svg x-show="showPassword" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
                     @error('password')
                         <p class="text-red-500 text-xs mt-1.5 font-medium">{{ $message }}</p>
                     @enderror
@@ -65,8 +71,14 @@
                 {{-- Konfirmasi Password --}}
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Konfirmasi Kata Sandi</label>
-                    <input type="password" name="password_confirmation" required placeholder="Ulangi kata sandi baru"
-                           class="w-full px-4 py-3.5 rounded-xl border transition-all text-sm outline-none dark:bg-[#1E293B] dark:text-white border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-teal-500/20">
+                    <div class="relative">
+                        <input :type="showConfirmPassword ? 'text' : 'password'" name="password_confirmation" required placeholder="Ulangi kata sandi baru"
+                               class="w-full pl-4 pr-12 py-3.5 rounded-xl border transition-all text-sm outline-none dark:bg-[#1E293B] dark:text-white border-gray-200 dark:border-gray-700 focus:ring-2 focus:ring-teal-500/20">
+                        <button type="button" @click="showConfirmPassword = !showConfirmPassword" class="absolute right-3.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none transition-colors p-1" tabindex="-1">
+                            <svg x-show="!showConfirmPassword" class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"/></svg>
+                            <svg x-show="showConfirmPassword" x-cloak class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                        </button>
+                    </div>
                 </div>
 
                 <button type="submit" class="w-full py-3.5 rounded-xl text-white font-semibold text-sm transition-all duration-300 hover:-translate-y-0.5" style="background: var(--gradient-main);">
@@ -76,5 +88,6 @@
 
         </div>
     </div>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </body>
 </html>

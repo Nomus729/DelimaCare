@@ -230,7 +230,7 @@ class ReservasiServiceTest extends TestCase
     }
 
     /** @test */
-    public function it_rejects_time_before_schedule_start(): void
+    public function it_ignores_time_boundaries_for_doctor_availability(): void
     {
         $doctor = $this->createDoctor();
         $this->createSchedule($doctor, ['Senin'], '08:00', '16:00');
@@ -238,44 +238,12 @@ class ReservasiServiceTest extends TestCase
         $monday = $this->getDateForDay('Monday');
 
         // Jam 07:30 — sebelum jam buka 08:00
-        $result = $this->service->checkDoctorAvailability($doctor, $monday, '07:30');
-
-        $this->assertFalse($result['status'],
-            'Harus ditolak jika jam lebih awal dari start_time.');
-        $this->assertStringContainsString('di luar jam praktek', $result['message']);
-    }
-
-    /** @test */
-    public function it_rejects_time_after_schedule_end(): void
-    {
-        $doctor = $this->createDoctor();
-        $this->createSchedule($doctor, ['Senin'], '08:00', '16:00');
-
-        $monday = $this->getDateForDay('Monday');
+        $resultStart = $this->service->checkDoctorAvailability($doctor, $monday, '07:30');
+        $this->assertTrue($resultStart['status'], 'Harus diterima meskipun sebelum jam buka.');
 
         // Jam 17:00 — setelah jam tutup 16:00
-        $result = $this->service->checkDoctorAvailability($doctor, $monday, '17:00');
-
-        $this->assertFalse($result['status'],
-            'Harus ditolak jika jam melewati end_time.');
-        $this->assertStringContainsString('di luar jam praktek', $result['message']);
-    }
-
-    /** @test */
-    public function it_accepts_time_exactly_at_schedule_boundaries(): void
-    {
-        $doctor = $this->createDoctor();
-        $this->createSchedule($doctor, ['Senin'], '08:00', '16:00');
-
-        $monday = $this->getDateForDay('Monday');
-
-        // Tepat di jam buka
-        $resultStart = $this->service->checkDoctorAvailability($doctor, $monday, '08:00');
-        $this->assertTrue($resultStart['status'], 'Harus diterima tepat di jam buka.');
-
-        // Tepat di jam tutup
-        $resultEnd = $this->service->checkDoctorAvailability($doctor, $monday, '16:00');
-        $this->assertTrue($resultEnd['status'], 'Harus diterima tepat di jam tutup.');
+        $resultEnd = $this->service->checkDoctorAvailability($doctor, $monday, '17:00');
+        $this->assertTrue($resultEnd['status'], 'Harus diterima meskipun setelah jam tutup.');
     }
 
     // =========================================================================
@@ -422,5 +390,35 @@ class ReservasiServiceTest extends TestCase
             $reservasi->estimated_time,
             'createReservasi() harus menggunakan start_time jadwal dokter sebagai estimasi pertama.'
         );
+    }
+
+    /** @test */
+    public function it_generates_sequential_global_queue_numbers_across_different_doctors(): void
+    {
+        $doctor1 = $this->createDoctor(['nama' => 'Dr. A']);
+        $doctor2 = $this->createDoctor(['nama' => 'Dr. B']);
+        $today  = date('Y-m-d');
+
+        // Buat reservasi pertama untuk Dr. A
+        $res1 = $this->service->createReservasi([
+            'user_id' => null,
+            'nama'    => 'Pasien Dokter A',
+            'phone'   => '081111111111',
+            'layanan' => 'Konsultasi',
+            'tanggal' => $today,
+        ], $doctor1);
+
+        // Buat reservasi kedua untuk Dr. B
+        $res2 = $this->service->createReservasi([
+            'user_id' => null,
+            'nama'    => 'Pasien Dokter B',
+            'phone'   => '082222222222',
+            'layanan' => 'Konsultasi',
+            'tanggal' => $today,
+        ], $doctor2);
+
+        // Nomor antrean harus berurutan secara global (1 dan 2) meskipun dokter berbeda
+        $this->assertEquals(1, $res1->queue_number);
+        $this->assertEquals(2, $res2->queue_number);
     }
 }

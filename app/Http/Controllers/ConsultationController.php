@@ -31,11 +31,15 @@ class ConsultationController extends Controller
 
     public function sendMessage(Request $request)
     {
+        $validatedData = $request->validate([
+            'message' => 'required|string|min:1',
+        ]);
+
         $message = ConsultationMessage::create([
             'username' => Auth::user()->username,
             'sender' => $request->sender ?? 'user',
             'type' => $request->type ?? 'text',
-            'message' => $request->message,
+            'message' => $validatedData['message'],
         ]);
 
         broadcast(new \App\Events\MessageSent($message))->toOthers();
