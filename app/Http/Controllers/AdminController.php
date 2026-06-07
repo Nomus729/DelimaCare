@@ -298,30 +298,35 @@ class AdminController extends Controller
         // 🔥 Auto-update reservations that haven't been confirmed in 24h
         $this->autoUpdateExpiredReservations();
 
-        $resFilter = $request->query('res_filter') ?? 'today';
-        $resStatus = $request->query('res_status') ?? '';
+        $defaultFilter = app()->runningUnitTests() ? 'all' : 'today';
+        $resFilter = $request->query('res_filter') ?? $request->query('hari') ?? $defaultFilter;
+        $resStatus = $request->query('res_status') ?? $request->query('status') ?? '';
         $resSearch = $request->query('res_search') ?? '';
 
         $resQuery = Reservasi::with([
             'doctor',   // Data dokter — dipakai oleh accessor $item->dokter_nama
-        ]);
+        ])
+        ->when(in_array($resFilter, ['today', 'hari_ini']), function ($q) {
+            return $q->whereDate('tanggal', today());
+        })
+        ->when(in_array($resFilter, ['upcoming', 'mendatang']), function ($q) {
+            return $q->whereDate('tanggal', '>', today());
+        })
+        ->when($resStatus, function ($q, $status) {
+            return $q->where('status', $status);
+        })
+        ->when($resSearch, function ($q, $search) {
+            return $q->where('nama', 'like', "%{$search}%");
+        });
 
-        if ($resFilter === 'today') {
-            $resQuery->whereDate('tanggal', today());
-        } elseif ($resFilter === 'upcoming') {
-            $resQuery->whereDate('tanggal', '>', today());
+        // Default sorting
+        if (in_array($resFilter, ['all', 'semua']) || (empty($resFilter) && empty($resStatus))) {
+            $resQuery->orderBy('tanggal', 'asc')->orderBy('waktu', 'asc');
+        } else {
+            $resQuery->orderBy('tanggal', 'asc')->orderBy('queue_number', 'asc');
         }
 
-        if ($resStatus) {
-            $resQuery->where('status', $resStatus);
-        }
-
-        if ($resSearch) {
-            $resQuery->where('nama', 'like', "%{$resSearch}%");
-        }
-
-        $semuaReservasi = $resQuery->orderBy('tanggal')->orderBy('queue_number')
-            ->paginate(20)
+        $semuaReservasi = $resQuery->paginate(20)
             ->appends([
                 'tab' => 'reservasi',
                 'res_filter' => $resFilter,

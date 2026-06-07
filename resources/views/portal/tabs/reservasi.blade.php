@@ -118,7 +118,7 @@
                     </div>
                     <div x-show="!isMobile || currentStep === 1">
                         <label for="phone" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Nomor Telepon / WA</label>
-                        <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required placeholder="08xx-xxxx-xxxx" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                        <input type="tel" id="phone" name="phone" value="{{ old('phone') }}" required placeholder="08xx-xxxx-xxxx" maxlength="15" class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
                     </div>
                 </div>
 
@@ -158,12 +158,32 @@
                         <input type="date" id="tanggal" name="tanggal" required x-model="selectedDate" @change="checkAvailability()"
                                class="w-full px-4 py-3 rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none transition-all text-gray-700 dark:bg-[#0F172A] dark:border-gray-700 dark:text-white dark:color-scheme-dark">
                     </div>
-                    <div class="flex items-center" x-show="!isMobile || currentStep === 1">
-                        <div class="p-4 bg-teal-50 border border-teal-100 rounded-2xl dark:bg-teal-900/10 dark:border-teal-800 w-full">
-                            <p class="text-[11px] text-teal-700 font-bold flex items-center gap-2 dark:text-teal-400">
-                                <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                                Nomor antrean dan jam estimasi akan diberikan otomatis oleh sistem setelah Anda mendaftar.
-                            </p>
+                    <div x-show="!isMobile || currentStep === 1">
+                        <label for="waktu" class="block text-sm font-semibold text-gray-700 mb-2 dark:text-gray-300">Jam Kedatangan</label>
+                        <div class="relative">
+                            <select id="waktu" name="waktu" required class="w-full px-4 py-3 appearance-none rounded-xl border border-gray-200 focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 outline-none bg-white transition-all dark:bg-[#0F172A] dark:border-gray-700 dark:text-white">
+                                <option value="" disabled {{ !old('waktu') ? 'selected' : '' }}>Pilih Jam</option>
+                                @php
+                                    $start = strtotime('08:00');
+                                    $end = strtotime('20:00');
+                                    $currentTimeStr = date('H:i');
+                                    $currentDateStr = date('Y-m-d');
+                                    while ($start <= $end) {
+                                        $t = date('H:i', $start);
+                                        $sel = old('waktu') == $t ? 'selected' : '';
+                                        // Gunakan x-bind:disabled dan x-text untuk memanipulasi option lewat AlpineJS berdasarkan selectedDate
+                                        echo "<option value=\"$t\" $sel 
+                                              x-bind:disabled=\"selectedDate === '$currentDateStr' && '$t' <= '$currentTimeStr'\"
+                                              x-text=\"selectedDate === '$currentDateStr' && '$t' <= '$currentTimeStr' ? '$t (Sudah Lewat)' : '$t'\">
+                                              $t
+                                              </option>";
+                                        $start = strtotime('+30 minutes', $start);
+                                    }
+                                @endphp
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-500">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M19 9l-7 7-7-7"/></svg>
+                            </div>
                         </div>
                     </div>
                 </div>

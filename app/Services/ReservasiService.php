@@ -111,9 +111,18 @@ class ReservasiService
             ];
         }
 
-        // PENTING: Jika antrean bersifat global, kita tidak membatasi jam pendaftaran secara ketat
-        // berdasarkan rentang waktu praktek dokter karena estimasi jam antrean global akan terus bertambah.
-        // Cukup pastikan dokter praktek pada hari tersebut (status & schedule check di atas).
+        // Validasi waktu praktek (Jam Mulai - Jam Selesai)
+        $waktuPilihan = substr($jam, 0, 5);
+        $startPraktek = substr($schedule->start_time, 0, 5);
+        $endPraktek   = substr($schedule->end_time, 0, 5);
+
+        if ($waktuPilihan < $startPraktek || $waktuPilihan > $endPraktek) {
+            return [
+                'status'  => false,
+                'message' => "Maaf, {$doctor->nama} hanya praktek dari jam {$startPraktek} sampai {$endPraktek} di hari {$selectedDay}.",
+            ];
+        }
+
         return ['status' => true];
     }
 
@@ -136,9 +145,14 @@ class ReservasiService
             //   - Melakukan ROLLBACK jika ada exception yang ter-throw
             return DB::transaction(function () use ($data, $doctor, $status) {
 
-                // calculateQueue() dipanggil DI DALAM transaksi agar lockForUpdate()
-                // yang ada di dalamnya benar-benar aktif menjaga konsistensi data.
-                $queue = $this->calculateQueue($data['tanggal'], $doctor);
+                // Karena pasien sekarang memilih waktu spesifik, kita tidak menggunakan calculateQueue()
+                // untuk waktu, tapi kita tetap butuh mengunci baris untuk mendapatkan nomor antrean berurutan
+                $lastReservasi = Reservasi::whereDate('tanggal', $data['tanggal'])
+                    ->orderBy('queue_number', 'desc')
+                    ->lockForUpdate()
+                    ->first();
+                
+                $queueNumber = $lastReservasi ? $lastReservasi->queue_number + 1 : 1;
 
                 return Reservasi::create([
                     'user_id'        => $data['user_id'] ?? null,
@@ -148,15 +162,27 @@ class ReservasiService
                     'dokter_id'      => $doctor->nama,  // Backward compat: kolom string lama
                     'doctor_id'      => $doctor->id,    // FK integer baru
                     'tanggal'        => $data['tanggal'],
-                    'waktu'          => $queue['estimated_time'],
-                    'queue_number'   => $queue['queue_number'],
-                    'estimated_time' => $queue['estimated_time'],
+                    'waktu'          => $data['waktu'], // Waktu spesifik dari input pasien
+                    'queue_number'   => $queueNumber,
+                    'estimated_time' => $data['waktu'], // Waktu estimasi = waktu spesifik
                     'keluhan'        => $data['keluhan'] ?? null,
                     'status'         => $status,
                 ]);
             });
 
         } catch (\Illuminate\Database\QueryException $e) {
+            // Error 23000 atau 23505 adalah kode untuk Unique Constraint Violation (Duplicate Entry)
+            if ($e->getCode() === '23000' || $e->getCode() === '23505') {
+                Log::warning('Double booking (Race condition) berhasil dicegah.', [
+                    'doctor_id' => $doctor->id,
+                    'tanggal'   => $data['tanggal'],
+                    'waktu'     => $data['waktu'],
+                ]);
+                throw new \RuntimeException(
+                    'Maaf, slot waktu ini baru saja dipesan oleh pasien lain. Silakan pilih waktu lain.'
+                );
+            }
+
             // Error 40001 = deadlock terdeteksi oleh MySQL/PostgreSQL.
             if ($e->getCode() === '40001') {
                 Log::warning('Deadlock terdeteksi saat membuat reservasi. Silakan coba kembali.', [

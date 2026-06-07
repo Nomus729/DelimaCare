@@ -21,13 +21,11 @@ class ReservasiController extends Controller
     {
         $doctor = \App\Models\Doctor::findOrFail($request->dokter_id);
 
-        $queue = $this->reservasiService->calculateQueue($request->tanggal, $doctor);
-
         $availability = $this->reservasiService->checkDoctorAvailability(
-            $doctor, $request->tanggal, $queue['estimated_time']
+            $doctor, $request->tanggal, $request->waktu
         );
         if (!$availability['status']) {
-            return redirect()->back()->with('error', $availability['message']);
+            return redirect()->back()->withInput()->with('error', $availability['message']);
         }
 
         // Blok error slot 20 menit SUDAH DIHAPUS.
@@ -40,11 +38,12 @@ class ReservasiController extends Controller
                 'phone'    => $request->phone,
                 'layanan'  => $request->layanan,
                 'tanggal'  => $request->tanggal,
+                'waktu'    => $request->waktu,
                 'keluhan'  => $request->keluhan,
             ], $doctor, 'Menunggu');
 
         } catch (\RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Terjadi kesalahan sistem. Silakan coba lagi.');
         }
@@ -60,8 +59,6 @@ class ReservasiController extends Controller
     {
         $doctor = \App\Models\Doctor::findOrFail($request->dokter_id);
 
-        $queue = $this->reservasiService->calculateQueue($request->tanggal, $doctor);
-
         // Blok error slot 20 menit (Admin) SUDAH DIHAPUS.
 
         try {
@@ -70,11 +67,12 @@ class ReservasiController extends Controller
                 'phone'   => $request->phone,
                 'layanan' => $request->layanan,
                 'tanggal' => $request->tanggal,
+                'waktu'   => $request->waktu,
                 'keluhan' => $request->keluhan,
             ], $doctor, 'Dikonfirmasi');
 
         } catch (\RuntimeException $e) {
-            return redirect()->back()->with('error', $e->getMessage());
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Gagal membuat reservasi. Silakan coba lagi.');
         }

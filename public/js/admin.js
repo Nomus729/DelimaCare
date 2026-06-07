@@ -183,6 +183,12 @@ document.addEventListener('htmx:afterSwap', (e) => {
     // 4. Fade in
     container.style.transition = 'opacity 0.2s ease';
     container.style.opacity    = '1';
+
+    // 5. Scroll main container to top to prevent screen shifting/jumping
+    const mainEl = document.querySelector('main');
+    if (mainEl) {
+        mainEl.scrollTo({ top: 0, behavior: 'smooth' });
+    }
 });
 
 /**
@@ -317,7 +323,9 @@ document.addEventListener('alpine:init', () => {
             this.activeMenu = menuName;
             applyTabTheme(menuName);
             this._updateUrl(menuName);
-            window.scrollTo({ top: 0, behavior: 'smooth' });
+            
+            const mainEl = document.querySelector('main');
+            if (mainEl) mainEl.scrollTo({ top: 0, behavior: 'smooth' });
 
             // Cache hit → konten sudah ada di DOM, tampil langsung
             if (this.loadedTabs[menuName]) return;

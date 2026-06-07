@@ -143,6 +143,7 @@
 <div class="bg-white/50 dark:bg-[#1E293B]/50 backdrop-blur-md border border-gray-100 dark:border-gray-800 rounded-3xl p-4 mb-6 shadow-sm">
     <form action="{{ route('admin.dashboard') }}" method="GET" class="flex flex-col xl:flex-row gap-4 items-center justify-between w-full">
         <input type="hidden" name="tab" value="reservasi">
+        <input type="hidden" name="res_filter" value="{{ $resFilter }}">
 
         {{-- Date Filter Tabs --}}
         <div class="flex bg-white dark:bg-[#0f172a] rounded-2xl p-1.5 gap-1 shadow-sm border border-gray-100 dark:border-gray-700/50 w-full xl:w-auto shrink-0 overflow-x-auto hide-scrollbar">
@@ -291,10 +292,10 @@
         {{-- Time & Warnings --}}
         <div class="flex flex-row md:flex-col items-center md:items-end justify-between w-full md:w-auto gap-3">
              <div class="flex flex-col items-start md:items-end gap-1">
-                @if($item->estimated_time)
+                @if($item->waktu)
                 <span class="text-sm font-black text-gray-900 dark:text-white flex items-center gap-1.5 px-1 py-0.5">
                     <svg class="w-4 h-4 text-cyan-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-                    {{ \Carbon\Carbon::parse($item->estimated_time)->format('H:i') }} - {{ \Carbon\Carbon::parse($item->estimated_time)->addMinutes(30)->format('H:i') }}
+                    Jam Kedatangan: {{ \Carbon\Carbon::parse($item->waktu)->format('H:i') }}
                 </span>
                 @endif
                 
@@ -406,13 +407,36 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">No. HP / WhatsApp *</label>
-                        <input type="text" name="phone" required placeholder="08xxxxxxxxxx"
+                        <input type="text" name="phone" required placeholder="08xxxxxxxxxx" maxlength="15"
                                class="q-input font-semibold">
                     </div>
-                    <div>
-                        <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Tanggal *</label>
-                        <input type="date" name="tanggal" required value="{{ date('Y-m-d') }}"
-                               class="q-input font-semibold">
+                    <div class="grid grid-cols-2 gap-2" x-data="{ selectedDate: '{{ date('Y-m-d') }}' }">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Tanggal *</label>
+                            <input type="date" name="tanggal" required x-model="selectedDate"
+                                   class="q-input font-semibold px-2">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1.5">Jam *</label>
+                            <select name="waktu" required class="q-input q-select font-semibold px-2">
+                                <option value="" disabled selected>Pilih Jam</option>
+                                @php
+                                    $start = strtotime('08:00');
+                                    $end = strtotime('20:00');
+                                    $currentTimeStr = date('H:i');
+                                    $currentDateStr = date('Y-m-d');
+                                    while ($start <= $end) {
+                                        $t = date('H:i', $start);
+                                        echo "<option value=\"$t\"
+                                              x-bind:disabled=\"selectedDate === '$currentDateStr' && '$t' <= '$currentTimeStr'\"
+                                              x-text=\"selectedDate === '$currentDateStr' && '$t' <= '$currentTimeStr' ? '$t (Lewat)' : '$t'\">
+                                              $t
+                                              </option>";
+                                        $start = strtotime('+30 minutes', $start);
+                                    }
+                                @endphp
+                            </select>
+                        </div>
                     </div>
                 </div>
                 <div class="grid grid-cols-2 gap-4">
