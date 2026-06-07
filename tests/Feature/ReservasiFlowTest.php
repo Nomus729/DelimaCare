@@ -217,4 +217,29 @@ class ReservasiFlowTest extends TestCase
         $response2->assertSessionHas('error');
         $this->assertStringContainsString('Dokter sedang Istirahat', session('error'));
     }
+
+    /** @test */
+    public function patient_can_view_portal_with_reservations()
+    {
+        $reservasi = Reservasi::create([
+            'user_id'        => $this->pasien->id,
+            'nama'           => 'pasien1',
+            'phone'          => '081234567890',
+            'layanan'        => 'Konsultasi',
+            'dokter_id'      => $this->doctor->id,
+            'tanggal'        => now()->format('Y-m-d'),
+            'waktu'          => '08:00',
+            'queue_number'   => 1,
+            'estimated_time' => '08:00',
+            'status'         => 'Menunggu',
+        ]);
+
+        $response = $this->actingAs($this->pasien)->get(route('portal'));
+
+        $response->assertStatus(200);
+        $response->assertSee('Jadwal Saya');
+        $response->assertSee('pasien1');
+        $response->assertSee('Dr. Test');
+        $response->assertSee('Konsultasi');
+    }
 }

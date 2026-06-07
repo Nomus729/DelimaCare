@@ -95,9 +95,38 @@ document.addEventListener("alpine:init", () => {
         days: ["Minggu", "Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu"],
         daysIndo: ["Senin", "Selasa", "Rabu", "Kamis", "Jumat", "Sabtu", "Minggu"],
         warning: "",
+        currentStep: 1,
+        isMobile: false,
 
         init() {
             this.checkAvailability();
+            this.checkMobile();
+            window.addEventListener('resize', () => this.checkMobile());
+        },
+
+        checkMobile() {
+            this.isMobile = window.innerWidth < 768;
+        },
+
+        nextStep() {
+            const phoneInput = document.getElementById('phone');
+            const layananSelect = document.getElementById('layanan');
+            const tanggalInput = document.getElementById('tanggal');
+
+            if (phoneInput && !phoneInput.checkValidity()) {
+                phoneInput.reportValidity();
+                return;
+            }
+            if (layananSelect && !layananSelect.checkValidity()) {
+                layananSelect.reportValidity();
+                return;
+            }
+            if (tanggalInput && !tanggalInput.checkValidity()) {
+                tanggalInput.reportValidity();
+                return;
+            }
+
+            this.currentStep = 2;
         },
 
         checkAvailability() {

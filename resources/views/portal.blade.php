@@ -275,7 +275,7 @@
                     <button id="close-success-popup"
                             @click="showSuccessModal = false"
                             class="w-full py-3.5 bg-gradient-to-r from-teal-600 to-cyan-500 hover:from-teal-700 hover:to-cyan-600 text-white font-bold rounded-2xl shadow-lg shadow-teal-500/20 transition-all text-sm hover:-translate-y-0.5">
-                        Tutup Halaman
+                        Tutup
                     </button>
                 </div>
             </div>

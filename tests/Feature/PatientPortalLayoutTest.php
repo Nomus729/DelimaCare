@@ -165,4 +165,24 @@ class PatientPortalLayoutTest extends TestCase
         $response->assertDontSee($onLeaveDoctor->nama);
         $response->assertDontSee($restingDoctor->nama);
     }
+
+    /** @test */
+    public function portal_reservasi_wizard_contains_wizard_attributes_and_elements()
+    {
+        $response = $this->actingAs($this->pasien)->get(route('portal'));
+        $response->assertStatus(200);
+
+        // Check for step indicator
+        $response->assertSee('Langkah 1: Detail Reservasi', false);
+        $response->assertSee('Langkah 2: Pilih Dokter', false);
+
+        // Check for Lanjut and Kembali buttons
+        $response->assertSee('nextStep()', false);
+        $response->assertSee('Lanjut Pilih Dokter', false);
+        $response->assertSee('currentStep = 1', false);
+        $response->assertSee('Kembali', false);
+
+        // Check that crucial fields are marked as required
+        $response->assertSee('required', false);
+    }
 }
