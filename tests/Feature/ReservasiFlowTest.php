@@ -177,4 +177,44 @@ class ReservasiFlowTest extends TestCase
         $response->assertRedirect(route('portal'));
         $this->assertDatabaseMissing('reservasi', ['id' => $reservasi->id]);
     }
+
+    /** @test */
+    public function reservasi_fails_if_doctor_is_on_leave_or_resting()
+    {
+        $onLeaveDoctor = Doctor::create([
+            'nama'           => 'Dr. Dokter Libur',
+            'spesialisasi'   => 'Gigi',
+            'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
+            'status'         => 'Libur',
+        ]);
+
+        $restingDoctor = Doctor::create([
+            'nama'           => 'Dr. Dokter Istirahat',
+            'spesialisasi'   => 'Anak',
+            'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
+            'status'         => 'Istirahat',
+        ]);
+
+        // Try booking on-leave doctor
+        $response1 = $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+            'dokter_id' => $onLeaveDoctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Konsultasi',
+            'tanggal'   => now()->addDay()->format('Y-m-d'),
+        ]);
+        $response1->assertRedirect();
+        $response1->assertSessionHas('error');
+        $this->assertStringContainsString('Dokter sedang Libur', session('error'));
+
+        // Try booking resting doctor
+        $response2 = $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+            'dokter_id' => $restingDoctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Konsultasi',
+            'tanggal'   => now()->addDay()->format('Y-m-d'),
+        ]);
+        $response2->assertRedirect();
+        $response2->assertSessionHas('error');
+        $this->assertStringContainsString('Dokter sedang Istirahat', session('error'));
+    }
 }

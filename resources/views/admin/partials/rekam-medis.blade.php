@@ -8,15 +8,31 @@
         background: #fff;
         border-radius: 2rem;
         width: 100%;
-        max-width: 38rem;
+        max-width: 72rem; /* Increased for split screen */
+        height: 90vh; /* Set height to support scrollable columns */
         max-height: calc(100dvh - 2rem);
-        overflow-y: auto;
+        overflow: hidden; /* Prevent outer scroll */
         display: flex;
         flex-direction: column;
         box-shadow: 0 30px 70px rgba(0,0,0,.22);
         animation: rmModalIn .25s cubic-bezier(.16,1,.3,1) both;
     }
     .dark .rm-modal-inner { background: #1E293B; }
+
+    /* Scrollable areas styling */
+    .rm-scroll::-webkit-scrollbar {
+        width: 6px;
+    }
+    .rm-scroll::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .rm-scroll::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 3px;
+    }
+    .dark .rm-scroll::-webkit-scrollbar-thumb {
+        background: #475569;
+    }
     @keyframes rmModalIn {
         from { opacity:0; transform:scale(.95) translateY(15px); }
         to   { opacity:1; transform:scale(1) translateY(0); }
@@ -63,6 +79,45 @@
     isSubmitting: false,
     errors: {},
     activeFilter: 'all',
+    history: [],
+    isLoadingHistory: false,
+    async fetchHistory(reservasiId = '', namaPasien = '', userId = null, recordId = null) {
+        if (!reservasiId && !namaPasien && !userId) {
+            this.history = [];
+            return;
+        }
+        this.isLoadingHistory = true;
+        try {
+            let url = '';
+            if (this.editMode && recordId) {
+                url = `{{ url('admin/rekam-medis') }}/${recordId}/edit`;
+            } else {
+                url = `{{ route('admin.rekam-medis.create') }}`;
+            }
+            const params = new URLSearchParams();
+            if (reservasiId) params.append('reservasi_id', reservasiId);
+            if (namaPasien) params.append('nama_pasien', namaPasien);
+            if (userId) params.append('user_id', userId);
+
+            const response = await fetch(`${url}?${params.toString()}`, {
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                }
+            });
+            if (response.ok) {
+                const data = await response.json();
+                this.history = data.history || [];
+            } else {
+                this.history = [];
+            }
+        } catch (error) {
+            console.error('Error fetching history:', error);
+            this.history = [];
+        } finally {
+            this.isLoadingHistory = false;
+        }
+    },
     rm: {
         id: '',
         reservasi_id: '',
@@ -89,6 +144,7 @@
     },
     openAdd(prefill = null) {
         this.editMode = false;
+        this.history = [];
         this.rm = {
             id: '', reservasi_id: '', nama_pasien: '', usia: '', no_telepon: '', alamat: '', golongan_darah: '',
             kategori: 'Kontrol Umum', usia_kehamilan_minggu: '', hpht: '', taksiran_persalinan: '',
@@ -96,6 +152,8 @@
             tinggi_badan: '', catatan_medis: '', catatan_pasien: '', diagnosis: '', tindakan: '', jadwal_kontrol_berikutnya: '',
             dokter_pemeriksa: ''
         };
+        let reservasiId = '';
+        let namaPasien = '';
         if (prefill) {
             this.rm.reservasi_id = prefill.reservasi_id || prefill.id || '';
             this.rm.nama_pasien  = prefill.nama_pasien  || '';
@@ -118,8 +176,12 @@
             };
             const layanan = prefill.layanan || '';
             this.rm.kategori = layananMap[layanan] || 'Kontrol Umum';
+
+            reservasiId = this.rm.reservasi_id;
+            namaPasien = this.rm.nama_pasien;
         }
         this.showModal = true;
+        this.fetchHistory(reservasiId, namaPasien);
     },
     async submitForm(e) {
         this.isSubmitting = true;
@@ -168,6 +230,7 @@
         if(this.rm.taksiran_persalinan) this.rm.taksiran_persalinan = this.rm.taksiran_persalinan.split('T')[0];
         if(this.rm.jadwal_kontrol_berikutnya) this.rm.jadwal_kontrol_berikutnya = this.rm.jadwal_kontrol_berikutnya.split('T')[0];
         this.showModal = true;
+        this.fetchHistory('', this.rm.nama_pasien, this.rm.user_id, this.rm.id);
     },
     showDeleteModal: false,
     rmToDelete: { id: '', name: '' },
@@ -533,7 +596,7 @@
 
             <div class="rm-modal-inner relative" @click.stop>
                 {{-- Header --}}
-                <div class="flex items-center justify-between px-7 py-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30">
+                <div class="flex items-center justify-between px-7 py-5 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/30 shrink-0">
                     <div>
                         <h3 class="text-lg font-black text-gray-900 dark:text-white" x-text="editMode ? 'Edit Rekam Medis' : 'Tambah Rekam Medis'"></h3>
                         <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5">Data Kesehatan Pasien</p>
@@ -543,176 +606,295 @@
                     </button>
                 </div>
 
-                {{-- Form --}}
-                <form @submit.prevent="submitForm" class="p-7 space-y-6">
-                    @csrf
-                    <template x-if="editMode">
-                        <input type="hidden" name="_method" value="PUT">
-                    </template>
-                    <input type="hidden" name="reservasi_id" x-model="rm.reservasi_id">
+                {{-- Two Columns Container --}}
+                <div class="flex flex-col lg:flex-row flex-1 overflow-hidden min-h-0">
+                    {{-- Left Column: Form --}}
+                    <div class="w-full lg:w-1/2 flex flex-col overflow-y-auto border-b lg:border-b-0 lg:border-r border-gray-100 dark:border-gray-800 rm-scroll">
+                        <form @submit.prevent="submitForm" class="p-7 space-y-6">
+                            @csrf
+                            <template x-if="editMode">
+                                <input type="hidden" name="_method" value="PUT">
+                            </template>
+                            <input type="hidden" name="reservasi_id" x-model="rm.reservasi_id">
 
-                    <div class="space-y-6">
-                        {{-- Section 1: Identitas --}}
-                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
-                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
-                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
-                                Identitas Pasien
-                            </h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
-                                <div class="rm-field md:col-span-2">
-                                    <label>Nama Lengkap <span class="text-rose-500">*</span></label>
-                                    <input type="text" name="nama_pasien" x-model="rm.nama_pasien" required placeholder="Contoh: Siti Aminah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.nama_pasien}">
-                                    <span x-show="errors.nama_pasien" x-text="errors.nama_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>Usia <span class="text-rose-500">*</span></label>
-                                    <input type="number" name="usia" x-model="rm.usia" required placeholder="Usia" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia}">
-                                    <span x-show="errors.usia" x-text="errors.usia?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>No. Telepon</label>
-                                    <input type="text" name="no_telepon" x-model="rm.no_telepon" placeholder="08xxxx" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.no_telepon}">
-                                    <span x-show="errors.no_telepon" x-text="errors.no_telepon?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>Golongan Darah</label>
-                                    <select name="golongan_darah" x-model="rm.golongan_darah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.golongan_darah}">
-                                        <option value="">Pilih</option>
-                                        <option value="A">A</option>
-                                        <option value="B">B</option>
-                                        <option value="AB">AB</option>
-                                        <option value="O">O</option>
-                                    </select>
-                                    <span x-show="errors.golongan_darah" x-text="errors.golongan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>Kategori <span class="text-rose-500">*</span></label>
-                                    <select name="kategori" x-model="rm.kategori" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.kategori}">
-                                        <option value="Kehamilan">Kehamilan</option>
-                                        <option value="Keluarga Berencana">Keluarga Berencana</option>
-                                        <option value="Kontrol Umum">Kontrol Umum</option>
-                                        <option value="Konsultasi">Konsultasi</option>
-                                        <option value="Imunisasi">Imunisasi</option>
-                                    </select>
-                                    <span x-show="errors.kategori" x-text="errors.kategori?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- Section 2: Pemeriksaan Fisik --}}
-                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
-                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
-                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
-                                Pemeriksaan Fisik & Status
-                            </h4>
-                            <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
-                                <div class="rm-field">
-                                    <label>TD (mmHg)</label>
-                                    <input type="text" name="tekanan_darah" x-model="rm.tekanan_darah" placeholder="120/80" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tekanan_darah}">
-                                    <span x-show="errors.tekanan_darah" x-text="errors.tekanan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>BB (kg)</label>
-                                    <input type="number" step="0.1" name="berat_badan" x-model="rm.berat_badan" placeholder="BB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.berat_badan}">
-                                    <span x-show="errors.berat_badan" x-text="errors.berat_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>TB (cm)</label>
-                                    <input type="number" step="0.1" name="tinggi_badan" x-model="rm.tinggi_badan" placeholder="TB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tinggi_badan}">
-                                    <span x-show="errors.tinggi_badan" x-text="errors.tinggi_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field">
-                                    <label>Risiko <span class="text-rose-500">*</span></label>
-                                    <select name="status_risiko" x-model="rm.status_risiko" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_risiko}">
-                                        <option value="Rendah">Rendah</option>
-                                        <option value="Sedang">Sedang</option>
-                                        <option value="Tinggi">Tinggi</option>
-                                    </select>
-                                    <span x-show="errors.status_risiko" x-text="errors.status_risiko?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="rm-field md:col-span-2">
-                                    <label>Status Kunjungan <span class="text-rose-500">*</span></label>
-                                    <select name="status_kunjungan" x-model="rm.status_kunjungan" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_kunjungan}">
-                                        <option value="Aktif">Aktif</option>
-                                        <option value="Selesai">Selesai</option>
-                                        <option value="Dirujuk">Dirujuk</option>
-                                    </select>
-                                    <span x-show="errors.status_kunjungan" x-text="errors.status_kunjungan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                {{-- Conditional Pregnancy Fields --}}
-                                <template x-if="rm.kategori === 'Kehamilan'">
-                                    <div class="grid grid-cols-2 gap-5 md:col-span-2">
-                                        <div class="rm-field">
-                                            <label>UK (Minggu)</label>
-                                            <input type="number" name="usia_kehamilan_minggu" x-model="rm.usia_kehamilan_minggu" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia_kehamilan_minggu}">
-                                            <span x-show="errors.usia_kehamilan_minggu" x-text="errors.usia_kehamilan_minggu?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                            <div class="space-y-6">
+                                {{-- Section 1: Identitas --}}
+                                <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                                    <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                        <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                        Identitas Pasien
+                                    </h4>
+                                    <div class="grid grid-cols-1 md:grid-cols-3 gap-5">
+                                        <div class="rm-field md:col-span-2">
+                                            <label>Nama Lengkap <span class="text-rose-500">*</span></label>
+                                            <input type="text" name="nama_pasien" x-model="rm.nama_pasien" @input.debounce.500ms="fetchHistory('', rm.nama_pasien)" required placeholder="Contoh: Siti Aminah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.nama_pasien}">
+                                            <span x-show="errors.nama_pasien" x-text="errors.nama_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
                                         </div>
                                         <div class="rm-field">
-                                            <label>HPHT</label>
-                                            <input type="date" name="hpht" x-model="rm.hpht" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.hpht}">
-                                            <span x-show="errors.hpht" x-text="errors.hpht?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                            <label>Usia <span class="text-rose-500">*</span></label>
+                                            <input type="number" name="usia" x-model="rm.usia" required placeholder="Usia" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia}">
+                                            <span x-show="errors.usia" x-text="errors.usia?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>No. Telepon</label>
+                                            <input type="text" name="no_telepon" x-model="rm.no_telepon" placeholder="08xxxx" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.no_telepon}">
+                                            <span x-show="errors.no_telepon" x-text="errors.no_telepon?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>Golongan Darah</label>
+                                            <select name="golongan_darah" x-model="rm.golongan_darah" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.golongan_darah}">
+                                                <option value="">Pilih</option>
+                                                <option value="A">A</option>
+                                                <option value="B">B</option>
+                                                <option value="AB">AB</option>
+                                                <option value="O">O</option>
+                                            </select>
+                                            <span x-show="errors.golongan_darah" x-text="errors.golongan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>Kategori <span class="text-rose-500">*</span></label>
+                                            <select name="kategori" x-model="rm.kategori" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.kategori}">
+                                                <option value="Kehamilan">Kehamilan</option>
+                                                <option value="Keluarga Berencana">Keluarga Berencana</option>
+                                                <option value="Kontrol Umum">Kontrol Umum</option>
+                                                <option value="Konsultasi">Konsultasi</option>
+                                                <option value="Imunisasi">Imunisasi</option>
+                                            </select>
+                                            <span x-show="errors.kategori" x-text="errors.kategori?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {{-- Section 2: Pemeriksaan Fisik --}}
+                                <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                                    <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                        <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                        Pemeriksaan Fisik & Status
+                                    </h4>
+                                    <div class="grid grid-cols-2 md:grid-cols-4 gap-5">
+                                        <div class="rm-field">
+                                            <label>TD (mmHg)</label>
+                                            <input type="text" name="tekanan_darah" x-model="rm.tekanan_darah" placeholder="120/80" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tekanan_darah}">
+                                            <span x-show="errors.tekanan_darah" x-text="errors.tekanan_darah?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>BB (kg)</label>
+                                            <input type="number" step="0.1" name="berat_badan" x-model="rm.berat_badan" placeholder="BB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.berat_badan}">
+                                            <span x-show="errors.berat_badan" x-text="errors.berat_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>TB (cm)</label>
+                                            <input type="number" step="0.1" name="tinggi_badan" x-model="rm.tinggi_badan" placeholder="TB" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tinggi_badan}">
+                                            <span x-show="errors.tinggi_badan" x-text="errors.tinggi_badan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label>Risiko <span class="text-rose-500">*</span></label>
+                                            <select name="status_risiko" x-model="rm.status_risiko" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_risiko}">
+                                                <option value="Rendah">Rendah</option>
+                                                <option value="Sedang">Sedang</option>
+                                                <option value="Tinggi">Tinggi</option>
+                                            </select>
+                                            <span x-show="errors.status_risiko" x-text="errors.status_risiko?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="rm-field md:col-span-2">
+                                            <label>Status Kunjungan <span class="text-rose-500">*</span></label>
+                                            <select name="status_kunjungan" x-model="rm.status_kunjungan" required class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.status_kunjungan}">
+                                                <option value="Aktif">Aktif</option>
+                                                <option value="Selesai">Selesai</option>
+                                                <option value="Dirujuk">Dirujuk</option>
+                                            </select>
+                                            <span x-show="errors.status_kunjungan" x-text="errors.status_kunjungan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        {{-- Conditional Pregnancy Fields --}}
+                                        <template x-if="rm.kategori === 'Kehamilan'">
+                                            <div class="grid grid-cols-2 gap-5 md:col-span-2">
+                                                <div class="rm-field">
+                                                    <label>UK (Minggu)</label>
+                                                    <input type="number" name="usia_kehamilan_minggu" x-model="rm.usia_kehamilan_minggu" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.usia_kehamilan_minggu}">
+                                                    <span x-show="errors.usia_kehamilan_minggu" x-text="errors.usia_kehamilan_minggu?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                                </div>
+                                                <div class="rm-field">
+                                                    <label>HPHT</label>
+                                                    <input type="date" name="hpht" x-model="rm.hpht" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.hpht}">
+                                                    <span x-show="errors.hpht" x-text="errors.hpht?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </div>
+
+                                {{-- Section 3: Analisis & Tindakan --}}
+                                <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
+                                    <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
+                                        <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
+                                        Analisis & Tindakan
+                                    </h4>
+                                    <div class="space-y-5">
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div class="rm-field">
+                                                <label>Diagnosis</label>
+                                                <textarea name="diagnosis" x-model="rm.diagnosis" rows="2" placeholder="Diagnosis..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.diagnosis}"></textarea>
+                                                <span x-show="errors.diagnosis" x-text="errors.diagnosis?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                            </div>
+                                            <div class="rm-field">
+                                                <label>Tindakan / Terapi</label>
+                                                <textarea name="tindakan" x-model="rm.tindakan" rows="2" placeholder="Tindakan..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tindakan}"></textarea>
+                                                <span x-show="errors.tindakan" x-text="errors.tindakan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                            </div>
+                                        </div>
+                                        <div class="rm-field">
+                                            <label class="text-teal-600 font-bold dark:text-teal-400">Catatan Khusus untuk Pasien</label>
+                                            <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3"
+                                                      placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien di portal..."
+                                                      class="text-xs border-teal-200 focus:ring-teal-500/20 focus:border-teal-500 dark:border-teal-900/30" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.catatan_pasien}"></textarea>
+                                            <span x-show="errors.catatan_pasien" x-text="errors.catatan_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                        </div>
+                                        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                                            <div class="rm-field">
+                                                <label>Dokter Pemeriksa</label>
+                                                <input type="text" name="dokter_pemeriksa" x-model="rm.dokter_pemeriksa" placeholder="Nama Dokter" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.dokter_pemeriksa}">
+                                                <span x-show="errors.dokter_pemeriksa" x-text="errors.dokter_pemeriksa?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                            </div>
+                                            <div class="rm-field">
+                                                <label>Kontrol Berikutnya</label>
+                                                <input type="date" name="jadwal_kontrol_berikutnya" x-model="rm.jadwal_kontrol_berikutnya" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.jadwal_kontrol_berikutnya}">
+                                                <span x-show="errors.jadwal_kontrol_berikutnya" x-text="errors.jadwal_kontrol_berikutnya?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- Footer --}}
+                            <div class="flex gap-3 pt-2">
+                                <button type="button" @click="showModal = false" :disabled="isSubmitting"
+                                        class="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-xl hover:bg-gray-100 disabled:opacity-50 transition-all text-xs">
+                                    Batal
+                                </button>
+                                <button type="submit" :disabled="isSubmitting"
+                                        class="flex-[2] px-5 py-3 bg-gradient-to-r from-teal-600 to-cyan-500 text-white font-black rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 disabled:opacity-50 transition-all text-xs flex items-center justify-center gap-2">
+                                    <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
+                                    <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Data'"></span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+
+                    {{-- Right Column: History Panel --}}
+                    <div class="w-full lg:w-1/2 flex flex-col bg-slate-50/30 dark:bg-slate-900/10 overflow-hidden">
+                        {{-- History Header --}}
+                        <div class="px-7 py-4 border-b border-gray-100 dark:border-gray-800 bg-gray-50/30 dark:bg-gray-800/10 flex items-center justify-between shrink-0">
+                            <div>
+                                <h4 class="text-sm font-black text-gray-900 dark:text-white uppercase tracking-wider">Riwayat Rekam Medis</h4>
+                                <p class="text-[9px] font-bold text-gray-400 dark:text-gray-500 uppercase tracking-widest mt-0.5" x-text="rm.nama_pasien ? 'Pasien: ' + rm.nama_pasien : 'Ketik Nama Pasien...'"></p>
+                            </div>
+                            <span class="px-2.5 py-1 bg-teal-50 dark:bg-teal-900/30 text-teal-600 dark:text-teal-400 rounded-lg text-[10px] font-black" x-text="history.length + ' Kunjungan'"></span>
+                        </div>
+
+                        {{-- History Body (Scrollable) --}}
+                        <div class="flex-1 overflow-y-auto p-7 space-y-6 min-h-0 rm-scroll">
+                            {{-- Loading State --}}
+                            <div x-show="isLoadingHistory" class="flex flex-col items-center justify-center py-20 text-center">
+                                <svg class="animate-spin h-8 w-8 text-teal-500 mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                </svg>
+                                <p class="text-xs font-bold text-gray-400 uppercase tracking-wider">Memuat riwayat medis...</p>
+                            </div>
+
+                            {{-- Empty State --}}
+                            <div x-show="!isLoadingHistory && history.length === 0" class="flex flex-col items-center justify-center py-20 text-center">
+                                <div class="w-16 h-16 bg-gray-100 dark:bg-gray-800 rounded-full flex items-center justify-center mb-4 text-gray-300">
+                                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                    </svg>
+                                </div>
+                                <h5 class="text-xs font-black text-gray-800 dark:text-white mb-1">Belum Ada Riwayat</h5>
+                                <p class="text-[10px] text-gray-400 dark:text-gray-500 max-w-[200px]">Belum ada riwayat rekam medis untuk pasien ini.</p>
+                            </div>
+
+                            {{-- List of History --}}
+                            <div x-show="!isLoadingHistory && history.length > 0" class="space-y-4">
+                                <template x-for="(item, idx) in history" :key="item.id">
+                                    <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
+                                        {{-- Top Header of Card --}}
+                                        <div class="flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50 pb-3">
+                                            <div>
+                                                <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-550 dark:text-gray-400 rounded-md text-[9px] font-black uppercase tracking-wider" x-text="item.kategori"></span>
+                                                <p class="text-xs font-bold text-gray-900 dark:text-white mt-1" x-text="new Date(item.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})"></p>
+                                            </div>
+                                            <div class="text-right">
+                                                <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md" 
+                                                      :class="item.status_risiko === 'Tinggi' ? 'bg-rose-50 text-rose-600 border border-rose-100' : (item.status_risiko === 'Sedang' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100')"
+                                                      x-text="'Risiko ' + item.status_risiko"></span>
+                                                <p class="text-[10px] text-gray-400 mt-1" x-text="item.no_rekam_medis"></p>
+                                            </div>
+                                        </div>
+
+                                        {{-- Doctor --}}
+                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+                                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                            </svg>
+                                            <span>Dokter: </span>
+                                            <span class="text-gray-800 dark:text-gray-200" x-text="item.dokter_pemeriksa || '—'"></span>
+                                        </div>
+
+                                        {{-- Physical metrics (BP, Weight, Height) --}}
+                                        <div class="grid grid-cols-3 gap-2 bg-gray-50/50 dark:bg-gray-800/40 p-2.5 rounded-xl text-[10px] text-gray-550">
+                                            <div>
+                                                <span class="block text-[8px] font-black uppercase text-gray-400">TD</span>
+                                                <span class="font-bold text-gray-750 dark:text-gray-200" x-text="item.tekanan_darah || '—'"></span>
+                                            </div>
+                                            <div>
+                                                <span class="block text-[8px] font-black uppercase text-gray-400">Berat</span>
+                                                <span class="font-bold text-gray-755 dark:text-gray-200" x-text="item.berat_badan ? item.berat_badan + ' kg' : '—'"></span>
+                                            </div>
+                                            <div>
+                                                <span class="block text-[8px] font-black uppercase text-gray-400">Tinggi</span>
+                                                <span class="font-bold text-gray-760 dark:text-gray-200" x-text="item.tinggi_badan ? item.tinggi_badan + ' cm' : '—'"></span>
+                                            </div>
+                                        </div>
+
+                                        {{-- Details (Keluhan, Diagnosis, Tindakan) --}}
+                                        <div class="space-y-3 text-xs leading-relaxed">
+                                            {{-- Keluhan Utama --}}
+                                            <div x-show="item.catatan_pasien">
+                                                <span class="text-[9px] font-black uppercase text-cyan-600 block">Keluhan / Catatan Pasien</span>
+                                                <p class="text-gray-700 dark:text-gray-300 font-medium bg-cyan-50/10 dark:bg-cyan-900/5 p-2 rounded-lg" x-text="item.catatan_pasien"></p>
+                                            </div>
+                                            
+                                            {{-- Diagnosis --}}
+                                            <div>
+                                                <span class="text-[9px] font-black uppercase text-teal-600 block">Diagnosis</span>
+                                                <p class="text-gray-800 dark:text-gray-200 font-bold bg-teal-50/10 dark:bg-teal-900/5 p-2 rounded-lg" x-text="item.diagnosis || '—'"></p>
+                                            </div>
+
+                                            {{-- Tindakan --}}
+                                            <div>
+                                                <span class="text-[9px] font-black uppercase text-teal-600 block">Tindakan / Terapi</span>
+                                                <p class="text-gray-700 dark:text-gray-300 font-medium bg-teal-50/10 dark:bg-teal-900/5 p-2 rounded-lg" x-text="item.tindakan || '—'"></p>
+                                            </div>
+
+                                            {{-- Prescription --}}
+                                            <div x-show="item.resep_medis">
+                                                <span class="text-[9px] font-black uppercase text-purple-600 block">Resep Obat</span>
+                                                <div class="bg-purple-50/10 dark:bg-purple-900/5 p-2 rounded-lg space-y-1.5">
+                                                    <template x-for="rItem in item.resep_medis?.items" :key="rItem.id">
+                                                        <div class="flex items-start justify-between text-[11px]">
+                                                            <span class="font-bold text-gray-800 dark:text-gray-200" x-text="rItem.nama_obat"></span>
+                                                            <span class="text-purple-600 dark:text-purple-400 font-semibold" x-text="rItem.jumlah + ' ' + rItem.satuan + ' (' + (rItem.aturan_pakai || '—') + ')'"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </template>
                             </div>
                         </div>
-
-                        {{-- Section 3: Analisis & Tindakan --}}
-                        <div class="bg-gray-50/50 dark:bg-gray-800/20 p-5 md:p-6 rounded-[2rem] border border-gray-100 dark:border-gray-800">
-                            <h4 class="text-[10px] font-black uppercase tracking-[0.15em] text-teal-600 dark:text-teal-400 mb-5 flex items-center gap-2">
-                                <span class="w-1.5 h-4 bg-teal-500 rounded-full"></span>
-                                Analisis & Tindakan
-                            </h4>
-                            <div class="space-y-5">
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div class="rm-field">
-                                        <label>Diagnosis</label>
-                                        <textarea name="diagnosis" x-model="rm.diagnosis" rows="2" placeholder="Diagnosis..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.diagnosis}"></textarea>
-                                        <span x-show="errors.diagnosis" x-text="errors.diagnosis?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                    </div>
-                                    <div class="rm-field">
-                                        <label>Tindakan / Terapi</label>
-                                        <textarea name="tindakan" x-model="rm.tindakan" rows="2" placeholder="Tindakan..." class="text-xs" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.tindakan}"></textarea>
-                                        <span x-show="errors.tindakan" x-text="errors.tindakan?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                    </div>
-                                </div>
-                                <div class="rm-field">
-                                    <label class="text-teal-600 font-bold dark:text-teal-400">Catatan Khusus untuk Pasien</label>
-                                    <textarea name="catatan_pasien" x-model="rm.catatan_pasien" rows="3"
-                                              placeholder="Tulis pesan atau instruksi yang bisa dibaca langsung oleh pasien di portal..."
-                                              class="text-xs border-teal-200 focus:ring-teal-500/20 focus:border-teal-500 dark:border-teal-900/30" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.catatan_pasien}"></textarea>
-                                    <span x-show="errors.catatan_pasien" x-text="errors.catatan_pasien?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                </div>
-                                <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <div class="rm-field">
-                                        <label>Dokter Pemeriksa</label>
-                                        <input type="text" name="dokter_pemeriksa" x-model="rm.dokter_pemeriksa" placeholder="Nama Dokter" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.dokter_pemeriksa}">
-                                        <span x-show="errors.dokter_pemeriksa" x-text="errors.dokter_pemeriksa?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                    </div>
-                                    <div class="rm-field">
-                                        <label>Kontrol Berikutnya</label>
-                                        <input type="date" name="jadwal_kontrol_berikutnya" x-model="rm.jadwal_kontrol_berikutnya" class="text-xs py-2.5" :class="{'border-rose-500 bg-rose-50 dark:bg-rose-900/10': errors.jadwal_kontrol_berikutnya}">
-                                        <span x-show="errors.jadwal_kontrol_berikutnya" x-text="errors.jadwal_kontrol_berikutnya?.[0]" class="text-[10px] font-bold text-rose-500 mt-1.5 block"></span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
                     </div>
-
-                    {{-- Footer --}}
-                    <div class="flex gap-3 pt-2">
-                        <button type="button" @click="showModal = false" :disabled="isSubmitting"
-                                class="flex-1 px-5 py-3 bg-gray-50 dark:bg-gray-800 text-gray-500 font-bold rounded-xl hover:bg-gray-100 disabled:opacity-50 transition-all text-xs">
-                            Batal
-                        </button>
-                        <button type="submit" :disabled="isSubmitting"
-                                class="flex-[2] px-5 py-3 bg-gradient-to-r from-teal-600 to-cyan-500 text-white font-black rounded-xl shadow-lg shadow-teal-500/20 hover:shadow-teal-500/40 disabled:opacity-50 transition-all text-xs flex items-center justify-center gap-2">
-                            <svg x-show="isSubmitting" class="animate-spin h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
-                            <span x-text="isSubmitting ? 'Menyimpan...' : 'Simpan Data'"></span>
-                        </button>
-                    </div>
-                </form>
-            </div>
+                </div>
         </div>
     </template>
 

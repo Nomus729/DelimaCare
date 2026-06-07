@@ -92,15 +92,21 @@
         </button>
     </div>
 
-    {{-- Doctor Cards Grid --}}
-    <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8 pb-10">
-        @foreach($doctors as $doc)
-        <div class="group relative bg-white/70 dark:bg-[#0E1A2E]/70 backdrop-blur-xl border border-white/40 dark:border-gray-800/50 rounded-[3rem] p-1 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.05)] hover:shadow-2xl transition-all duration-500 hover:-translate-y-2">
-            {{-- Inner Card Container --}}
-            <div class="bg-white dark:bg-[#0E1A2E] rounded-[2.8rem] p-7 h-full flex flex-col">
-                
-                {{-- Top Action & Status --}}
-                <div class="flex justify-between items-start mb-8">
+    {{-- Doctor List - Minimalist --}}
+    <div class="bg-white/50 dark:bg-[#0E1A2E]/50 backdrop-blur-xl border border-gray-100 dark:border-gray-800/50 rounded-[2rem] overflow-hidden shadow-sm pb-1 mb-10 anim-up">
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="border-b border-gray-100 dark:border-gray-800/50 text-[10px] font-black text-gray-400 dark:text-gray-500 uppercase tracking-widest bg-gray-50/50 dark:bg-[#0E1A2E]/30">
+                        <th class="px-6 py-4">Dokter</th>
+                        <th class="px-6 py-4">Jadwal Praktek</th>
+                        <th class="px-6 py-4">WhatsApp</th>
+                        <th class="px-6 py-4">Status</th>
+                        <th class="px-6 py-4 text-right">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100 dark:divide-gray-800/50">
+                    @foreach($doctors as $doc)
                     @php
                         $statusColor = match($doc->current_status) {
                             'Tersedia' => 'emerald',
@@ -109,73 +115,75 @@
                             default => 'gray'
                         };
                     @endphp
-                    <div class="px-4 py-2 rounded-2xl bg-{{ $statusColor }}-50 dark:bg-{{ $statusColor }}-900/20 border border-{{ $statusColor }}-100 dark:border-{{ $statusColor }}-900/30 flex items-center gap-2">
-                        <span class="relative flex h-2 w-2">
-                            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-{{ $statusColor }}-400 opacity-75"></span>
-                            <span class="relative inline-flex rounded-full h-2 w-2 bg-{{ $statusColor }}-500"></span>
-                        </span>
-                        <span class="text-[10px] font-black uppercase tracking-widest text-{{ $statusColor }}-600 dark:text-{{ $statusColor }}-400">{{ $doc->current_status }}</span>
-                    </div>
-
-                    <div class="flex gap-2">
-                        <button @click="openEdit({{ $doc->toJson() }})" class="p-3 rounded-2xl bg-gray-50 dark:bg-gray-800 text-gray-400 hover:text-teal-600 dark:hover:text-teal-400 hover:bg-teal-50 dark:hover:bg-teal-900/30 transition-all">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
-                        </button>
-                    </div>
-                </div>
-
-                {{-- Profile Section --}}
-                <div class="flex flex-col items-center text-center mb-8">
-                    <div class="relative mb-4">
-                        <div class="w-24 h-24 rounded-[2rem] bg-gradient-to-br from-teal-500 to-cyan-500 p-1 rotate-3 group-hover:rotate-6 transition-transform duration-500">
-                            <div class="w-full h-full rounded-[1.8rem] bg-white dark:bg-[#0E1A2E] flex items-center justify-center overflow-hidden">
-                                <span class="text-3xl font-black bg-gradient-to-br from-teal-600 to-cyan-500 bg-clip-text text-transparent">
-                                    {{ strtoupper(substr($doc->nama, 4, 1)) }}
-                                </span>
+                    <tr class="hover:bg-gray-50/40 dark:hover:bg-gray-800/20 transition-all duration-200">
+                        {{-- Identity Column --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-3">
+                                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-cyan-500 p-0.5 shadow-sm flex items-center justify-center">
+                                    <div class="w-full h-full rounded-[0.55rem] bg-white dark:bg-[#0E1A2E] flex items-center justify-center overflow-hidden">
+                                        @if($doc->image)
+                                            <img src="{{ asset('storage/' . $doc->image) }}" class="w-full h-full object-cover rounded-[0.55rem]">
+                                        @else
+                                            <svg class="w-5 h-5 text-teal-600 dark:text-teal-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                        @endif
+                                    </div>
+                                </div>
+                                <div>
+                                    <h4 class="text-sm font-bold text-gray-900 dark:text-white leading-tight">{{ $doc->nama }}</h4>
+                                    <p class="text-[10px] font-bold text-teal-600 dark:text-teal-400 uppercase tracking-wider mt-0.5">{{ $doc->spesialisasi }}</p>
+                                </div>
                             </div>
-                        </div>
-                        {{-- Verified badge --}}
-                        <div class="absolute -bottom-1 -right-1 w-8 h-8 bg-white dark:bg-[#0E1A2E] rounded-xl flex items-center justify-center shadow-lg border border-gray-100 dark:border-gray-800">
-                            <svg class="w-4 h-4 text-blue-500" fill="currentColor" viewBox="0 0 20 20"><path d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.64.304 1.25.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"/></svg>
-                        </div>
-                    </div>
-                    <h3 class="text-xl font-black text-gray-900 dark:text-white leading-tight mb-1">{{ $doc->nama }}</h3>
-                    <p class="text-xs font-bold text-teal-600 dark:text-teal-400 uppercase tracking-[0.2em]">{{ $doc->spesialisasi }}</p>
-                </div>
+                        </td>
 
-                {{-- Schedule & Info --}}
-                <div class="bg-gray-50/50 dark:bg-gray-900/30 rounded-[2rem] p-5 space-y-4 mb-6 flex-1">
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center text-teal-600 shadow-sm flex-shrink-0">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Jadwal Praktek</p>
-                            <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ $doc->jadwal_praktek ?? 'Belum Diatur' }}</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start gap-4">
-                        <div class="w-10 h-10 rounded-xl bg-white dark:bg-gray-800 flex items-center justify-center text-cyan-600 shadow-sm flex-shrink-0">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
-                        </div>
-                        <div>
-                            <p class="text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1">Kontak Darurat</p>
-                            <p class="text-xs font-bold text-gray-700 dark:text-gray-300">{{ $doc->phone ?? '-' }}</p>
-                        </div>
-                    </div>
-                </div>
+                        {{-- Schedule Column --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-teal-600 dark:text-teal-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $doc->jadwal_praktek ?? 'Belum Diatur' }}</span>
+                            </div>
+                        </td>
 
-                {{-- Delete Button (Hidden by default, shown on hover/touch) --}}
-                <div class="mt-auto pt-2 border-t border-gray-100 dark:border-gray-800/50 flex gap-3 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <button @click="confirmDelete({{ $doc->id }}, {{ json_encode($doc->nama) }})" 
-                        class="w-full py-3 rounded-2xl text-rose-500 font-bold text-xs hover:bg-rose-50 dark:hover:bg-rose-500/10 transition-all flex items-center justify-center gap-2">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
-                        Hapus Data
-                    </button>
-                </div>
-            </div>
+                        {{-- WhatsApp / Emergency Contact Column --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <div class="flex items-center gap-2">
+                                <svg class="w-4 h-4 text-cyan-600 dark:text-cyan-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+                                <span class="text-xs font-semibold text-gray-700 dark:text-gray-300">{{ $doc->phone ?? '-' }}</span>
+                            </div>
+                        </td>
+
+                        {{-- Status Column --}}
+                        <td class="px-6 py-4 whitespace-nowrap">
+                            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-{{ $statusColor }}-50 dark:bg-{{ $statusColor }}-900/20 border border-{{ $statusColor }}-100 dark:border-{{ $statusColor }}-900/30 text-[10px] font-black uppercase tracking-widest text-{{ $statusColor }}-600 dark:text-{{ $statusColor }}-400">
+                                <span class="relative flex h-1.5 w-1.5">
+                                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-{{ $statusColor }}-400 opacity-75"></span>
+                                    <span class="relative inline-flex rounded-full h-1.5 w-1.5 bg-{{ $statusColor }}-500"></span>
+                                </span>
+                                {{ $doc->current_status }}
+                            </span>
+                        </td>
+
+                        {{-- Actions Column --}}
+                        <td class="px-6 py-4 whitespace-nowrap text-right">
+                            <div class="flex items-center justify-end gap-2">
+                                <button @click="openEdit({{ $doc->toJson() }})" 
+                                        class="p-2 rounded-xl bg-gray-50 hover:bg-teal-50 text-gray-400 hover:text-teal-600 dark:bg-[#1E293B] dark:hover:bg-teal-900/30 dark:hover:text-teal-400 transition-all duration-200"
+                                        title="Edit Dokter">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
+                                </button>
+                                <button @click="confirmDelete({{ $doc->id }}, {{ json_encode($doc->nama) }})" 
+                                        class="p-2 rounded-xl bg-gray-50 hover:bg-rose-50 text-gray-400 hover:text-rose-600 dark:bg-[#1E293B] dark:hover:bg-rose-550/20 dark:hover:text-rose-400 transition-all duration-200"
+                                        title="Hapus Dokter">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                                </button>
+                            </div>
+                        </td>
+                    </tr>
+                    @endforeach
+                </tbody>
+            </table>
         </div>
-        @endforeach
     </div>
 
     {{-- MODAL REDESIGN: Structured Schedule --}}
@@ -188,105 +196,127 @@
             
             <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-md" @click="showModal = false"></div>
             
-            <div class="relative bg-white dark:bg-[#0E1A2E] w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden anim-up" @click.stop>
+            <div class="relative bg-white dark:bg-[#0E1A2E] w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden anim-up flex flex-col max-h-[90vh]" @click.stop>
                 {{-- Compact Header --}}
-                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50">
+                <div class="px-6 py-4 border-b border-gray-100 dark:border-gray-800 flex justify-between items-center bg-gray-50/50 flex-shrink-0">
                     <h3 class="text-lg font-black text-gray-900 dark:text-white" x-text="editMode ? 'Edit Dokter' : 'Tambah Dokter'"></h3>
                     <button @click="showModal = false" class="text-gray-400 hover:text-gray-600 transition-colors">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M6 18L18 6M6 6l12 12"/></svg>
                     </button>
                 </div>
 
-                <form :action="editMode ? '{{ url('admin/doctors') }}/' + doctor.id : '{{ route('admin.doctors.store') }}'" method="POST" class="p-6 space-y-4">
+                <form :action="editMode ? '{{ url('admin/doctors') }}/' + doctor.id : '{{ route('admin.doctors.store') }}'" method="POST" enctype="multipart/form-data" class="flex flex-col overflow-hidden">
                     @csrf
                     <template x-if="editMode">
                         <input type="hidden" name="_method" value="PUT">
                     </template>
 
-                    {{-- Nama --}}
-                    <div>
-                        <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Nama Lengkap</label>
-                        <input type="text" name="nama" x-model="doctor.nama" required placeholder="Dr. Siti Aminah, Sp.OG"
-                               class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-sm">
-                    </div>
-
-                    {{-- Spesialisasi & Status --}}
-                    <div class="grid grid-cols-2 gap-4">
+                    {{-- Scrollable Content Area --}}
+                    <div class="p-6 space-y-4 overflow-y-auto max-h-[55vh] custom-scrollbar">
+                        {{-- Nama --}}
                         <div>
-                            <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Bidang</label>
-                            <select name="spesialisasi" x-model="doctor.spesialisasi" required
-                                    class="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 font-bold text-xs appearance-none">
-                                <option value="" disabled>Pilih</option>
-                                <option value="Kebidanan & Kandungan">Kebidanan</option>
-                                <option value="Bidan">Bidan</option>
-                                <option value="Dokter Umum">Umum</option>
-                                <option value="Spesialis Anak">Anak</option>
-                            </select>
+                            <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Nama Lengkap</label>
+                            <input type="text" name="nama" x-model="doctor.nama" required placeholder="Dr. Siti Aminah, Sp.OG"
+                                   class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-sm">
                         </div>
-                        <div>
-                            <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Ketersediaan</label>
-                            <select name="status" x-model="doctor.status" required
-                                    class="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 font-bold text-xs appearance-none">
-                                <option value="Tersedia">Tersedia</option>
-                                <option value="Istirahat">Istirahat</option>
-                                <option value="Libur">Libur</option>
-                            </select>
-                        </div>
-                    </div>
 
-                    {{-- Schedule Section: Ultra Compact --}}
-                    <div class="p-4 bg-teal-50/30 dark:bg-teal-900/10 rounded-2xl border border-teal-100/50">
-                        <p class="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-3">Waktu Praktek (Format 24 Jam)</p>
-                        
-                        <div class="space-y-3">
-                            <div class="flex items-center gap-2">
-                                <select x-model="schedule.dayStart" class="flex-1 px-2 py-2 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg text-[10px] font-bold outline-none">
-                                    <template x-for="day in days"><option :value="day" x-text="day"></option></template>
-                                </select>
-                                <span class="text-gray-300 text-[10px]">s/d</span>
-                                <select x-model="schedule.dayEnd" class="flex-1 px-2 py-2 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg text-[10px] font-bold outline-none">
-                                    <template x-for="day in days"><option :value="day" x-text="day"></option></template>
+                        {{-- Spesialisasi & Status --}}
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Bidang</label>
+                                <select name="spesialisasi" x-model="doctor.spesialisasi" required
+                                        class="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 font-bold text-xs appearance-none">
+                                    <option value="" disabled>Pilih</option>
+                                    <option value="Kebidanan & Kandungan">Kebidanan</option>
+                                    <option value="Bidan">Bidan</option>
+                                    <option value="Dokter Umum">Umum</option>
+                                    <option value="Spesialis Anak">Anak</option>
                                 </select>
                             </div>
-                            <div class="flex items-center gap-2">
-                                <div class="flex-1 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg px-2 py-1">
-                                    <select x-model="schedule.hourStart" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
-                                        <template x-for="h in hours"><option :value="h" x-text="h"></option></template>
-                                    </select>
-                                    <span class="text-gray-300">:</span>
-                                    <select x-model="schedule.minStart" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
-                                        <template x-for="m in minutes"><option :value="m" x-text="m"></option></template>
-                                    </select>
-                                </div>
-                                <span class="text-gray-300 text-[10px]">s/d</span>
-                                <div class="flex-1 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg px-2 py-1">
-                                    <select x-model="schedule.hourEnd" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
-                                        <template x-for="h in hours"><option :value="h" x-text="h"></option></template>
-                                    </select>
-                                    <span class="text-gray-300">:</span>
-                                    <select x-model="schedule.minEnd" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
-                                        <template x-for="m in minutes"><option :value="m" x-text="m"></option></template>
-                                    </select>
-                                </div>
+                            <div>
+                                <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Ketersediaan</label>
+                                <select name="status" x-model="doctor.status" required
+                                        class="w-full px-3 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 font-bold text-xs appearance-none">
+                                    <option value="Tersedia">Tersedia</option>
+                                    <option value="Istirahat">Istirahat</option>
+                                    <option value="Libur">Libur</option>
+                                </select>
                             </div>
                         </div>
 
-                        <input type="hidden" name="jadwal_praktek" :value="combinedSchedule">
-                        <div class="mt-3 pt-2 border-t border-teal-100/30">
-                            <p class="text-[10px] font-bold text-teal-600/80 italic text-center" x-text="combinedSchedule"></p>
+                        {{-- Schedule Section: Ultra Compact --}}
+                        <div class="p-4 bg-teal-50/30 dark:bg-teal-900/10 rounded-2xl border border-teal-100/50">
+                            <p class="text-[9px] font-black text-teal-600 uppercase tracking-widest mb-3">Waktu Praktek (Format 24 Jam)</p>
+                            
+                            <div class="space-y-3">
+                                <div class="flex items-center gap-2">
+                                    <select x-model="schedule.dayStart" class="flex-1 px-2 py-2 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg text-[10px] font-bold outline-none">
+                                        <template x-for="day in days"><option :value="day" x-text="day"></option></template>
+                                    </select>
+                                    <span class="text-gray-300 text-[10px]">s/d</span>
+                                    <select x-model="schedule.dayEnd" class="flex-1 px-2 py-2 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg text-[10px] font-bold outline-none">
+                                        <template x-for="day in days"><option :value="day" x-text="day"></option></template>
+                                    </select>
+                                </div>
+                                <div class="flex items-center gap-2">
+                                    <div class="flex-1 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg px-2 py-1">
+                                        <select x-model="schedule.hourStart" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
+                                            <template x-for="h in hours"><option :value="h" x-text="h"></option></template>
+                                        </select>
+                                        <span class="text-gray-300">:</span>
+                                        <select x-model="schedule.minStart" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
+                                            <template x-for="m in minutes"><option :value="m" x-text="m"></option></template>
+                                        </select>
+                                    </div>
+                                    <span class="text-gray-300 text-[10px]">s/d</span>
+                                    <div class="flex-1 flex items-center gap-1 bg-white dark:bg-gray-800 border border-gray-100 rounded-lg px-2 py-1">
+                                        <select x-model="schedule.hourEnd" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
+                                            <template x-for="h in hours"><option :value="h" x-text="h"></option></template>
+                                        </select>
+                                        <span class="text-gray-300">:</span>
+                                        <select x-model="schedule.minEnd" class="w-full bg-transparent text-[10px] font-bold outline-none appearance-none text-center">
+                                            <template x-for="m in minutes"><option :value="m" x-text="m"></option></template>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <input type="hidden" name="jadwal_praktek" :value="combinedSchedule">
+                            <div class="mt-3 pt-2 border-t border-teal-100/30">
+                                <p class="text-[10px] font-bold text-teal-600/80 italic text-center" x-text="combinedSchedule"></p>
+                            </div>
+                        </div>
+
+                        {{-- Photo Preview & Upload --}}
+                        <div class="space-y-2">
+                            <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">Foto Dokter</label>
+                            
+                            {{-- Preview current photo in Edit Mode --}}
+                            <template x-if="editMode && doctor.image">
+                                <div class="flex items-center gap-3 p-3 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-2xl">
+                                    <img :src="'/storage/' + doctor.image" class="w-12 h-12 rounded-xl object-cover border border-teal-500/20">
+                                    <div>
+                                        <p class="text-[9px] font-black text-teal-600 dark:text-teal-400 uppercase tracking-widest">Foto Saat Ini</p>
+                                        <p class="text-[10px] font-bold text-gray-400">Tersimpan di sistem</p>
+                                    </div>
+                                </div>
+                            </template>
+
+                            <input type="file" name="image" accept="image/*"
+                                   class="w-full px-4 py-2 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-xs text-gray-400 file:mr-4 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-[10px] file:font-black file:uppercase file:tracking-wider file:bg-teal-50 file:text-teal-700 dark:file:bg-teal-900/30 dark:file:text-teal-400 hover:file:bg-teal-100 dark:hover:file:bg-teal-900/40">
+                        </div>
+
+                        {{-- WhatsApp --}}
+                        <div>
+                            <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">No. WhatsApp</label>
+                            <input type="text" name="phone" x-model="doctor.phone" placeholder="0812..."
+                                   class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-sm">
                         </div>
                     </div>
 
-                    {{-- WhatsApp --}}
-                    <div>
-                        <label class="block text-[9px] font-black text-gray-400 uppercase tracking-widest mb-1 ml-1">No. WhatsApp</label>
-                        <input type="text" name="phone" x-model="doctor.phone" placeholder="0812..."
-                               class="w-full px-4 py-2.5 bg-gray-50 dark:bg-[#080F1E] border border-gray-100 dark:border-gray-800 rounded-xl outline-none focus:border-teal-500 transition-all font-bold text-sm">
-                    </div>
-
-                    {{-- Actions --}}
-                    <div class="flex gap-2 pt-2">
-                        <button type="button" @click="showModal = false" class="flex-1 py-3 bg-gray-50 text-gray-400 font-bold rounded-xl text-xs">Batal</button>
+                    {{-- Sticky Actions (Footer) --}}
+                    <div class="flex gap-2 p-6 bg-gray-50/50 dark:bg-[#0E1A2E]/50 border-t border-gray-100 dark:border-gray-800 flex-shrink-0">
+                        <button type="button" @click="showModal = false" class="flex-1 py-3 bg-gray-50 dark:bg-gray-800 text-gray-400 dark:text-gray-400 font-bold rounded-xl text-xs">Batal</button>
                         <button type="submit" class="flex-[2] py-3 bg-teal-600 text-white font-black rounded-xl shadow-lg shadow-teal-600/20 text-xs">
                             Simpan Data
                         </button>

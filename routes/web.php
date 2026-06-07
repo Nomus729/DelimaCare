@@ -82,7 +82,7 @@ Route::middleware(['auth', 'patient'])->group(function () {
     Route::get('/portal', function () {
         // Hanya jadwal milik pasien yang lagi login
         $jadwalPasien = \App\Models\Reservasi::where('user_id', Auth::id())->latest()->get();
-        $doctors = \App\Models\Doctor::all();
+        $doctors = \App\Models\Doctor::whereNotIn('status', ['Libur', 'Istirahat'])->get();
 
         // Ambil rekam medis via user_id (reliable FK) dengan fallback ke nama_pasien
         $rekamMedis = \App\Models\RekamMedis::with('resepMedis.items.medicine')

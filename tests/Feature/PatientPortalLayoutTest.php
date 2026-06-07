@@ -125,4 +125,44 @@ class PatientPortalLayoutTest extends TestCase
         $response->assertStatus(200);
         $response->assertDontSee('id="success-popup"', false);
     }
+
+    /** @test */
+    public function portal_does_not_display_doctors_on_leave_or_resting()
+    {
+        // 1. Create a doctor who is 'Tersedia' (available)
+        $availableDoctor = Doctor::create([
+            'nama'           => 'Dr. Dokter Tersedia',
+            'spesialisasi'   => 'Umum',
+            'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
+            'status'         => 'Tersedia',
+        ]);
+
+        // 2. Create a doctor who is 'Libur' (on leave)
+        $onLeaveDoctor = Doctor::create([
+            'nama'           => 'Dr. Dokter Libur',
+            'spesialisasi'   => 'Gigi',
+            'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
+            'status'         => 'Libur',
+        ]);
+
+        // 3. Create a doctor who is 'Istirahat' (resting)
+        $restingDoctor = Doctor::create([
+            'nama'           => 'Dr. Dokter Istirahat',
+            'spesialisasi'   => 'Anak',
+            'jadwal_praktek' => 'Senin - Minggu (08:00 - 20:00)',
+            'status'         => 'Istirahat',
+        ]);
+
+        // Access the portal as patient
+        $response = $this->actingAs($this->pasien)->get(route('portal'));
+
+        $response->assertStatus(200);
+
+        // Assert that the available doctor is shown
+        $response->assertSee($availableDoctor->nama);
+
+        // Assert that the libur and istirahat doctors are NOT shown
+        $response->assertDontSee($onLeaveDoctor->nama);
+        $response->assertDontSee($restingDoctor->nama);
+    }
 }

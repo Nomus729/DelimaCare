@@ -6,8 +6,91 @@ use App\Http\Controllers\Controller;
 use App\Http\Requests\RekamMedisRequest;
 use App\Models\RekamMedis;
 
+use Illuminate\Http\Request;
+
 class RekamMedisController extends Controller
 {
+    /**
+     * Show the form for creating a new resource.
+     */
+    public function create(Request $request)
+    {
+        $userId = $request->query('user_id');
+        $namaPasien = $request->query('nama_pasien');
+        $reservasiId = $request->query('reservasi_id');
+
+        if (!$userId && $reservasiId) {
+            $reservasi = \App\Models\Reservasi::find($reservasiId);
+            if ($reservasi) {
+                $userId = $reservasi->user_id;
+                if (!$userId) {
+                    $namaPasien = $reservasi->nama;
+                }
+            }
+        }
+
+        $history = collect();
+        if ($userId || $namaPasien) {
+            $history = RekamMedis::with(['resepMedis.items.medicine'])
+                ->where(function ($q) use ($userId, $namaPasien) {
+                    if ($userId) {
+                        $q->where('user_id', $userId);
+                    } else {
+                        $q->where('nama_pasien', $namaPasien);
+                    }
+                })
+                ->where(function ($q) {
+                    $q->where('status_kunjungan', 'Selesai')
+                      ->orWhereDate('created_at', '<', today());
+                })
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'history' => $history
+            ]);
+        }
+
+        return view('admin.rekam-medis.create', compact('history'));
+    }
+
+    /**
+     * Show the form for editing the specified resource.
+     */
+    public function edit(RekamMedis $rekamMedis, Request $request)
+    {
+        $userId = $rekamMedis->user_id;
+        $namaPasien = $rekamMedis->nama_pasien;
+
+        $history = RekamMedis::with(['resepMedis.items.medicine'])
+            ->where(function ($q) use ($userId, $namaPasien) {
+                if ($userId) {
+                    $q->where('user_id', $userId);
+                } else {
+                    $q->where('nama_pasien', $namaPasien);
+                }
+            })
+            ->where('id', '!=', $rekamMedis->id)
+            ->where(function ($q) {
+                $q->where('status_kunjungan', 'Selesai')
+                  ->orWhereDate('created_at', '<', today());
+            })
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        if ($request->ajax() || $request->wantsJson()) {
+            return response()->json([
+                'success' => true,
+                'history' => $history
+            ]);
+        }
+
+        return view('admin.rekam-medis.edit', compact('rekamMedis', 'history'));
+    }
+
     /**
      * Store a newly created record.
      */
