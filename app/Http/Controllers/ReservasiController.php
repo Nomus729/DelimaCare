@@ -108,7 +108,9 @@ class ReservasiController extends Controller
             return redirect()->route('portal')->with('error', 'Jadwal konsultasi tidak dapat dibatalkan karena statusnya sudah ' . $reservasi->status . '.');
         }
 
-        $reservasi->delete();
+        $reservasi->status = 'Dibatalkan';
+        $reservasi->alasan_batal = 'Dibatalkan oleh Pasien';
+        $reservasi->save();
 
         return redirect()->route('portal')->with('success', 'Jadwal konsultasi berhasil dibatalkan.');
     }
@@ -128,13 +130,19 @@ class ReservasiController extends Controller
     }
 
     // 5. Admin membatalkan/menghapus reservasi
-    public function batalAdmin($id)
+    public function batalAdmin(Request $request, $id)
     {
+        $request->validate([
+            'alasan_batal' => 'required|string|max:255'
+        ]);
+
         $reservasi = Reservasi::findOrFail($id);
         $nama = $reservasi->nama;
-        $reservasi->delete();
+        $reservasi->status = 'Dibatalkan';
+        $reservasi->alasan_batal = $request->alasan_batal;
+        $reservasi->save();
 
-        return redirect()->back()->with('success', 'Reservasi atas nama ' . $nama . ' berhasil dihapus.');
+        return redirect()->back()->with('success', 'Reservasi atas nama ' . $nama . ' berhasil dibatalkan.');
     }
 
     // 6. Admin update status reservasi (Datang / Tidak Datang)

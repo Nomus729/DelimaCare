@@ -84,18 +84,18 @@
         this.isPolling = false;
     },
 
-    showDeleteModal: false,
-    itemToDelete: { id: '', nama: '' },
-    confirmDelete(id, nama) {
-        this.itemToDelete = { id, nama };
-        this.showDeleteModal = true;
+    showBatalModal: false,
+    itemToBatal: { id: '', nama: '' },
+    confirmBatal(id, nama) {
+        this.itemToBatal = { id, nama };
+        this.showBatalModal = true;
     },
-    executeDelete() {
-        const f = document.createElement('form'); f.method='POST';
-        f.action=`{{ url('admin/reservasi') }}/${this.itemToDelete.id}/batal`;
-        const c=document.createElement('input'); c.type='hidden'; c.name='_token'; c.value='{{ csrf_token() }}';
-        const m=document.createElement('input'); m.type='hidden'; m.name='_method'; m.value='DELETE';
-        f.appendChild(c); f.appendChild(m); document.body.appendChild(f); f.submit();
+    executeBatal() {
+        const form = document.getElementById('batalForm');
+        if (form.reportValidity()) {
+            form.action = `{{ url('admin/reservasi') }}/${this.itemToBatal.id}/batal`;
+            form.submit();
+        }
     }
 }">
 
@@ -206,7 +206,7 @@
             'Menunggu'     => ['pill'=>'bg-amber-50 text-amber-600 ring-1 ring-amber-200 dark:bg-amber-900/30 dark:ring-amber-500/30 dark:text-amber-400',   'dot'=>'bg-amber-400',  'color'=>'amber'],
             'Dikonfirmasi' => ['pill'=>'bg-teal-50 text-teal-600 ring-1 ring-teal-200 dark:bg-teal-900/30 dark:ring-teal-500/30 dark:text-teal-400',      'dot'=>'bg-teal-400',   'color'=>'teal'],
             'Datang'       => ['pill'=>'bg-emerald-50 text-emerald-600 ring-1 ring-emerald-200 dark:bg-emerald-900/30 dark:ring-emerald-500/30 dark:text-emerald-400','dot'=>'bg-emerald-400','color'=>'emerald'],
-            'Tidak Datang' => ['pill'=>'bg-rose-50 text-rose-500 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:ring-rose-500/30 dark:text-rose-400',      'dot'=>'bg-rose-400',   'color'=>'rose'],
+            'Tidak Datang', 'Dibatalkan' => ['pill'=>'bg-rose-50 text-rose-500 ring-1 ring-rose-200 dark:bg-rose-900/30 dark:ring-rose-500/30 dark:text-rose-400',      'dot'=>'bg-rose-400',   'color'=>'rose'],
             default        => ['pill'=>'bg-slate-50 text-slate-500 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700 dark:text-slate-400',   'dot'=>'bg-slate-400',  'color'=>'slate'],
         };
         $numGrads = ['from-teal-500 to-cyan-400','from-emerald-500 to-teal-400','from-cyan-500 to-teal-500','from-teal-400 to-emerald-500'];
@@ -340,8 +340,8 @@
                 </button>
                 @endif
                 
-                <button @click="confirmDelete({{ $item->id }}, '{{ addslashes($item->nama) }}')"
-                    title="Batalkan / Hapus"
+                <button @click="confirmBatal({{ $item->id }}, '{{ addslashes($item->nama) }}')"
+                    title="Batalkan Antrean"
                     class="w-10 h-10 rounded-2xl flex items-center justify-center text-slate-400 bg-slate-50 dark:bg-slate-800 dark:text-slate-500 hover:bg-rose-500 hover:text-white dark:hover:bg-rose-500 dark:hover:text-white hover:scale-110 transition-all shadow-sm group-hover:text-rose-400">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
                 </button>
@@ -481,9 +481,9 @@
     </div>
 </template>
 
-{{-- ─── MODAL HAPUS ANTREAN ─── --}}
+{{-- ─── MODAL BATAL ANTREAN ─── --}}
 <template x-teleport="body">
-    <div x-show="showDeleteModal" x-cloak
+    <div x-show="showBatalModal" x-cloak
          x-transition:enter="transition ease-out duration-200"
          x-transition:enter-start="opacity-0"
          x-transition:enter-end="opacity-100"
@@ -492,33 +492,40 @@
          x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-[999] flex items-center justify-center p-4">
 
-        <div class="absolute inset-0 bg-gray-900/65 backdrop-blur-sm" @click="showDeleteModal = false"></div>
+        <div class="absolute inset-0 bg-gray-900/65 backdrop-blur-sm" @click="showBatalModal = false"></div>
 
         <div class="relative bg-white dark:bg-[#1E293B] w-full max-w-md rounded-2xl shadow-2xl overflow-hidden q-anim" @click.stop>
-            <div class="p-8 text-center">
+            <form id="batalForm" method="POST" class="p-8 text-center">
+                @csrf
+                @method('DELETE')
                 <div class="w-16 h-16 bg-rose-100 dark:bg-rose-900/30 rounded-full flex items-center justify-center mx-auto mb-5">
                     <svg class="w-8 h-8 text-rose-600 dark:text-rose-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/>
                     </svg>
                 </div>
-                <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">Hapus Antrean?</h3>
-                <p class="text-gray-500 dark:text-gray-400 text-sm mb-6">
-                    Yakin ingin menghapus antrean untuk pasien <span class="font-bold text-gray-900 dark:text-white" x-text="itemToDelete.nama"></span>?
-                    Tindakan ini tidak dapat dibatalkan.
+                <h3 class="text-xl font-black text-gray-900 dark:text-white mb-2">Batalkan Antrean?</h3>
+                <p class="text-gray-500 dark:text-gray-400 text-sm mb-4">
+                    Alasan pembatalan untuk pasien <span class="font-bold text-gray-900 dark:text-white" x-text="itemToBatal.nama"></span>:
                 </p>
+                
+                <div class="mb-6 text-left">
+                    <textarea name="alasan_batal" required rows="3" placeholder="Contoh: Dokter berhalangan hadir, jadwal direschedule..."
+                              class="q-input font-medium resize-none text-sm w-full"></textarea>
+                </div>
+
                 <div class="flex gap-3">
-                    <button @click="showDeleteModal = false"
+                    <button type="button" @click="showBatalModal = false"
                         class="flex-1 px-4 py-2.5 bg-gray-100 dark:bg-gray-800 text-gray-700 dark:text-gray-300
                                font-bold rounded-xl hover:bg-gray-200 dark:hover:bg-gray-700 transition-all text-sm">
                         Batal
                     </button>
-                    <button @click="executeDelete()"
+                    <button type="button" @click="executeBatal()"
                         class="flex-1 px-4 py-2.5 bg-rose-600 text-white font-bold rounded-xl
                                hover:bg-rose-700 shadow-lg shadow-rose-500/30 transition-all text-sm">
-                        Hapus Sekarang
+                        Konfirmasi Pembatalan
                     </button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 </template>

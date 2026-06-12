@@ -222,7 +222,11 @@ class ReservasiFlowTest extends TestCase
             ->delete(route('reservasi.destroy', $reservasi->id));
 
         $response->assertRedirect(route('portal'));
-        $this->assertDatabaseMissing('reservasi', ['id' => $reservasi->id]);
+        $this->assertDatabaseHas('reservasi', [
+            'id' => $reservasi->id,
+            'status' => 'Dibatalkan',
+            'alasan_batal' => 'Dibatalkan oleh Pasien'
+        ]);
     }
 
     /** @test */
@@ -249,6 +253,38 @@ class ReservasiFlowTest extends TestCase
         $response->assertSessionHas('error');
         $this->assertStringContainsString('Jadwal konsultasi tidak dapat dibatalkan', session('error'));
         $this->assertDatabaseHas('reservasi', ['id' => $reservasi->id, 'status' => 'Dikonfirmasi']);
+    }
+
+    /** @test */
+    public function admin_can_cancel_reservasi_with_reason()
+    {
+        $reservasi = Reservasi::create([
+            'user_id'        => $this->pasien->id,
+            'nama'           => 'pasien1',
+            'phone'          => '08123',
+            'layanan'        => 'Umum',
+            'dokter_id'      => $this->doctor->nama,
+            'doctor_id'      => $this->doctor->id,
+            'tanggal'        => now()->format('Y-m-d'),
+            'waktu'          => '08:00',
+            'queue_number'   => 1,
+            'estimated_time' => '08:00',
+            'status'         => 'Menunggu',
+        ]);
+
+        $response = $this->actingAs($this->admin)
+            ->delete(route('admin.reservasi.batal', $reservasi->id), [
+                'alasan_batal' => 'Dokter ada rapat mendadak'
+            ]);
+
+        $response->assertRedirect();
+        $response->assertSessionHas('success');
+        
+        $this->assertDatabaseHas('reservasi', [
+            'id' => $reservasi->id,
+            'status' => 'Dibatalkan',
+            'alasan_batal' => 'Dokter ada rapat mendadak'
+        ]);
     }
 
     /** @test */

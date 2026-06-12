@@ -53,15 +53,15 @@
                         </div>
 
                         <div class="flex flex-row md:flex-col justify-between items-center md:items-end gap-3">
-                            @php
-                                $statusColor = match($jadwal->status) {
-                                    'Menunggu' => 'amber',
-                                    'Dikonfirmasi' => 'blue',
-                                    'Datang', 'Selesai' => 'emerald',
-                                    'Tidak Datang', 'Batal' => 'rose',
-                                    default => 'gray'
-                                };
-                            @endphp
+                                @php
+                                    $statusColor = match($jadwal->status) {
+                                        'Menunggu' => 'amber',
+                                        'Dikonfirmasi' => 'blue',
+                                        'Datang', 'Selesai' => 'emerald',
+                                        'Tidak Datang', 'Batal', 'Dibatalkan' => 'rose',
+                                        default => 'gray'
+                                    };
+                                @endphp
                             <span class="px-4 py-1.5 bg-{{ $statusColor }}-50 dark:bg-{{ $statusColor }}-950/30 text-{{ $statusColor }}-700 dark:text-{{ $statusColor }}-400 text-[10px] font-black uppercase tracking-widest rounded-full border border-{{ $statusColor }}-100 dark:border-{{ $statusColor }}-900/30 shadow-sm">
                                 {{ $jadwal->status ?? 'Menunggu Konfirmasi' }}
                             </span>
@@ -93,7 +93,7 @@
                             'Menunggu' => 'amber',
                             'Dikonfirmasi' => 'blue',
                             'Datang', 'Selesai' => 'emerald',
-                            'Tidak Datang', 'Batal' => 'rose',
+                            'Tidak Datang', 'Batal', 'Dibatalkan' => 'rose',
                             default => 'gray'
                         };
                     @endphp
@@ -240,6 +240,16 @@
                                 <p class="text-xs text-gray-500 dark:text-gray-400 font-bold uppercase mb-1">Keluhan / Catatan</p>
                                 <p class="text-gray-700 dark:text-gray-300 text-sm italic">"{{ $jadwal->keluhan ?? 'Tidak ada catatan.' }}"</p>
                             </div>
+                            
+                            @if(in_array($jadwal->status, ['Batal', 'Dibatalkan']) && $jadwal->alasan_batal)
+                            <div class="p-4 bg-rose-50 dark:bg-rose-900/20 rounded-xl border border-rose-100 dark:border-rose-900/30 mt-3">
+                                <p class="text-xs text-rose-500 dark:text-rose-400 font-bold uppercase mb-1 flex items-center gap-1.5">
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/></svg>
+                                    Alasan Pembatalan
+                                </p>
+                                <p class="text-rose-700 dark:text-rose-300 text-sm font-medium">{{ $jadwal->alasan_batal }}</p>
+                            </div>
+                            @endif
                         </div>
 
                         <button onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.add('hidden')" class="mt-8 w-full py-3 bg-teal-600 dark:bg-teal-500 text-white font-bold rounded-xl hover:bg-teal-700 dark:hover:bg-teal-600 transition-all">
