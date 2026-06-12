@@ -39,10 +39,6 @@ class RekamMedisController extends Controller
                         $q->where('nama_pasien', $namaPasien);
                     }
                 })
-                ->where(function ($q) {
-                    $q->where('status_kunjungan', 'Selesai')
-                      ->orWhereDate('created_at', '<', today());
-                })
                 ->orderBy('created_at', 'desc')
                 ->get();
         }
@@ -74,10 +70,6 @@ class RekamMedisController extends Controller
                 }
             })
             ->where('id', '!=', $rekamMedis->id)
-            ->where(function ($q) {
-                $q->where('status_kunjungan', 'Selesai')
-                  ->orWhereDate('created_at', '<', today());
-            })
             ->orderBy('created_at', 'desc')
             ->get();
 

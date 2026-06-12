@@ -531,13 +531,15 @@
                         </div>
                         <div class="inv-field">
                             <label>Kategori <span class="text-rose-500">*</span></label>
-                            <select name="category" x-model="medicine.category" required>
-                                <option value="" disabled selected>Pilih Kategori</option>
-                                <option value="Vitamin">Vitamin</option>
-                                <option value="Alat KB">Alat KB</option>
-                                <option value="Antibiotik">Antibiotik</option>
-                                <option value="Analgesik">Analgesik</option>
-                            </select>
+                            <input type="text" name="category" x-model="medicine.category" list="category-suggestions" required
+                                   placeholder="Contoh: Vitamin, Antibiotik">
+                            <datalist id="category-suggestions">
+                                @if(isset($suggestedCategories))
+                                    @foreach($suggestedCategories as $cat)
+                                        <option value="{{ $cat }}"></option>
+                                    @endforeach
+                                @endif
+                            </datalist>
                         </div>
                         <div class="inv-field">
                             <label>Stok <span class="text-rose-500">*</span></label>

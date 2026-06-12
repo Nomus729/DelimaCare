@@ -10,6 +10,7 @@ use App\Models\Medicine;
 use App\Models\Article;
 use App\Models\RekamMedis;
 use App\Models\Reservasi;
+use App\Models\DoctorSchedule;
 
 class SyncRemoteToLocal extends Command
 {
@@ -37,10 +38,15 @@ class SyncRemoteToLocal extends Command
         $models = [
             User::class,
             Doctor::class,
+            DoctorSchedule::class,
             Medicine::class,
             Article::class,
             RekamMedis::class,
             Reservasi::class,
+            \App\Models\ResepMedis::class,
+            \App\Models\ResepMedisItem::class,
+            \App\Models\Pengeluaran::class,
+            \App\Models\ConsultationMessage::class,
         ];
 
         foreach ($models as $modelClass) {

@@ -814,78 +814,104 @@
                             </div>
 
                             {{-- List of History --}}
-                            <div x-show="!isLoadingHistory && history.length > 0" class="space-y-4">
+                            <div x-show="!isLoadingHistory && history.length > 0" class="space-y-3" x-data="{ expandedId: null }">
                                 <template x-for="(item, idx) in history" :key="item.id">
-                                    <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl p-5 shadow-sm space-y-4 relative overflow-hidden">
-                                        {{-- Top Header of Card --}}
-                                        <div class="flex items-center justify-between border-b border-gray-50 dark:border-gray-800/50 pb-3">
-                                            <div>
-                                                <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-550 dark:text-gray-400 rounded-md text-[9px] font-black uppercase tracking-wider" x-text="item.kategori"></span>
-                                                <p class="text-xs font-bold text-gray-900 dark:text-white mt-1" x-text="new Date(item.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})"></p>
+                                    <div class="bg-white dark:bg-[#1E293B] border border-gray-100 dark:border-gray-800 rounded-2xl shadow-sm relative overflow-hidden transition-all duration-300"
+                                         :class="expandedId === item.id ? 'ring-2 ring-teal-500/20 border-teal-200 dark:border-teal-800' : 'hover:border-teal-200 dark:hover:border-teal-800 cursor-pointer'"
+                                         @click="expandedId = expandedId === item.id ? null : item.id">
+                                        
+                                        {{-- Top Header of Card (Always visible) --}}
+                                        <div class="p-4 flex items-center justify-between" :class="expandedId === item.id ? 'border-b border-gray-50 dark:border-gray-800/50 bg-teal-50/30 dark:bg-teal-900/10' : ''">
+                                            <div class="flex items-center gap-3">
+                                                <div class="w-10 h-10 rounded-xl bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-teal-600 transition-colors"
+                                                     :class="expandedId === item.id ? 'bg-teal-100 dark:bg-teal-900/50 text-teal-700' : ''">
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                                                </div>
+                                                <div>
+                                                    <div class="flex items-center gap-2 mb-1">
+                                                        <span class="px-2 py-0.5 bg-gray-100 dark:bg-gray-800 text-gray-550 dark:text-gray-400 rounded-md text-[9px] font-black uppercase tracking-wider" x-text="item.kategori"></span>
+                                                        <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md" 
+                                                              :class="item.status_risiko === 'Tinggi' ? 'bg-rose-50 text-rose-600 border border-rose-100' : (item.status_risiko === 'Sedang' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100')"
+                                                              x-text="'Risiko ' + item.status_risiko"></span>
+                                                    </div>
+                                                    <p class="text-xs font-bold text-gray-900 dark:text-white" x-text="new Date(item.created_at).toLocaleDateString('id-ID', {day:'numeric', month:'short', year:'numeric'})"></p>
+                                                </div>
                                             </div>
-                                            <div class="text-right">
-                                                <span class="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded-md" 
-                                                      :class="item.status_risiko === 'Tinggi' ? 'bg-rose-50 text-rose-600 border border-rose-100' : (item.status_risiko === 'Sedang' ? 'bg-amber-50 text-amber-600 border border-amber-100' : 'bg-emerald-50 text-emerald-600 border border-emerald-100')"
-                                                      x-text="'Risiko ' + item.status_risiko"></span>
-                                                <p class="text-[10px] text-gray-400 mt-1" x-text="item.no_rekam_medis"></p>
-                                            </div>
-                                        </div>
-
-                                        {{-- Doctor --}}
-                                        <div class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
-                                            <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                            </svg>
-                                            <span>Dokter: </span>
-                                            <span class="text-gray-800 dark:text-gray-200" x-text="item.dokter_pemeriksa || '—'"></span>
-                                        </div>
-
-                                        {{-- Physical metrics (BP, Weight, Height) --}}
-                                        <div class="grid grid-cols-3 gap-2 bg-gray-50/50 dark:bg-gray-800/40 p-2.5 rounded-xl text-[10px] text-gray-550">
-                                            <div>
-                                                <span class="block text-[8px] font-black uppercase text-gray-400">TD</span>
-                                                <span class="font-bold text-gray-750 dark:text-gray-200" x-text="item.tekanan_darah || '—'"></span>
-                                            </div>
-                                            <div>
-                                                <span class="block text-[8px] font-black uppercase text-gray-400">Berat</span>
-                                                <span class="font-bold text-gray-755 dark:text-gray-200" x-text="item.berat_badan ? item.berat_badan + ' kg' : '—'"></span>
-                                            </div>
-                                            <div>
-                                                <span class="block text-[8px] font-black uppercase text-gray-400">Tinggi</span>
-                                                <span class="font-bold text-gray-760 dark:text-gray-200" x-text="item.tinggi_badan ? item.tinggi_badan + ' cm' : '—'"></span>
+                                            <div class="flex items-center gap-4">
+                                                <div class="text-right hidden sm:block">
+                                                    <p class="text-[10px] font-bold text-gray-400 mb-0.5" x-text="item.no_rekam_medis"></p>
+                                                    <p class="text-[9px] font-black uppercase tracking-wider text-teal-600" x-text="expandedId === item.id ? 'Tutup Detail' : 'Lihat Detail'"></p>
+                                                </div>
+                                                <div class="w-7 h-7 rounded-full bg-gray-50 dark:bg-gray-800 flex items-center justify-center text-gray-400 transition-transform duration-300"
+                                                     :class="expandedId === item.id ? 'rotate-180 bg-teal-100 text-teal-600 dark:bg-teal-900/50 dark:text-teal-400' : ''">
+                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/></svg>
+                                                </div>
                                             </div>
                                         </div>
 
-                                        {{-- Details (Keluhan, Diagnosis, Tindakan) --}}
-                                        <div class="space-y-3 text-xs leading-relaxed">
-                                            {{-- Keluhan Utama --}}
-                                            <div x-show="item.catatan_pasien">
-                                                <span class="text-[9px] font-black uppercase text-cyan-600 block">Keluhan / Catatan Pasien</span>
-                                                <p class="text-gray-700 dark:text-gray-300 font-medium bg-cyan-50/10 dark:bg-cyan-900/5 p-2 rounded-lg" x-text="item.catatan_pasien"></p>
-                                            </div>
+                                        {{-- Expanded Details --}}
+                                        <div x-show="expandedId === item.id" 
+                                             x-transition:enter="transition ease-out duration-200"
+                                             x-transition:enter-start="opacity-0 translate-y-[-10px]"
+                                             x-transition:enter-end="opacity-100 translate-y-0"
+                                             class="p-5 space-y-4">
                                             
-                                            {{-- Diagnosis --}}
-                                            <div>
-                                                <span class="text-[9px] font-black uppercase text-teal-600 block">Diagnosis</span>
-                                                <p class="text-gray-800 dark:text-gray-200 font-bold bg-teal-50/10 dark:bg-teal-900/5 p-2 rounded-lg" x-text="item.diagnosis || '—'"></p>
+                                            {{-- Doctor --}}
+                                            <div class="flex items-center gap-1.5 text-[10px] font-bold text-gray-500">
+                                                <svg class="w-3.5 h-3.5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                </svg>
+                                                <span>Dokter: </span>
+                                                <span class="text-gray-800 dark:text-gray-200" x-text="item.dokter_pemeriksa || '—'"></span>
                                             </div>
 
-                                            {{-- Tindakan --}}
-                                            <div>
-                                                <span class="text-[9px] font-black uppercase text-teal-600 block">Tindakan / Terapi</span>
-                                                <p class="text-gray-700 dark:text-gray-300 font-medium bg-teal-50/10 dark:bg-teal-900/5 p-2 rounded-lg" x-text="item.tindakan || '—'"></p>
+                                            {{-- Physical metrics (BP, Weight, Height) --}}
+                                            <div class="grid grid-cols-3 gap-2 bg-gray-50/50 dark:bg-gray-800/40 p-2.5 rounded-xl text-[10px] text-gray-550">
+                                                <div>
+                                                    <span class="block text-[8px] font-black uppercase text-gray-400">TD</span>
+                                                    <span class="font-bold text-gray-750 dark:text-gray-200" x-text="item.tekanan_darah || '—'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="block text-[8px] font-black uppercase text-gray-400">Berat</span>
+                                                    <span class="font-bold text-gray-755 dark:text-gray-200" x-text="item.berat_badan ? item.berat_badan + ' kg' : '—'"></span>
+                                                </div>
+                                                <div>
+                                                    <span class="block text-[8px] font-black uppercase text-gray-400">Tinggi</span>
+                                                    <span class="font-bold text-gray-760 dark:text-gray-200" x-text="item.tinggi_badan ? item.tinggi_badan + ' cm' : '—'"></span>
+                                                </div>
                                             </div>
 
-                                            {{-- Prescription --}}
-                                            <div x-show="item.resep_medis">
-                                                <span class="text-[9px] font-black uppercase text-purple-600 block">Resep Obat</span>
-                                                <div class="bg-purple-50/10 dark:bg-purple-900/5 p-2 rounded-lg space-y-1.5">
-                                                    <template x-for="rItem in item.resep_medis?.items" :key="rItem.id">
-                                                        <div class="flex items-start justify-between text-[11px]">
-                                                            <span class="font-bold text-gray-800 dark:text-gray-200" x-text="rItem.nama_obat"></span>
-                                                            <span class="text-purple-600 dark:text-purple-400 font-semibold" x-text="rItem.jumlah + ' ' + rItem.satuan + ' (' + (rItem.aturan_pakai || '—') + ')'"></span>
-                                                        </div>
-                                                    </template>
+                                            {{-- Details (Keluhan, Diagnosis, Tindakan) --}}
+                                            <div class="space-y-3 text-xs leading-relaxed">
+                                                {{-- Keluhan Utama --}}
+                                                <div x-show="item.catatan_pasien">
+                                                    <span class="text-[9px] font-black uppercase text-cyan-600 block mb-1">Keluhan / Catatan Pasien</span>
+                                                    <p class="text-gray-700 dark:text-gray-300 font-medium bg-cyan-50/20 dark:bg-cyan-900/10 p-3 rounded-xl border border-cyan-100/50 dark:border-cyan-800/30" x-text="item.catatan_pasien"></p>
+                                                </div>
+                                                
+                                                {{-- Diagnosis --}}
+                                                <div>
+                                                    <span class="text-[9px] font-black uppercase text-teal-600 block mb-1">Diagnosis</span>
+                                                    <p class="text-gray-800 dark:text-gray-200 font-bold bg-teal-50/20 dark:bg-teal-900/10 p-3 rounded-xl border border-teal-100/50 dark:border-teal-800/30" x-text="item.diagnosis || '—'"></p>
+                                                </div>
+
+                                                {{-- Tindakan --}}
+                                                <div>
+                                                    <span class="text-[9px] font-black uppercase text-teal-600 block mb-1">Tindakan / Terapi</span>
+                                                    <p class="text-gray-700 dark:text-gray-300 font-medium bg-teal-50/20 dark:bg-teal-900/10 p-3 rounded-xl border border-teal-100/50 dark:border-teal-800/30" x-text="item.tindakan || '—'"></p>
+                                                </div>
+
+                                                {{-- Prescription --}}
+                                                <div x-show="item.resep_medis">
+                                                    <span class="text-[9px] font-black uppercase text-purple-600 block mb-1">Resep Obat</span>
+                                                    <div class="bg-purple-50/20 dark:bg-purple-900/10 p-3 rounded-xl border border-purple-100/50 dark:border-purple-800/30 space-y-2">
+                                                        <template x-for="rItem in item.resep_medis?.items" :key="rItem.id">
+                                                            <div class="flex items-start justify-between text-[11px] pb-2 border-b border-purple-100 dark:border-purple-800/50 last:border-0 last:pb-0">
+                                                                <span class="font-bold text-gray-800 dark:text-gray-200" x-text="rItem.nama_obat"></span>
+                                                                <span class="text-purple-600 dark:text-purple-400 font-bold" x-text="rItem.jumlah + ' ' + rItem.satuan + ' (' + (rItem.aturan_pakai || '—') + ')'"></span>
+                                                            </div>
+                                                        </template>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

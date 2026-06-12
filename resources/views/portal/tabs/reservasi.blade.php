@@ -1,3 +1,7 @@
+@php
+    $hasActiveReservation = isset($jadwalPasien) ? $jadwalPasien->whereIn('status', ['Menunggu', 'Dikonfirmasi'])->isNotEmpty() : false;
+@endphp
+
 <form action="{{ route('reservasi.store') }}" method="POST" @submit="isSubmitting = true"
       class="w-full"
       x-data="reservasiApp(@js($doctors), '{{ date('Y-m-d') }}')"
@@ -75,6 +79,20 @@
                 <h3 id="form-reservasi-heading" class="font-bold text-gray-900 mb-2 text-xl dark:text-white">Form Reservasi</h3>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Isi formulir dengan lengkap untuk membuat janji temu baru. Data Anda dienkripsi.</p>
             </header>
+
+            @if($hasActiveReservation)
+                <div class="flex flex-col items-center justify-center text-center py-12">
+                    <div class="w-20 h-20 bg-rose-50 dark:bg-rose-900/20 rounded-full flex items-center justify-center mb-5 text-rose-500 dark:text-rose-400">
+                        <svg class="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                    </div>
+                    <h4 class="text-xl font-bold text-gray-900 dark:text-white mb-2">Reservasi Aktif Ditemukan</h4>
+                    <p class="text-sm text-gray-500 dark:text-gray-400 max-w-sm mb-8 leading-relaxed">Anda masih memiliki reservasi yang berstatus <strong class="text-rose-500">Menunggu</strong> atau <strong class="text-rose-500">Dikonfirmasi</strong>. Silakan selesaikan atau batalkan reservasi tersebut terlebih dahulu untuk membuat reservasi baru.</p>
+                    <button type="button" @click.prevent="activeTab = 'jadwal'; window.scrollTo({top: 0, behavior: 'smooth'});" class="px-8 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-xl transition-all shadow-lg shadow-teal-500/30 flex items-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                        Lihat Jadwal Saya
+                    </button>
+                </div>
+            @else
 
             {{-- Error/Warning Alert --}}
             <div x-show="warning" x-cloak x-transition aria-live="polite"
@@ -239,6 +257,7 @@
                     Data medis Anda dilindungi oleh enkripsi end-to-end.
                 </p>
             </div>
+            @endif
         </section>
     </div>
 </form>

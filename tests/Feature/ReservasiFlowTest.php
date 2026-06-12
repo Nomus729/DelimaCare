@@ -59,6 +59,7 @@ class ReservasiFlowTest extends TestCase
             'phone'     => '081234567890',
             'layanan'   => 'Konsultasi',
             'tanggal'   => now()->addDay()->format('Y-m-d'),
+            'waktu'     => '08:00',
         ]);
 
         $response->assertRedirect(route('portal'));
@@ -69,6 +70,42 @@ class ReservasiFlowTest extends TestCase
             'doctor_id' => $this->doctor->id,
             'status'    => 'Menunggu',
         ]);
+    }
+    /** @test */
+    public function pasien_cannot_create_multiple_active_reservasi()
+    {
+        // 1. Pasien membuat reservasi pertama
+        $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+            'dokter_id' => $this->doctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Konsultasi',
+            'tanggal'   => now()->addDay()->format('Y-m-d'),
+            'waktu'     => '08:00',
+        ]);
+
+        $this->assertDatabaseHas('reservasi', [
+            'nama'      => 'pasien1',
+            'status'    => 'Menunggu',
+        ]);
+
+        // 2. Pasien mencoba membuat reservasi kedua sementara yang pertama masih 'Menunggu'
+        $response = $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+            'dokter_id' => $this->doctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Umum',
+            'tanggal'   => now()->addDays(2)->format('Y-m-d'),
+            'waktu'     => '10:00',
+        ]);
+
+        // Harus gagal dan kembali dengan pesan error
+        $response->assertRedirect(route('portal'));
+        $response->assertSessionHas('error');
+        
+        $errorMsg = session('error');
+        $this->assertStringContainsString('Anda masih memiliki reservasi aktif', $errorMsg);
+
+        // Pastikan di DB hanya ada 1 reservasi untuk pasien ini
+        $this->assertEquals(1, Reservasi::where('user_id', $this->pasien->id)->count());
     }
 
     /** @test */
@@ -93,6 +130,7 @@ class ReservasiFlowTest extends TestCase
             'phone'     => '081234567890',
             'layanan'   => 'Pemeriksaan Kehamilan',
             'tanggal'   => now()->addDay()->format('Y-m-d'),
+            'waktu'     => '08:00',
         ]);
 
         $response->assertRedirect();
@@ -133,19 +171,28 @@ class ReservasiFlowTest extends TestCase
     {
         $tomorrow = now()->addDay()->format('Y-m-d');
 
-        // Buat 2 reservasi berurutan
+        $pasien2 = User::create([
+            'username' => 'pasien2',
+            'email'    => 'pasien2@test.com',
+            'password' => bcrypt('password'),
+            'role'     => 'pasien',
+        ]);
+
+        // Buat 2 reservasi berurutan dari 2 pasien yang berbeda
         $this->actingAs($this->pasien)->post(route('reservasi.store'), [
             'dokter_id' => $this->doctor->id,
             'phone'     => '081234567890',
             'layanan'   => 'Konsultasi',
             'tanggal'   => $tomorrow,
+            'waktu'     => '08:00',
         ]);
 
-        $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+        $this->actingAs($pasien2)->post(route('reservasi.store'), [
             'dokter_id' => $this->doctor->id,
             'phone'     => '081234567890',
             'layanan'   => 'Pemeriksaan Umum',
             'tanggal'   => $tomorrow,
+            'waktu'     => '08:30',
         ]);
 
         $reservations = Reservasi::whereDate('tanggal', $tomorrow)->orderBy('queue_number')->get();
@@ -179,6 +226,32 @@ class ReservasiFlowTest extends TestCase
     }
 
     /** @test */
+    public function pasien_cannot_cancel_confirmed_reservasi()
+    {
+        $reservasi = Reservasi::create([
+            'user_id'        => $this->pasien->id,
+            'nama'           => 'pasien1',
+            'phone'          => '08123',
+            'layanan'        => 'Umum',
+            'dokter_id'      => $this->doctor->nama,
+            'doctor_id'      => $this->doctor->id,
+            'tanggal'        => now()->format('Y-m-d'),
+            'waktu'          => '08:00',
+            'queue_number'   => 1,
+            'estimated_time' => '08:00',
+            'status'         => 'Dikonfirmasi',
+        ]);
+
+        $response = $this->actingAs($this->pasien)
+            ->delete(route('reservasi.destroy', $reservasi->id));
+
+        $response->assertRedirect(route('portal'));
+        $response->assertSessionHas('error');
+        $this->assertStringContainsString('Jadwal konsultasi tidak dapat dibatalkan', session('error'));
+        $this->assertDatabaseHas('reservasi', ['id' => $reservasi->id, 'status' => 'Dikonfirmasi']);
+    }
+
+    /** @test */
     public function reservasi_fails_if_doctor_is_on_leave_or_resting()
     {
         $onLeaveDoctor = Doctor::create([
@@ -201,6 +274,7 @@ class ReservasiFlowTest extends TestCase
             'phone'     => '081234567890',
             'layanan'   => 'Konsultasi',
             'tanggal'   => now()->addDay()->format('Y-m-d'),
+            'waktu'     => '08:00',
         ]);
         $response1->assertRedirect();
         $response1->assertSessionHas('error');
@@ -212,6 +286,7 @@ class ReservasiFlowTest extends TestCase
             'phone'     => '081234567890',
             'layanan'   => 'Konsultasi',
             'tanggal'   => now()->addDay()->format('Y-m-d'),
+            'waktu'     => '08:00',
         ]);
         $response2->assertRedirect();
         $response2->assertSessionHas('error');

@@ -67,6 +67,7 @@
                             </span>
 
                             <div class="flex gap-2">
+                                @if($jadwal->status === 'Menunggu')
                                 <button aria-label="Batalkan jadwal ini"
                                         type="button"
                                         @click="cancelRoute = '{{ route('reservasi.destroy', $jadwal->id) }}'; showConfirmCancel = true"
@@ -74,6 +75,7 @@
                                         title="Batalkan">
                                     <svg aria-hidden="true" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
                                 </button>
+                                @endif
 
                                 <button aria-haspopup="dialog" aria-controls="modal-{{ $jadwal->id }}" onclick="document.getElementById('modal-{{ $jadwal->id }}').classList.remove('hidden')" class="px-5 py-2.5 bg-black dark:bg-gray-800 text-white text-xs font-bold rounded-xl hover:bg-gray-800 dark:hover:bg-gray-700 transition-all shadow-sm">
                                     Lihat Detail
@@ -190,6 +192,7 @@
                             Lihat Detail
                         </button>
 
+                        @if($jadwal->status === 'Menunggu')
                         <button type="button"
                                 @click="cancelRoute = '{{ route('reservasi.destroy', $jadwal->id) }}'; showConfirmCancel = true"
                                 class="w-full py-3 border border-red-200 dark:border-red-900/30 text-red-600 dark:text-red-400 bg-white dark:bg-transparent hover:bg-red-50 dark:hover:bg-red-950/20 text-xs font-bold rounded-xl transition-all flex items-center justify-center gap-1.5">
@@ -198,6 +201,7 @@
                             </svg>
                             Batalkan Reservasi
                         </button>
+                        @endif
                     </div>
                 </article>
 

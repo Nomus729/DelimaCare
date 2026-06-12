@@ -19,6 +19,14 @@ class ReservasiController extends Controller
 
     public function store(StoreReservasiRequest $request)
     {
+        $activeReservation = Reservasi::where('user_id', Auth::id())
+            ->whereIn('status', ['Menunggu', 'Dikonfirmasi'])
+            ->first();
+
+        if ($activeReservation) {
+            return redirect()->route('portal')->with('error', 'Anda masih memiliki reservasi aktif. Selesaikan atau batalkan reservasi sebelumnya untuk membuat yang baru.');
+        }
+
         $doctor = \App\Models\Doctor::findOrFail($request->dokter_id);
 
         $availability = $this->reservasiService->checkDoctorAvailability(
@@ -95,6 +103,11 @@ class ReservasiController extends Controller
     public function destroy($id)
     {
         $reservasi = Reservasi::where('id', $id)->where('user_id', Auth::id())->firstOrFail();
+        
+        if ($reservasi->status !== 'Menunggu') {
+            return redirect()->route('portal')->with('error', 'Jadwal konsultasi tidak dapat dibatalkan karena statusnya sudah ' . $reservasi->status . '.');
+        }
+
         $reservasi->delete();
 
         return redirect()->route('portal')->with('success', 'Jadwal konsultasi berhasil dibatalkan.');
