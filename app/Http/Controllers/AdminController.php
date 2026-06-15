@@ -321,7 +321,7 @@ class AdminController extends Controller
 
         // Default sorting
         if (in_array($resFilter, ['all', 'semua']) || (empty($resFilter) && empty($resStatus))) {
-            $resQuery->orderBy('tanggal', 'asc')->orderBy('waktu', 'asc');
+            $resQuery->orderBy('tanggal', 'desc')->orderBy('waktu', 'desc');
         } else {
             $resQuery->orderBy('tanggal', 'asc')->orderBy('queue_number', 'asc');
         }

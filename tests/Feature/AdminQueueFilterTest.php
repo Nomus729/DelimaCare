@@ -90,7 +90,7 @@ class AdminQueueFilterTest extends TestCase
     }
 
     /** @test */
-    public function admin_gets_queue_ordered_chronologically_by_default()
+    public function admin_gets_queue_ordered_reverse_chronologically_by_default()
     {
         $r1 = Reservasi::create([
             'nama'           => 'Urutan Kedua',
@@ -137,9 +137,9 @@ class AdminQueueFilterTest extends TestCase
 
         $response->assertStatus(200);
         $response->assertSeeInOrder([
-            'Urutan Kesatu',
-            'Urutan Kedua',
             'Urutan Ketiga',
+            'Urutan Kedua',
+            'Urutan Kesatu',
         ]);
     }
 }

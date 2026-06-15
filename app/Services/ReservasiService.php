@@ -145,16 +145,14 @@ class ReservasiService
             //   - Melakukan ROLLBACK jika ada exception yang ter-throw
             return DB::transaction(function () use ($data, $doctor, $status) {
 
-                // Karena pasien sekarang memilih waktu spesifik, kita tidak menggunakan calculateQueue()
-                // untuk waktu, tapi kita tetap butuh mengunci baris untuk mendapatkan nomor antrean berurutan
-                $lastReservasi = Reservasi::whereDate('tanggal', $data['tanggal'])
-                    ->orderBy('queue_number', 'desc')
+                // 1. Ambil semua reservasi pada tanggal yang sama, kunci barisnya (lockForUpdate)
+                // Ini mencegah transaksi lain memodifikasi jadwal di hari yang sama bersamaan
+                $reservationsOnDate = Reservasi::whereDate('tanggal', $data['tanggal'])
                     ->lockForUpdate()
-                    ->first();
-                
-                $queueNumber = $lastReservasi ? $lastReservasi->queue_number + 1 : 1;
+                    ->get();
 
-                return Reservasi::create([
+                // 2. Buat reservasi baru dengan queue_number sementara (akan di-update langsung)
+                $newReservasi = Reservasi::create([
                     'user_id'        => $data['user_id'] ?? null,
                     'nama'           => $data['nama'],
                     'phone'          => $data['phone'],
@@ -163,11 +161,31 @@ class ReservasiService
                     'doctor_id'      => $doctor->id,    // FK integer baru
                     'tanggal'        => $data['tanggal'],
                     'waktu'          => $data['waktu'], // Waktu spesifik dari input pasien
-                    'queue_number'   => $queueNumber,
+                    'queue_number'   => 0, // Placeholder
                     'estimated_time' => $data['waktu'], // Waktu estimasi = waktu spesifik
                     'keluhan'        => $data['keluhan'] ?? null,
                     'status'         => $status,
                 ]);
+
+                // 3. Gabungkan reservasi baru ke koleksi
+                $reservationsOnDate->push($newReservasi);
+
+                // 4. Urutkan koleksi secara manual berdasarkan waktu lalu id
+                $sortedReservations = $reservationsOnDate->sortBy([
+                    fn ($a, $b) => $a->waktu <=> $b->waktu,
+                    fn ($a, $b) => $a->id <=> $b->id,
+                ])->values();
+
+                // 5. Update queue_number masing-masing
+                foreach ($sortedReservations as $index => $reservasi) {
+                    $newQueueNumber = $index + 1;
+                    if ($reservasi->queue_number !== $newQueueNumber) {
+                        $reservasi->queue_number = $newQueueNumber;
+                        $reservasi->save();
+                    }
+                }
+
+                return $newReservasi->fresh();
             });
 
         } catch (\Illuminate\Database\QueryException $e) {

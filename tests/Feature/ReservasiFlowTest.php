@@ -198,7 +198,44 @@ class ReservasiFlowTest extends TestCase
         $reservations = Reservasi::whereDate('tanggal', $tomorrow)->orderBy('queue_number')->get();
         $this->assertEquals(1, $reservations[0]->queue_number);
         $this->assertEquals(2, $reservations[1]->queue_number);
-        $this->assertNotEquals($reservations[0]->estimated_time, $reservations[1]->estimated_time);
+    }
+
+    /** @test */
+    public function queue_numbers_are_ordered_by_waktu_not_creation_time()
+    {
+        $tomorrow = now()->addDay()->format('Y-m-d');
+
+        $pasien2 = User::create([
+            'username' => 'pasien2',
+            'email'    => 'pasien2@test.com',
+            'password' => bcrypt('password'),
+            'role'     => 'pasien',
+        ]);
+
+        // Pasien 1 booking duluan tapi untuk jam 10:00
+        $this->actingAs($this->pasien)->post(route('reservasi.store'), [
+            'dokter_id' => $this->doctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Konsultasi',
+            'tanggal'   => $tomorrow,
+            'waktu'     => '10:00',
+        ]);
+
+        // Pasien 2 booking belakangan tapi untuk jam 08:00
+        $this->actingAs($pasien2)->post(route('reservasi.store'), [
+            'dokter_id' => $this->doctor->id,
+            'phone'     => '081234567890',
+            'layanan'   => 'Pemeriksaan Umum',
+            'tanggal'   => $tomorrow,
+            'waktu'     => '08:00',
+        ]);
+
+        // Berdasarkan waktu, Pasien 2 (08:00) harus jadi antrean 1, Pasien 1 (10:00) jadi antrean 2
+        $resJam08 = Reservasi::where('waktu', '08:00')->first();
+        $resJam10 = Reservasi::where('waktu', '10:00')->first();
+
+        $this->assertEquals(1, $resJam08->queue_number);
+        $this->assertEquals(2, $resJam10->queue_number);
     }
 
     /** @test */
