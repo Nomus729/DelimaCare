@@ -56,32 +56,39 @@ Aplikasi ini juga dilengkapi dukungan **Mode Gelap (Dark Mode)** tanpa *flash of
 
 ```mermaid
 flowchart TB
-    subgraph Client["Antarmuka Pengguna (Blade + Tailwind CSS + Alpine.js)"]
+    subgraph Client["Antarmuka Pengguna - Blade, Tailwind CSS, Alpine.js"]
         Pub["Halaman Publik & Artikel"]
         Portal["Portal Pasien (/portal)"]
-        Admin["Panel Admin (/admin)\nAJAX Partials + ApexCharts + Chart.js"]
+        Admin["Panel Admin (/admin)<br/>AJAX Partials, ApexCharts, Chart.js"]
     end
 
-    subgraph App["Aplikasi Backend (Laravel 10 / PHP 8.1+)"]
-        MW["Middleware\n(auth, guest, patient, admin)"]
+    subgraph App["Aplikasi Backend - Laravel 10 / PHP 8.1+"]
+        MW["Middleware<br/>auth, guest, patient, admin"]
         Ctrl["Controllers & Form Requests"]
-        Svc["ReservasiService\n(Validasi Jadwal & Antrean)"]
-        Evt["Broadcasting\n(MessageSent via Pusher)"]
-        Sched["Console Scheduler\n(reservasi:update-status)"]
+        Svc["ReservasiService<br/>Validasi Jadwal & Antrean"]
+        Evt["Broadcasting<br/>MessageSent via Pusher"]
+        Sched["Console Scheduler<br/>reservasi:update-status"]
     end
 
     subgraph Data["Penyimpanan & Sinkronisasi"]
-        DB[("Database Utama\nMySQL / SQLite")]
-        Sync["HybridSync Trait &\nSyncToRemoteJob (Queue)"]
-        Remote[("Remote MySQL\n(Opsional)")]
+        DB[("Database Utama<br/>MySQL / SQLite")]
+        Sync["HybridSync Trait &<br/>SyncToRemoteJob Queue"]
+        Remote[("Remote MySQL<br/>Opsional")]
     end
 
-    Pub & Portal & Admin --> MW --> Ctrl
-    Ctrl --> Svc --> DB
+    Pub --> MW
+    Portal --> MW
+    Admin --> MW
+    MW --> Ctrl
+    Ctrl --> Svc
+    Svc --> DB
     Ctrl --> DB
-    Ctrl --> Evt -.->|"Real-time Chat"| Portal & Admin
+    Ctrl --> Evt
+    Evt -. "Real-time Chat" .-> Portal
+    Evt -. "Real-time Chat" .-> Admin
     Sched --> DB
-    DB -->|"Observer"| Sync -.-> Remote
+    DB -- "Observer" --> Sync
+    Sync -.-> Remote
 ```
 
 ---
